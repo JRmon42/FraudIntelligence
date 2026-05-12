@@ -24,8 +24,8 @@ param secondaryLocation string
 @description('Region code of partner region (for naming partner resources)')
 param partnerRegionCode string
 
-@description('Resource group name where the shared private DNS zones live (always the primary RG)')
-param dnsZoneResourceGroupName string
+@description('RG that holds the private DNS zones consumed by this region. Defaults to the local RG so each region is independent.')
+param dnsZoneResourceGroupName string = resourceGroup().name
 
 // Identity / admin params
 param kvAdminPrincipalIds array = []

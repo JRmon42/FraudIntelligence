@@ -194,13 +194,15 @@ var dnsZoneNames = [
   'privatelink.notebooks.azure.net'
 ]
 
-resource dnsZones 'Microsoft.Network/privateDnsZones@2020-06-01' = [for zone in dnsZoneNames: if (isPrimary) {
+// Private DNS zones — created locally in EACH region's RG so that
+// region failures don't block private endpoint resolution in the other.
+resource dnsZones 'Microsoft.Network/privateDnsZones@2020-06-01' = [for zone in dnsZoneNames: {
   name: zone
   location: 'global'
   tags: tags
 }]
 
-resource dnsLinks 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = [for (zone, i) in dnsZoneNames: if (isPrimary) {
+resource dnsLinks 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = [for (zone, i) in dnsZoneNames: {
   name: '${zone}/link-${vnetName}'
   location: 'global'
   dependsOn: [ dnsZones[i] ]

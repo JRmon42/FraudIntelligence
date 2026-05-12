@@ -84,7 +84,6 @@ module primary 'platform.bicep' = {
     tags: tags
     secondaryLocation: drLocation
     partnerRegionCode: 'neu'
-    dnsZoneResourceGroupName: primaryRg.name
     kvAdminPrincipalIds: kvAdminPrincipalIds
     fabricAdminMembers: fabricAdminMembers
     amlAadAdminObjectId: synapseAadAdminObjectId
@@ -92,7 +91,9 @@ module primary 'platform.bicep' = {
     synapseSqlAdminPassword: synapseSqlAdminPassword
     alertEmailReceivers: alertEmailReceivers
     cmkKeyUri: cmkKeyUri
-    partnerEventHubsNamespaceId: dr.outputs.eventHubsNamespaceId
+    // partnerEventHubsNamespaceId is deliberately NOT set to avoid a circular
+    // dependency with the DR region. The geo-DR alias can be created in a
+    // follow-up deployment once both regions have provisioned successfully.
   }
 }
 
@@ -107,7 +108,6 @@ module dr 'platform.bicep' = {
     tags: tags
     secondaryLocation: primaryLocation
     partnerRegionCode: 'swc'
-    dnsZoneResourceGroupName: primaryRg.name
     kvAdminPrincipalIds: kvAdminPrincipalIds
     fabricAdminMembers: fabricAdminMembers
     amlAadAdminObjectId: synapseAadAdminObjectId
