@@ -14,25 +14,12 @@
         "owner": "JRmon42"
       }
     },
-    "kvAdminPrincipalIds": {
-      "value": [
-        "00000000-0000-0000-0000-000000000000"
-      ]
-    },
-    "fabricAdminMembers": {
-      "value": [ "JRmon42@example.onmicrosoft.com" ]
-    },
-    "synapseAadAdminObjectId": { "value": "00000000-0000-0000-0000-000000000000" },
-    "synapseAadAdminLogin":    { "value": "JRmon42@example.onmicrosoft.com" },
-    "synapseSqlAdminPassword": {
-      "reference": {
-        "keyVault": { "id": "/subscriptions/ea8d83f8-8538-4914-ae12-24f954d61638/resourceGroups/fraudintelligence_rg/providers/Microsoft.KeyVault/vaults/kv-fraudintel-prod-swc" },
-        "secretName": "synapse-sql-admin-password"
-      }
-    },
-    "alertEmailReceivers": {
-      "value": [ "jrmon42-alerts@example.com" ]
-    },
+    "kvAdminPrincipalIds": { "value": ["49ccd746-cbb9-4c54-8e51-4593fea1f63c"] },
+    "fabricAdminMembers": { "value": ["admin@MngEnv995349.onmicrosoft.com"] },
+    "synapseAadAdminObjectId": { "value": "49ccd746-cbb9-4c54-8e51-4593fea1f63c" },
+    "synapseAadAdminLogin": { "value": "admin@MngEnv995349.onmicrosoft.com" },
+    "synapseSqlAdminPassword": { "value": "c0R9yKOm0jaLUEta3HeC5wYOAa1!" },
+    "alertEmailReceivers": { "value": ["admin@MngEnv995349.onmicrosoft.com"] },
     "cmkKeyUri": { "value": "" }
   }
 }

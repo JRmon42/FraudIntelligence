@@ -189,7 +189,7 @@ module aca 'modules/containerapps.bicep' = {
     tags: tags
     logAnalyticsWorkspaceId: logs.outputs.workspaceId
     logAnalyticsCustomerId: logs.outputs.workspaceCustomerId
-    logAnalyticsSharedKey: listKeys(logs.outputs.workspaceId, '2023-09-01').primarySharedKey
+    logAnalyticsSharedKey: logs.outputs.workspaceSharedKey
     acaSubnetId: net.outputs.subnetAcaId
     appInsightsConnectionString: logs.outputs.appInsightsConnectionString
   }

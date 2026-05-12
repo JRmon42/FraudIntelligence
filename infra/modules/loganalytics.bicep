@@ -49,6 +49,8 @@ resource ai 'Microsoft.Insights/components@2020-02-02' = {
 output workspaceId string = la.id
 output workspaceName string = la.name
 output workspaceCustomerId string = la.properties.customerId
+@secure()
+output workspaceSharedKey string = la.listKeys().primarySharedKey
 output appInsightsId string = ai.id
 output appInsightsName string = ai.name
 output appInsightsConnectionString string = ai.properties.ConnectionString
