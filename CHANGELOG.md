@@ -1,3 +1,9 @@
+## [1.0.4](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.3...v1.0.4) (2026-05-12)
+
+### Bug Fixes
+
+* **infra:** cosmos SQL-only + drop ACA service-tag IP rule ([650eaac](https://github.com/JRmon42/FraudIntelligence/commit/650eaacc4e0e6b0b857ec3c0b5f036eb082113d7))
+
 ## [1.0.3](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.2...v1.0.3) (2026-05-12)
 
 ### Bug Fixes
