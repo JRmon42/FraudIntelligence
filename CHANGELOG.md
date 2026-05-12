@@ -1,3 +1,9 @@
+## [1.0.6](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.5...v1.0.6) (2026-05-12)
+
+### Bug Fixes
+
+* **eba-reporter:** use python3/pip3 (Azure Linux base has no python alias) ([68d105b](https://github.com/JRmon42/FraudIntelligence/commit/68d105b85941a56e2dc354e30fe0d0501f85cc8b))
+
 ## [1.0.5](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.4...v1.0.5) (2026-05-12)
 
 ### Bug Fixes
