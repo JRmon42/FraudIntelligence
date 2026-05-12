@@ -1,0 +1,45 @@
+name: bicep-validate
+
+on:
+  pull_request:
+    paths:
+      - "infra/**"
+      - ".github/workflows/bicep-validate.yml"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install Bicep
+        run: az bicep install
+
+      - name: az bicep build (all modules)
+        run: |
+          set -euo pipefail
+          shopt -s globstar nullglob
+          for f in infra/**/*.bicep; do
+            echo "::group::Building $f"
+            az bicep build --file "$f"
+            echo "::endgroup::"
+          done
+
+      - name: az deployment sub validate (main)
+        if: hashFiles('infra/main.bicep') != ''
+        run: |
+          az deployment sub validate \
+            --location ${{ vars.AZURE_LOCATION || 'swedencentral' }} \
+            --template-file infra/main.bicep \
+            --parameters env=dev

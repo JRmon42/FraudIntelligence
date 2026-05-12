@@ -1,0 +1,199 @@
+{
+  "name": "EBA Fraud Semantic Model",
+  "compatibilityLevel": 1567,
+  "model": {
+    "culture": "en-US",
+    "defaultPowerBIDataSourceVersion": "powerBI_V3",
+    "sourceQueryCulture": "en-GB",
+    "dataAccessOptions": { "legacyRedirects": true, "returnErrorValuesAsNull": true },
+    "discourageImplicitMeasures": true,
+    "annotations": [
+      { "name": "PBIDesktopVersion", "value": "2.130.1" },
+      { "name": "PBI_QueryOrder", "value": "[\"Fact_Tx\",\"Fact_Decisions\",\"Fact_Cases\",\"Fact_Eba\",\"Fact_Latency\",\"Dim_Country\",\"Dim_Date\",\"Dim_Instrument\",\"Dim_Exemption\",\"Dim_FraudType\"]" }
+    ],
+    "tables": [
+      {
+        "name": "Dim_Country",
+        "lineageTag": "dim-country",
+        "columns": [
+          { "name": "CountryCode", "dataType": "string", "sourceColumn": "CountryCode", "summarizeBy": "none" },
+          { "name": "CountryName", "dataType": "string", "sourceColumn": "CountryName", "summarizeBy": "none" },
+          { "name": "Region", "dataType": "string", "sourceColumn": "Region", "summarizeBy": "none" }
+        ],
+        "partitions": [{
+          "name": "Dim_Country",
+          "mode": "import",
+          "source": { "type": "m", "expression": "let Source = #table({\"CountryCode\",\"CountryName\",\"Region\"},{{\"SE\",\"Sweden\",\"Nordics\"},{\"NO\",\"Norway\",\"Nordics\"},{\"DK\",\"Denmark\",\"Nordics\"},{\"FI\",\"Finland\",\"Nordics\"},{\"EE\",\"Estonia\",\"Baltics\"}}) in Source" }
+        }]
+      },
+      {
+        "name": "Dim_Date",
+        "lineageTag": "dim-date",
+        "dataCategory": "Time",
+        "columns": [
+          { "name": "Date", "dataType": "dateTime", "sourceColumn": "Date", "summarizeBy": "none", "isKey": true },
+          { "name": "Year", "dataType": "int64", "sourceColumn": "Year", "summarizeBy": "none" },
+          { "name": "Quarter", "dataType": "string", "sourceColumn": "Quarter", "summarizeBy": "none" },
+          { "name": "Month", "dataType": "int64", "sourceColumn": "Month", "summarizeBy": "none" },
+          { "name": "MonthName", "dataType": "string", "sourceColumn": "MonthName", "summarizeBy": "none" }
+        ],
+        "partitions": [{
+          "name": "Dim_Date",
+          "mode": "import",
+          "source": { "type": "m", "expression": "let Source = List.Dates(#date(2023,1,1), Duration.Days(#date(2027,12,31)-#date(2023,1,1))+1, #duration(1,0,0,0)), T = Table.FromList(Source, Splitter.SplitByNothing(), {\"Date\"}), T2 = Table.AddColumn(T,\"Year\", each Date.Year([Date]), Int64.Type), T3 = Table.AddColumn(T2,\"Quarter\", each Text.From(Date.Year([Date])) & \"-Q\" & Text.From(Date.QuarterOfYear([Date])) ), T4 = Table.AddColumn(T3,\"Month\", each Date.Month([Date]), Int64.Type), T5 = Table.AddColumn(T4,\"MonthName\", each Date.MonthName([Date])) in T5" }
+        }]
+      },
+      {
+        "name": "Dim_Instrument",
+        "columns": [
+          { "name": "Instrument", "dataType": "string", "sourceColumn": "Instrument", "summarizeBy": "none" },
+          { "name": "InstrumentLabel", "dataType": "string", "sourceColumn": "InstrumentLabel", "summarizeBy": "none" }
+        ],
+        "partitions": [{
+          "name": "Dim_Instrument",
+          "mode": "import",
+          "source": { "type": "m", "expression": "let Source = #table({\"Instrument\",\"InstrumentLabel\"},{{\"card\",\"Card\"},{\"credit_transfer\",\"Credit transfer\"},{\"direct_debit\",\"Direct debit\"},{\"e_money\",\"E-money\"},{\"cash_withdrawal\",\"Cash withdrawal\"}}) in Source" }
+        }]
+      },
+      {
+        "name": "Dim_Exemption",
+        "columns": [
+          { "name": "ExemptionCode", "dataType": "string", "sourceColumn": "ExemptionCode", "summarizeBy": "none" },
+          { "name": "ExemptionLabel", "dataType": "string", "sourceColumn": "ExemptionLabel", "summarizeBy": "none" },
+          { "name": "RtsArticle", "dataType": "string", "sourceColumn": "RtsArticle", "summarizeBy": "none" }
+        ],
+        "partitions": [{
+          "name": "Dim_Exemption",
+          "mode": "import",
+          "source": { "type": "m", "expression": "let Source = #table({\"ExemptionCode\",\"ExemptionLabel\",\"RtsArticle\"},{{\"sca_applied\",\"SCA applied\",\"\"},{\"low_value\",\"Low value\",\"Art. 16\"},{\"tra\",\"Transaction risk analysis\",\"Art. 18\"},{\"trusted\",\"Trusted beneficiary\",\"Art. 13\"},{\"recurring\",\"Recurring\",\"Art. 14\"},{\"corporate\",\"Corporate\",\"Art. 17\"},{\"secure_corp\",\"Secure corporate\",\"Art. 17\"},{\"mit\",\"Merchant initiated\",\"out of scope\"},{\"contactless_lv\",\"Contactless low value\",\"Art. 11\"},{\"unattended\",\"Unattended transport\",\"Art. 12\"}}) in Source" }
+        }]
+      },
+      {
+        "name": "Dim_FraudType",
+        "columns": [
+          { "name": "FraudTypeCode", "dataType": "string", "sourceColumn": "FraudTypeCode", "summarizeBy": "none" },
+          { "name": "FraudTypeLabel", "dataType": "string", "sourceColumn": "FraudTypeLabel", "summarizeBy": "none" }
+        ],
+        "partitions": [{
+          "name": "Dim_FraudType",
+          "mode": "import",
+          "source": { "type": "m", "expression": "let Source = #table({\"FraudTypeCode\",\"FraudTypeLabel\"},{{\"unauthorised_issuance\",\"Issuance by fraudster\"},{\"unauthorised_modification\",\"Modification by fraudster\"},{\"manipulation_of_payer\",\"Manipulation of the payer\"},{\"lost_stolen\",\"Lost / stolen\"},{\"card_not_received\",\"Card not received\"},{\"counterfeit\",\"Counterfeit\"},{\"other\",\"Other\"}}) in Source" }
+        }]
+      },
+      {
+        "name": "Fact_Tx",
+        "lineageTag": "fact-tx",
+        "columns": [
+          { "name": "BookingDate", "dataType": "dateTime", "sourceColumn": "kpi_date", "summarizeBy": "none" },
+          { "name": "CountryCode", "dataType": "string", "sourceColumn": "issuer_country", "summarizeBy": "none" },
+          { "name": "Instrument", "dataType": "string", "sourceColumn": "instrument_type", "summarizeBy": "none" },
+          { "name": "TxCount", "dataType": "int64", "sourceColumn": "tx_count", "summarizeBy": "sum" },
+          { "name": "TxValueEur", "dataType": "decimal", "sourceColumn": "tx_value_eur", "summarizeBy": "sum", "formatString": "\"€\"#,0.00" },
+          { "name": "DeclineCount", "dataType": "int64", "sourceColumn": "decline_count", "summarizeBy": "sum" },
+          { "name": "FraudCount", "dataType": "int64", "sourceColumn": "fraud_count", "summarizeBy": "sum" },
+          { "name": "FraudValueEur", "dataType": "decimal", "sourceColumn": "fraud_value_eur", "summarizeBy": "sum", "formatString": "\"€\"#,0.00" },
+          { "name": "LossValueEur", "dataType": "decimal", "sourceColumn": "loss_value_eur", "summarizeBy": "sum", "formatString": "\"€\"#,0.00" }
+        ],
+        "partitions": [{
+          "name": "Fact_Tx",
+          "mode": "directLake",
+          "source": { "type": "entity", "entityName": "fraud_kpis_daily", "schemaName": "gold", "expressionSource": "DatabaseQuery" }
+        }]
+      },
+      {
+        "name": "Fact_Eba",
+        "lineageTag": "fact-eba",
+        "columns": [
+          { "name": "Quarter", "dataType": "string", "sourceColumn": "quarter", "summarizeBy": "none" },
+          { "name": "CountryCode", "dataType": "string", "sourceColumn": "reporting_country", "summarizeBy": "none" },
+          { "name": "Instrument", "dataType": "string", "sourceColumn": "instrument", "summarizeBy": "none" },
+          { "name": "Channel", "dataType": "string", "sourceColumn": "channel", "summarizeBy": "none" },
+          { "name": "ExemptionCode", "dataType": "string", "sourceColumn": "sca_exemption", "summarizeBy": "none" },
+          { "name": "FraudTypeCode", "dataType": "string", "sourceColumn": "fraud_type", "summarizeBy": "none" },
+          { "name": "CounterpartyGeo", "dataType": "string", "sourceColumn": "counterparty_geo", "summarizeBy": "none" },
+          { "name": "LossBearer", "dataType": "string", "sourceColumn": "loss_bearer", "summarizeBy": "none" },
+          { "name": "TxCount", "dataType": "int64", "sourceColumn": "tx_count", "summarizeBy": "sum" },
+          { "name": "TxValueEur", "dataType": "decimal", "sourceColumn": "tx_value_eur", "summarizeBy": "sum", "formatString": "\"€\"#,0.00" },
+          { "name": "FraudCount", "dataType": "int64", "sourceColumn": "fraud_count", "summarizeBy": "sum" },
+          { "name": "FraudValueEur", "dataType": "decimal", "sourceColumn": "fraud_value_eur", "summarizeBy": "sum", "formatString": "\"€\"#,0.00" },
+          { "name": "LossValueEur", "dataType": "decimal", "sourceColumn": "loss_value_eur", "summarizeBy": "sum", "formatString": "\"€\"#,0.00" }
+        ],
+        "partitions": [{
+          "name": "Fact_Eba",
+          "mode": "directLake",
+          "source": { "type": "entity", "entityName": "eba_report_q", "schemaName": "gold", "expressionSource": "DatabaseQuery" }
+        }]
+      },
+      {
+        "name": "Fact_Exemption",
+        "columns": [
+          { "name": "KpiDate", "dataType": "dateTime", "sourceColumn": "kpi_date", "summarizeBy": "none" },
+          { "name": "CountryCode", "dataType": "string", "sourceColumn": "issuer_country", "summarizeBy": "none" },
+          { "name": "ExemptionCode", "dataType": "string", "sourceColumn": "sca_exemption_code", "summarizeBy": "none" },
+          { "name": "TxCount", "dataType": "int64", "sourceColumn": "tx_count", "summarizeBy": "sum" },
+          { "name": "TxValueEur", "dataType": "decimal", "sourceColumn": "tx_value_eur", "summarizeBy": "sum" },
+          { "name": "FraudCount", "dataType": "int64", "sourceColumn": "fraud_count", "summarizeBy": "sum" },
+          { "name": "FraudRateBps", "dataType": "double", "sourceColumn": "fraud_rate_bps", "summarizeBy": "average" }
+        ],
+        "partitions": [{
+          "name": "Fact_Exemption",
+          "mode": "directLake",
+          "source": { "type": "entity", "entityName": "psd2_exemption_mix", "schemaName": "gold", "expressionSource": "DatabaseQuery" }
+        }]
+      },
+      {
+        "name": "Fact_Latency",
+        "columns": [
+          { "name": "KpiDate", "dataType": "dateTime", "sourceColumn": "kpi_date", "summarizeBy": "none" },
+          { "name": "ModelVersion", "dataType": "string", "sourceColumn": "model_version", "summarizeBy": "none" },
+          { "name": "P50Ms", "dataType": "double", "sourceColumn": "p50_ms", "summarizeBy": "average" },
+          { "name": "P95Ms", "dataType": "double", "sourceColumn": "p95_ms", "summarizeBy": "average" },
+          { "name": "P99Ms", "dataType": "double", "sourceColumn": "p99_ms", "summarizeBy": "average" },
+          { "name": "SampleCount", "dataType": "int64", "sourceColumn": "sample_count", "summarizeBy": "sum" }
+        ],
+        "partitions": [{
+          "name": "Fact_Latency",
+          "mode": "directLake",
+          "source": { "type": "entity", "entityName": "scoring_latency_p99", "schemaName": "gold", "expressionSource": "DatabaseQuery" }
+        }]
+      },
+      {
+        "name": "Measures",
+        "columns": [{ "name": "_dummy", "dataType": "int64", "sourceColumn": "_dummy", "isHidden": true, "summarizeBy": "none" }],
+        "partitions": [{
+          "name": "Measures",
+          "mode": "import",
+          "source": { "type": "m", "expression": "let Source = #table({\"_dummy\"},{{0}}) in Source" }
+        }],
+        "measures": [
+          { "name": "Total Tx Value (€)",      "expression": "SUM(Fact_Tx[TxValueEur])",  "formatString": "\"€\"#,0", "description": "Sum of EUR-converted booked transaction value across the selected period and country filter." },
+          { "name": "Total Tx Count",           "expression": "SUM(Fact_Tx[TxCount])",     "formatString": "#,0",      "description": "Sum of authorised payment transactions (excludes pre-auth and reversals) per Fact_Tx grain." },
+          { "name": "Decline Rate %",           "expression": "DIVIDE(SUM(Fact_Tx[DeclineCount]), SUM(Fact_Tx[TxCount]))", "formatString": "0.00%", "description": "Declines divided by total decisions — KPI tracked vs the 1.1% target." },
+          { "name": "Fraud Loss (€)",           "expression": "SUM(Fact_Tx[LossValueEur])","formatString": "\"€\"#,0", "description": "Confirmed fraud loss amount borne by the PSP (sourced from Cases mart)." },
+          { "name": "Fraud Rate (bps)",         "expression": "DIVIDE(SUM(Fact_Tx[FraudValueEur]), SUM(Fact_Tx[TxValueEur])) * 10000", "formatString": "0.00", "description": "Fraud rate in basis points (€ fraud / € authorised × 10 000) — EBA Annex C convention." },
+          { "name": "Scoring p99 (ms)",         "expression": "AVERAGE(Fact_Latency[P99Ms])", "formatString": "0.0", "description": "Average daily p99 scoring latency across model versions — target < 18 ms." },
+          { "name": "PSD2 Exemption Coverage %","expression": "DIVIDE(CALCULATE(SUM(Fact_Exemption[TxCount]), Fact_Exemption[ExemptionCode] <> \"sca_applied\"), SUM(Fact_Exemption[TxCount]))", "formatString": "0.00%", "description": "Share of in-scope transactions that successfully used an SCA exemption (target > 70%)." },
+          { "name": "Total Fraud Count",        "expression": "SUM(Fact_Eba[FraudCount])", "formatString": "#,0", "description": "Confirmed fraudulent transactions for EBA Annex B." },
+          { "name": "EBA Annex C Fraud Rate (bps)", "expression": "DIVIDE(SUM(Fact_Eba[FraudValueEur]), SUM(Fact_Eba[TxValueEur])) * 10000", "formatString": "0.00", "description": "Annex C basis-points fraud rate computed on the EBA aggregates (matches submitted XLSX)." },
+          { "name": "Loss Borne by PSP (€)",    "expression": "CALCULATE(SUM(Fact_Eba[LossValueEur]), Fact_Eba[LossBearer] = \"psp\")", "formatString": "\"€\"#,0", "description": "Loss amount allocated to the PSP per EBA Annex D." },
+          { "name": "Loss Borne by Payer (€)",  "expression": "CALCULATE(SUM(Fact_Eba[LossValueEur]), Fact_Eba[LossBearer] = \"payer\")", "formatString": "\"€\"#,0", "description": "Loss amount allocated to the payer per EBA Annex D." },
+          { "name": "Open Cases",               "expression": "COUNTROWS(FILTER(Fact_Eba, Fact_Eba[FraudCount] > 0))", "formatString": "#,0", "description": "Distinct EBA aggregate rows that contributed at least one fraud — proxy for case workload." },
+          { "name": "Model Drift Index",        "expression": "VAR p99_today = AVERAGE(Fact_Latency[P99Ms]) VAR p99_baseline = CALCULATE(AVERAGE(Fact_Latency[P99Ms]), DATEADD(Dim_Date[Date], -30, DAY)) RETURN DIVIDE(p99_today - p99_baseline, p99_baseline)", "formatString": "0.00%", "description": "Relative drift in p99 latency vs the 30-day-prior baseline — alert at > 25%." }
+        ]
+      }
+    ],
+    "relationships": [
+      { "name": "rel_tx_country",    "fromTable": "Fact_Tx",        "fromColumn": "CountryCode", "toTable": "Dim_Country",   "toColumn": "CountryCode" },
+      { "name": "rel_tx_date",       "fromTable": "Fact_Tx",        "fromColumn": "BookingDate", "toTable": "Dim_Date",      "toColumn": "Date" },
+      { "name": "rel_tx_instr",      "fromTable": "Fact_Tx",        "fromColumn": "Instrument",  "toTable": "Dim_Instrument","toColumn": "Instrument" },
+      { "name": "rel_eba_country",   "fromTable": "Fact_Eba",       "fromColumn": "CountryCode", "toTable": "Dim_Country",   "toColumn": "CountryCode" },
+      { "name": "rel_eba_instr",     "fromTable": "Fact_Eba",       "fromColumn": "Instrument",  "toTable": "Dim_Instrument","toColumn": "Instrument" },
+      { "name": "rel_eba_exempt",    "fromTable": "Fact_Eba",       "fromColumn": "ExemptionCode", "toTable": "Dim_Exemption", "toColumn": "ExemptionCode" },
+      { "name": "rel_eba_fraud",     "fromTable": "Fact_Eba",       "fromColumn": "FraudTypeCode","toTable": "Dim_FraudType","toColumn": "FraudTypeCode" },
+      { "name": "rel_exempt_date",   "fromTable": "Fact_Exemption", "fromColumn": "KpiDate",     "toTable": "Dim_Date",      "toColumn": "Date" },
+      { "name": "rel_exempt_country","fromTable": "Fact_Exemption", "fromColumn": "CountryCode", "toTable": "Dim_Country",   "toColumn": "CountryCode" },
+      { "name": "rel_exempt_code",   "fromTable": "Fact_Exemption", "fromColumn": "ExemptionCode","toTable": "Dim_Exemption","toColumn": "ExemptionCode" },
+      { "name": "rel_lat_date",      "fromTable": "Fact_Latency",   "fromColumn": "KpiDate",     "toTable": "Dim_Date",      "toColumn": "Date" }
+    ]
+  }
+}

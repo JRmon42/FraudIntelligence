@@ -1,0 +1,95 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/1.4.0/schema.json",
+  "name": "ExecutiveOverview",
+  "displayName": "Executive overview",
+  "displayOption": "FitToPage",
+  "height": 720,
+  "width": 1280,
+  "filters": [
+    {
+      "name": "PageFilter_Country",
+      "type": "Categorical",
+      "displayName": "Country",
+      "expression": { "Column": { "Expression": { "SourceRef": { "Entity": "Dim_Country" } }, "Property": "CountryCode" } },
+      "filter": {
+        "Where": [{ "Condition": { "In": { "Expressions": [{ "Column": { "Expression": { "SourceRef": { "Entity": "Dim_Country" } }, "Property": "CountryCode" } }],
+          "Values": [[{"Literal":{"Value":"'SE'"}}],[{"Literal":{"Value":"'NO'"}}],[{"Literal":{"Value":"'DK'"}}],[{"Literal":{"Value":"'FI'"}}],[{"Literal":{"Value":"'EE'"}}]] } } }]
+      }
+    }
+  ],
+  "visualContainers": [
+    {
+      "name": "title",
+      "x": 16, "y": 12, "z": 0, "width": 1248, "height": 56,
+      "config": { "name": "title", "singleVisual": { "visualType": "textbox",
+        "objects": { "general": [{ "properties": { "paragraphs": [{ "textRuns": [{ "value": "FraudIntelligence — Executive overview", "textStyle": { "fontSize": "24pt", "fontWeight": "bold", "color": { "solid": { "color": "#1F4E78" } } } }] }] } }] } } }
+    },
+    {
+      "name": "kpi_loss",
+      "x": 16, "y": 80, "z": 1, "width": 250, "height": 120,
+      "config": { "name": "kpi_loss", "singleVisual": { "visualType": "card",
+        "projections": { "Values": [{ "queryRef": "Measures.Fraud Loss (€)" }] },
+        "objects": { "labels": [{ "properties": { "fontSize": 28, "color": { "solid": { "color": "#C00000" } } } }],
+          "categoryLabels": [{ "properties": { "show": true, "text": "Fraud loss €" } }] } } }
+    },
+    {
+      "name": "kpi_decline",
+      "x": 274, "y": 80, "z": 2, "width": 250, "height": 120,
+      "config": { "name": "kpi_decline", "singleVisual": { "visualType": "card",
+        "projections": { "Values": [{ "queryRef": "Measures.Decline Rate %" }] },
+        "objects": { "categoryLabels": [{ "properties": { "show": true, "text": "Decline rate" } }] } } }
+    },
+    {
+      "name": "kpi_p99",
+      "x": 532, "y": 80, "z": 3, "width": 250, "height": 120,
+      "config": { "name": "kpi_p99", "singleVisual": { "visualType": "card",
+        "projections": { "Values": [{ "queryRef": "Measures.Scoring p99 (ms)" }] },
+        "objects": { "categoryLabels": [{ "properties": { "show": true, "text": "Scoring p99 (ms)" } }] } } }
+    },
+    {
+      "name": "kpi_psd2",
+      "x": 790, "y": 80, "z": 4, "width": 250, "height": 120,
+      "config": { "name": "kpi_psd2", "singleVisual": { "visualType": "card",
+        "projections": { "Values": [{ "queryRef": "Measures.PSD2 Exemption Coverage %" }] },
+        "objects": { "categoryLabels": [{ "properties": { "show": true, "text": "PSD2 exemption coverage" } }] } } }
+    },
+    {
+      "name": "kpi_fraud_rate",
+      "x": 1048, "y": 80, "z": 5, "width": 216, "height": 120,
+      "config": { "name": "kpi_fraud_rate", "singleVisual": { "visualType": "card",
+        "projections": { "Values": [{ "queryRef": "Measures.Fraud Rate (bps)" }] },
+        "objects": { "categoryLabels": [{ "properties": { "show": true, "text": "Fraud rate (bps)" } }] } } }
+    },
+    {
+      "name": "loss_by_country",
+      "x": 16, "y": 216, "z": 6, "width": 624, "height": 320,
+      "config": { "name": "loss_by_country", "singleVisual": { "visualType": "barChart",
+        "projections": {
+          "Category": [{ "queryRef": "Dim_Country.CountryName" }],
+          "Y": [{ "queryRef": "Measures.Fraud Loss (€)" }]
+        },
+        "objects": { "title": [{ "properties": { "text": "Fraud loss € by country" } }] } } }
+    },
+    {
+      "name": "exemption_mix",
+      "x": 656, "y": 216, "z": 7, "width": 608, "height": 320,
+      "config": { "name": "exemption_mix", "singleVisual": { "visualType": "donutChart",
+        "projections": {
+          "Category": [{ "queryRef": "Dim_Exemption.ExemptionLabel" }],
+          "Y": [{ "queryRef": "Measures.Total Tx Count" }]
+        },
+        "objects": { "title": [{ "properties": { "text": "PSD2 exemption mix" } }] } } }
+    },
+    {
+      "name": "p99_trend",
+      "x": 16, "y": 552, "z": 8, "width": 1248, "height": 152,
+      "config": { "name": "p99_trend", "singleVisual": { "visualType": "lineChart",
+        "projections": {
+          "Category": [{ "queryRef": "Dim_Date.Date" }],
+          "Y": [{ "queryRef": "Measures.Scoring p99 (ms)" }],
+          "Series": [{ "queryRef": "Fact_Latency.ModelVersion" }]
+        },
+        "objects": { "title": [{ "properties": { "text": "Scoring p99 latency trend (target ≤ 18 ms)" } }] } } }
+    }
+  ]
+}

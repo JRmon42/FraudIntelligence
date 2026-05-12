@@ -1,0 +1,44 @@
+{
+  "UserConfig": {
+    "NamespaceConfig": [
+      {
+        "Type": "EventHub",
+        "Name": "fraudintel-ns",
+        "Entities": [
+          {
+            "Name": "transactions",
+            "PartitionCount": 4,
+            "ConsumerGroups": [
+              { "Name": "$Default" },
+              { "Name": "feature-builder" },
+              { "Name": "scoring-api" }
+            ]
+          },
+          {
+            "Name": "alerts",
+            "PartitionCount": 2,
+            "ConsumerGroups": [
+              { "Name": "$Default" },
+              { "Name": "agentic-orchestrator" }
+            ]
+          },
+          {
+            "Name": "decisions",
+            "PartitionCount": 4,
+            "ConsumerGroups": [
+              { "Name": "$Default" },
+              { "Name": "eba-reporter" },
+              { "Name": "fabric-ingest" }
+            ]
+          },
+          {
+            "Name": "features",
+            "PartitionCount": 2,
+            "ConsumerGroups": [{ "Name": "$Default" }]
+          }
+        ]
+      }
+    ],
+    "LoggingConfig": { "Type": "Console" }
+  }
+}

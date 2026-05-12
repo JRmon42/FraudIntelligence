@@ -1,0 +1,63 @@
+# Azure Container Apps Job — quarterly EBA report generation.
+#
+# Deploy with:
+#   az containerapp job create -n eba-reporter -g rg-fi-prod \
+#     --environment cae-fi-prod --yaml job.yaml
+#
+# Scheduled to fire on the 5th of Jan/Apr/Jul/Oct at 02:00 UTC — generates
+# the report for the previous calendar quarter for each Nordic-Baltic country.
+apiVersion: 2024-03-01
+location: swedencentral
+type: Microsoft.App/jobs
+name: eba-reporter
+properties:
+  environmentId: /subscriptions/${SUB_ID}/resourceGroups/rg-fi-prod/providers/Microsoft.App/managedEnvironments/cae-fi-prod
+  configuration:
+    triggerType: Schedule
+    replicaTimeout: 1800        # 30 min
+    replicaRetryLimit: 2
+    scheduleTriggerConfig:
+      cronExpression: "0 2 5 1,4,7,10 *"   # 02:00 UTC, 5th of Jan/Apr/Jul/Oct
+      parallelism: 5             # one replica per country
+      replicaCompletionCount: 5
+    registries:
+      - server: acrfiprod.azurecr.io
+        identity: /subscriptions/${SUB_ID}/resourceGroups/rg-fi-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/uami-eba-reporter
+    secrets:
+      - name: cosmos-endpoint
+        keyVaultUrl: https://kv-fi-prod.vault.azure.net/secrets/cosmos-analytics-endpoint
+        identity: /subscriptions/${SUB_ID}/resourceGroups/rg-fi-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/uami-eba-reporter
+  template:
+    containers:
+      - name: eba-reporter
+        image: acrfiprod.azurecr.io/eba-reporter:1.0.0
+        # Each replica is parameterised by its REPLICA_INDEX (0..4) to map to a country.
+        command: ["/bin/sh", "-c"]
+        args:
+          - >
+            COUNTRIES="SE NO DK FI EE";
+            IDX=${CONTAINER_APP_REPLICA_INDEX:-0};
+            COUNTRY=$(echo $COUNTRIES | cut -d' ' -f$((IDX+1)));
+            QUARTER=$(python -c "from datetime import date; today=date.today(); q=((today.month-1)//3); y=today.year if q>0 else today.year-1; q=q if q>0 else 4; print(f'{y}-Q{q}')");
+            echo "Generating EBA report for country=$COUNTRY quarter=$QUARTER";
+            exec python -m report --country $COUNTRY --quarter $QUARTER
+        resources:
+          cpu: 1.0
+          memory: 2.0Gi
+        env:
+          - name: EBA_LAKEHOUSE_ACCOUNT
+            value: fiprodlh
+          - name: EBA_REPORTS_ACCOUNT
+            value: fiprodreports
+          - name: EBA_PSP_LEI
+            value: "5493001KJTIIGC8Y1R12"
+          - name: EBA_PSP_NAME
+            value: "FraudIntelligence Nordic Payments AS"
+          - name: EBA_COSMOS_ENDPOINT
+            secretRef: cosmos-endpoint
+          - name: AZURE_CLIENT_ID
+            value: "${UAMI_CLIENT_ID}"
+  identity:
+    type: UserAssigned
+    userAssignedIdentities:
+      "/subscriptions/${SUB_ID}/resourceGroups/rg-fi-prod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/uami-eba-reporter": {}

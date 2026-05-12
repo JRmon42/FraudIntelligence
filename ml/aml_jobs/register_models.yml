@@ -1,0 +1,30 @@
+# AML model registration manifest. Use with:
+#   az ml model create --file ml/aml_jobs/register_models.yml
+#
+# Two models are registered: the ONNX ensemble (online) and the GNN
+# embeddings + state_dict bundle (batch).
+$schema: https://azuremlschemas.azureedge.net/latest/model.schema.json
+name: fraud-intel-ensemble
+description: Stacked XGBoost+LightGBM+LR ensemble exported to ONNX with isotonic calibration.
+type: custom_model
+path: ../artifacts/ensemble.onnx
+tags:
+  team: fraud-intel
+  framework: onnx
+  task: binary-classification
+  eu_ai_act: high_risk
+properties:
+  model_card: artifacts/ensemble_model_card.md
+---
+$schema: https://azuremlschemas.azureedge.net/latest/model.schema.json
+name: fraud-intel-gnn
+description: Heterogeneous GraphSAGE GNN producing card embeddings and ring-score.
+type: custom_model
+path: ../artifacts/
+tags:
+  team: fraud-intel
+  framework: pytorch-geometric
+  task: node-classification
+  eu_ai_act: high_risk
+properties:
+  model_card: artifacts/gnn_model_card.md

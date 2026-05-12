@@ -1,0 +1,93 @@
+// ============================================================================
+// FraudIntelligence — Power BI DAX measures
+// ----------------------------------------------------------------------------
+// This file is the single source of truth for every measure used by the
+// `eba_fraud_dashboard.pbip` semantic model. The same expressions are embedded
+// in `definition/model.bim`. Keep them in sync — every measure here must have a
+// matching `measure` element in the BIM file (and vice versa).
+//
+// All measures respect the page-level country filter (SE/NO/DK/FI/EE) and the
+// global Dim_Date date-range filter.
+// ============================================================================
+
+// ---------------------------------------------------------------------------
+// Volume & value (Fact_Tx)
+// ---------------------------------------------------------------------------
+
+// Sum of EUR-converted booked transaction value across the selected period and
+// country filter. Used on the Executive overview KPI strip.
+[Total Tx Value (€)] =
+    SUM ( Fact_Tx[TxValueEur] )
+
+// Count of authorised payment transactions (excludes pre-auth and reversals)
+// at the daily/country/instrument grain of Fact_Tx.
+[Total Tx Count] =
+    SUM ( Fact_Tx[TxCount] )
+
+// Decline rate — declines divided by total decisions. KPI vs the 1.1% target.
+[Decline Rate %] =
+    DIVIDE ( SUM ( Fact_Tx[DeclineCount] ), SUM ( Fact_Tx[TxCount] ) )
+
+// Confirmed fraud loss amount borne by the PSP (sourced from Cases mart).
+[Fraud Loss (€)] =
+    SUM ( Fact_Tx[LossValueEur] )
+
+// Fraud rate in basis points (€ fraud / € authorised × 10 000).
+// Mirrors the EBA Annex C convention.
+[Fraud Rate (bps)] =
+    DIVIDE ( SUM ( Fact_Tx[FraudValueEur] ), SUM ( Fact_Tx[TxValueEur] ) ) * 10000
+
+// ---------------------------------------------------------------------------
+// Latency & scoring (Fact_Latency)
+// ---------------------------------------------------------------------------
+
+// Average daily p99 scoring latency across model versions. Target < 18 ms.
+[Scoring p99 (ms)] =
+    AVERAGE ( Fact_Latency[P99Ms] )
+
+// Relative drift in p99 latency vs the 30-day-prior baseline.
+// Triggers a Sentinel alert in the Operational page when > 25%.
+[Model Drift Index] =
+    VAR p99_today = AVERAGE ( Fact_Latency[P99Ms] )
+    VAR p99_baseline =
+        CALCULATE ( AVERAGE ( Fact_Latency[P99Ms] ), DATEADD ( Dim_Date[Date], -30, DAY ) )
+    RETURN
+        DIVIDE ( p99_today - p99_baseline, p99_baseline )
+
+// ---------------------------------------------------------------------------
+// PSD2 / SCA (Fact_Exemption)
+// ---------------------------------------------------------------------------
+
+// Share of in-scope transactions that successfully used an SCA exemption
+// (anything other than the `sca_applied` sentinel). Target > 70%.
+[PSD2 Exemption Coverage %] =
+    DIVIDE (
+        CALCULATE ( SUM ( Fact_Exemption[TxCount] ), Fact_Exemption[ExemptionCode] <> "sca_applied" ),
+        SUM ( Fact_Exemption[TxCount] )
+    )
+
+// ---------------------------------------------------------------------------
+// EBA quarterly aggregates (Fact_Eba)
+// ---------------------------------------------------------------------------
+
+// Total confirmed fraudulent transactions for EBA Annex B.
+[Total Fraud Count] =
+    SUM ( Fact_Eba[FraudCount] )
+
+// Annex C basis-points fraud rate computed on the EBA aggregates — must match
+// the value submitted in the Annex C sheet of the XLSX produced by eba-reporter.
+[EBA Annex C Fraud Rate (bps)] =
+    DIVIDE ( SUM ( Fact_Eba[FraudValueEur] ), SUM ( Fact_Eba[TxValueEur] ) ) * 10000
+
+// Loss amount allocated to the PSP per EBA Annex D.
+[Loss Borne by PSP (€)] =
+    CALCULATE ( SUM ( Fact_Eba[LossValueEur] ), Fact_Eba[LossBearer] = "psp" )
+
+// Loss amount allocated to the payer per EBA Annex D.
+[Loss Borne by Payer (€)] =
+    CALCULATE ( SUM ( Fact_Eba[LossValueEur] ), Fact_Eba[LossBearer] = "payer" )
+
+// Distinct EBA aggregate rows that contributed at least one fraud event —
+// proxy for the operational case workload (one row ≈ one investigation cluster).
+[Open Cases] =
+    COUNTROWS ( FILTER ( Fact_Eba, Fact_Eba[FraudCount] > 0 ) )

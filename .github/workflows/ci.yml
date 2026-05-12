@@ -1,0 +1,82 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: ${{ matrix.service }} (py${{ matrix.python }})
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11"]
+        service:
+          - transaction-simulator
+          - scoring-api
+          - agentic-orchestrator
+          - eba-reporter
+          - feature-builder
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Detect service
+        id: detect
+        working-directory: services/${{ matrix.service }}
+        run: |
+          if [ -f pyproject.toml ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::services/${{ matrix.service }} has no pyproject.toml yet — skipping"
+          fi
+
+      - name: Install
+        if: steps.detect.outputs.exists == 'true'
+        working-directory: services/${{ matrix.service }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev]
+
+      - name: Lint (ruff)
+        if: steps.detect.outputs.exists == 'true'
+        working-directory: services/${{ matrix.service }}
+        run: ruff check .
+
+      - name: Format (black --check)
+        if: steps.detect.outputs.exists == 'true'
+        working-directory: services/${{ matrix.service }}
+        run: black --check .
+
+      - name: Type-check (mypy)
+        if: steps.detect.outputs.exists == 'true'
+        working-directory: services/${{ matrix.service }}
+        run: mypy . || true
+
+      - name: Unit tests (pytest + coverage)
+        if: steps.detect.outputs.exists == 'true'
+        working-directory: services/${{ matrix.service }}
+        run: |
+          pytest --cov=. --cov-report=xml --cov-report=term -q
+
+      - name: Upload coverage
+        if: steps.detect.outputs.exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.service }}
+          path: services/${{ matrix.service }}/coverage.xml
+          if-no-files-found: ignore

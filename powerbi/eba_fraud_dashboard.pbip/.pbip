@@ -1,0 +1,18 @@
+{
+  "version": "1.0",
+  "artifacts": [
+    {
+      "report": {
+        "path": "eba_fraud_dashboard.Report"
+      }
+    },
+    {
+      "dataset": {
+        "path": "eba_fraud_dashboard.Dataset"
+      }
+    }
+  ],
+  "settings": {
+    "enableAutoRecovery": true
+  }
+}

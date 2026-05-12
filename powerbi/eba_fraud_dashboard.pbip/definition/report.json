@@ -1,0 +1,59 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/1.0.0/schema.json",
+  "name": "EBA Fraud Dashboard",
+  "resourcePackages": [
+    {
+      "name": "SharedResources",
+      "type": "SharedResources",
+      "items": [
+        { "name": "BaseTheme", "path": "themes/BaseTheme.json", "type": "BaseTheme" }
+      ]
+    }
+  ],
+  "settings": {
+    "useStylableVisualContainerHeader": true,
+    "exportDataMode": "AllowUnsummarized",
+    "useNewFilterPaneExperience": true,
+    "allowChangeFilterTypes": true,
+    "filterLocale": "en-US"
+  },
+  "config": {
+    "version": "5.55",
+    "themeCollection": { "baseTheme": { "name": "BaseTheme" } }
+  },
+  "layoutOptimization": "None",
+  "publicCustomVisuals": [],
+  "filters": [
+    {
+      "name": "Filter_Country",
+      "type": "Categorical",
+      "displayName": "Country (SE/NO/DK/FI/EE)",
+      "expression": { "Column": { "Expression": { "SourceRef": { "Entity": "Dim_Country" } }, "Property": "CountryCode" } },
+      "isLockedInViewMode": false,
+      "isHiddenInViewMode": false,
+      "filter": {
+        "Where": [
+          {
+            "Condition": {
+              "In": {
+                "Expressions": [{ "Column": { "Expression": { "SourceRef": { "Entity": "Dim_Country" } }, "Property": "CountryCode" } }],
+                "Values": [[{ "Literal": { "Value": "'SE'" } }], [{ "Literal": { "Value": "'NO'" } }], [{ "Literal": { "Value": "'DK'" } }], [{ "Literal": { "Value": "'FI'" } }], [{ "Literal": { "Value": "'EE'" } }]]
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Filter_Date",
+      "type": "RelativeDate",
+      "displayName": "Date range",
+      "expression": { "Column": { "Expression": { "SourceRef": { "Entity": "Dim_Date" } }, "Property": "Date" } }
+    }
+  ],
+  "pages": [
+    { "name": "ExecutiveOverview", "displayName": "Executive overview", "path": "pages/ExecutiveOverview" },
+    { "name": "EbaQuarterlyReport", "displayName": "EBA quarterly report", "path": "pages/EbaQuarterlyReport" },
+    { "name": "Operational",        "displayName": "Operational",          "path": "pages/Operational" }
+  ]
+}

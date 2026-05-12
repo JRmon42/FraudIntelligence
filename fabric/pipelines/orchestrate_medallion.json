@@ -1,0 +1,123 @@
+{
+  "name": "orchestrate_medallion",
+  "objectId": "8c1c5f3a-medallion-pipeline",
+  "properties": {
+    "description": "FraudIntelligence medallion orchestration: bronze ingest -> silver clean -> gold marts. Hourly trigger; the gold step also fans out the EBA quarterly cube once a day at 02:00 UTC.",
+    "activities": [
+      {
+        "name": "bronze_ingest",
+        "type": "TridentNotebook",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "@pipeline().globalParameters.bronze_notebook_id",
+          "workspaceId": "@pipeline().globalParameters.workspace_id",
+          "parameters": {
+            "pipeline.ingest_window": {
+              "value": "@formatDateTime(addHours(utcNow(),-1),'yyyy-MM-ddTHH:00:00')",
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "silver_clean",
+        "type": "TridentNotebook",
+        "dependsOn": [
+          { "activity": "bronze_ingest", "dependencyConditions": ["Succeeded"] }
+        ],
+        "policy": {
+          "timeout": "0.02:00:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 60
+        },
+        "typeProperties": {
+          "notebookId": "@pipeline().globalParameters.silver_notebook_id",
+          "workspaceId": "@pipeline().globalParameters.workspace_id",
+          "parameters": {
+            "pipeline.process_date": {
+              "value": "@formatDateTime(utcNow(),'yyyy-MM-dd')",
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "gold_marts",
+        "type": "TridentNotebook",
+        "dependsOn": [
+          { "activity": "silver_clean", "dependencyConditions": ["Succeeded"] }
+        ],
+        "policy": {
+          "timeout": "0.02:00:00",
+          "retry": 1,
+          "retryIntervalInSeconds": 120
+        },
+        "typeProperties": {
+          "notebookId": "@pipeline().globalParameters.gold_notebook_id",
+          "workspaceId": "@pipeline().globalParameters.workspace_id",
+          "parameters": {
+            "pipeline.process_date": {
+              "value": "@formatDateTime(utcNow(),'yyyy-MM-dd')",
+              "type": "string"
+            },
+            "pipeline.quarter": {
+              "value": "@concat(formatDateTime(utcNow(),'yyyy'),'-Q',string(add(div(sub(int(formatDateTime(utcNow(),'MM')),1),3),1)))",
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "notify_on_failure",
+        "type": "WebActivity",
+        "dependsOn": [
+          { "activity": "gold_marts", "dependencyConditions": ["Failed"] },
+          { "activity": "silver_clean", "dependencyConditions": ["Failed"] },
+          { "activity": "bronze_ingest", "dependencyConditions": ["Failed"] }
+        ],
+        "typeProperties": {
+          "url": "https://prod-1.swedencentral.logic.azure.com:443/workflows/medallion-failure/triggers/webhook/invoke",
+          "method": "POST",
+          "body": {
+            "pipeline": "@pipeline().Pipeline",
+            "runId": "@pipeline().RunId",
+            "failedActivity": "@activity('gold_marts').Error.Message",
+            "ts": "@utcNow()"
+          },
+          "headers": { "Content-Type": "application/json" }
+        }
+      }
+    ],
+    "policy": { "elapsedTimeMetric": { "duration": "0.04:00:00" } },
+    "globalParameters": {
+      "workspace_id":         { "type": "string", "value": "00000000-0000-0000-0000-000000000000" },
+      "bronze_notebook_id":   { "type": "string", "value": "10-bronze-ingest-id" },
+      "silver_notebook_id":   { "type": "string", "value": "20-silver-clean-id" },
+      "gold_notebook_id":     { "type": "string", "value": "30-gold-marts-id" }
+    },
+    "annotations": ["medallion", "fraud", "eba"],
+    "lastPublishTime": "2025-01-15T00:00:00Z"
+  },
+  "schedules": [
+    {
+      "name": "hourly_medallion",
+      "type": "ScheduleTrigger",
+      "properties": {
+        "recurrence": {
+          "frequency": "Hour",
+          "interval": 1,
+          "startTime": "2025-01-01T00:05:00Z",
+          "timeZone": "UTC"
+        },
+        "pipelines": [{ "pipelineReference": { "referenceName": "orchestrate_medallion" } }]
+      }
+    }
+  ]
+}

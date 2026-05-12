@@ -1,0 +1,38 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
+type: command
+display_name: fraud-intel-train-gnn
+experiment_name: fraud-intel-gnn
+description: |
+  Nightly heterogeneous GraphSAGE training on (card, merchant, device, ip)
+  graph. Outputs node embeddings to the feature store and per-card ring
+  scores.
+code: ../
+command: >-
+  python -m ml.train_gnn
+  --input ${{inputs.train_data}}
+  --output ${{outputs.model_dir}}
+  --epochs 25
+inputs:
+  train_data:
+    type: uri_file
+    path: azureml://datastores/fraudintel_gold/paths/transactions/latest/transactions.parquet
+    mode: ro_mount
+outputs:
+  model_dir:
+    type: uri_folder
+    mode: rw_mount
+environment:
+  conda_file: ../conda.yaml
+  image: mcr.microsoft.com/azureml/curated/acpt-pytorch-2.2-cuda12.1:latest
+compute: azureml:gpu-cluster
+resources:
+  instance_count: 1
+identity:
+  type: user_identity
+tags:
+  team: fraud-intel
+  model: gnn
+  framework: pytorch-geometric
+services:
+  mlflow:
+    type: tracking

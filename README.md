@@ -51,5 +51,30 @@ docker compose up
 ## Compliance
 GDPR · EU AI Act (high-risk system) · PSD2 SCA · EBA fraud reporting. See [docs/compliance/](./docs/compliance/).
 
+## Architecture at a glance
+
+Two-region (Sweden Central + North Europe) active/active. Hot path: AFD → APIM → **Container Apps Dedicated D8** with **ONNX Runtime in-process** against **Cosmos multi-master (Gremlin + SQL) + Redis Enterprise**. Cold path: Event Hubs → Stream Analytics → OneLake (Bronze/Silver/Gold) → Power BI Premium. Agentic case work via Semantic Kernel on Azure OpenAI (gpt-4o-mini + gpt-4o). Governance via Defender for Cloud + Purview + Azure Policy.
+
+```mermaid
+flowchart LR
+  Client[POS / e-com / mobile] --> AFD[Azure Front Door Premium]
+  AFD --> APIM[APIM Premium]
+  APIM --> ACA[Container Apps<br/>scoring-api + ONNX]
+  ACA -->|<2ms| Redis[(Redis Enterprise<br/>feature cache)]
+  ACA -->|1-hop graph| Cosmos[(Cosmos DB<br/>Gremlin + SQL<br/>multi-master)]
+  ACA -->|tx.scored| EH[Event Hubs Dedicated]
+  EH --> ASA[Stream Analytics] --> Fabric[Microsoft Fabric<br/>OneLake Bronze→Silver→Gold]
+  Fabric --> PBI[Power BI Premium<br/>EBA dashboards]
+  AML[Azure ML Registry] -->|ONNX model| ACA
+  Agents[Semantic Kernel agents<br/>+ Azure OpenAI] <--> Fabric
+```
+
+### Documentation
+- Architecture: [docs/architecture.md](./docs/architecture.md)
+- ADRs: [docs/adr/](./docs/adr/)
+- Compliance: [GDPR](./docs/compliance/gdpr.md) · [EU AI Act](./docs/compliance/eu-ai-act.md) · [PSD2 SCA](./docs/compliance/psd2-sca.md) · [EBA fraud reporting](./docs/compliance/eba-fraud-reporting.md)
+- Operations: [docs/runbook.md](./docs/runbook.md)
+- Demo: [docs/demo-script.md](./docs/demo-script.md)
+
 ## License
 MIT — see [LICENSE](./LICENSE).

@@ -1,0 +1,50 @@
+name: mlops
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ml/**"
+      - ".github/workflows/mlops.yml"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  submit-aml-job:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install az ml extension
+        run: az extension add -n ml -y
+
+      - name: Submit AML pipeline
+        env:
+          AML_RG: ${{ secrets.AML_RESOURCE_GROUP }}
+          AML_WS: ${{ secrets.AML_WORKSPACE }}
+        run: |
+          set -euo pipefail
+          JOB_FILE="ml/pipelines/training.yml"
+          if [ ! -f "$JOB_FILE" ]; then
+            echo "::warning::$JOB_FILE not present yet — skipping submission"
+            exit 0
+          fi
+          az ml job create \
+            --file "$JOB_FILE" \
+            --resource-group "$AML_RG" \
+            --workspace-name "$AML_WS" \
+            --set tags.gitSha=${{ github.sha }} tags.runId=${{ github.run_id }}

@@ -1,0 +1,84 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/1.4.0/schema.json",
+  "name": "Operational",
+  "displayName": "Operational",
+  "displayOption": "FitToPage",
+  "height": 720,
+  "width": 1280,
+  "filters": [
+    {
+      "name": "PageFilter_Country",
+      "type": "Categorical",
+      "displayName": "Country (SE/NO/DK/FI/EE)",
+      "expression": { "Column": { "Expression": { "SourceRef": { "Entity": "Dim_Country" } }, "Property": "CountryCode" } },
+      "filter": {
+        "Where": [{ "Condition": { "In": { "Expressions": [{ "Column": { "Expression": { "SourceRef": { "Entity": "Dim_Country" } }, "Property": "CountryCode" } }],
+          "Values": [[{"Literal":{"Value":"'SE'"}}],[{"Literal":{"Value":"'NO'"}}],[{"Literal":{"Value":"'DK'"}}],[{"Literal":{"Value":"'FI'"}}],[{"Literal":{"Value":"'EE'"}}]] } } }]
+      }
+    }
+  ],
+  "visualContainers": [
+    {
+      "name": "title",
+      "x": 16, "y": 12, "z": 0, "width": 1248, "height": 48,
+      "config": { "singleVisual": { "visualType": "textbox",
+        "objects": { "general": [{ "properties": { "paragraphs": [{ "textRuns": [{ "value": "Operational — alerts, cases, agents & model drift", "textStyle": { "fontSize": "22pt", "fontWeight": "bold", "color": { "solid": { "color": "#1F4E78" } } } }] }] } }] } } }
+    },
+    {
+      "name": "kpi_open_cases",
+      "x": 16, "y": 72, "z": 1, "width": 250, "height": 120,
+      "config": { "singleVisual": { "visualType": "card",
+        "projections": { "Values": [{ "queryRef": "Measures.Open Cases" }] },
+        "objects": { "categoryLabels": [{ "properties": { "show": true, "text": "Open cases" } }] } } }
+    },
+    {
+      "name": "kpi_drift",
+      "x": 274, "y": 72, "z": 2, "width": 250, "height": 120,
+      "config": { "singleVisual": { "visualType": "card",
+        "projections": { "Values": [{ "queryRef": "Measures.Model Drift Index" }] },
+        "objects": { "categoryLabels": [{ "properties": { "show": true, "text": "Model drift (vs 30d)" } }] } } }
+    },
+    {
+      "name": "kpi_p99_op",
+      "x": 532, "y": 72, "z": 3, "width": 250, "height": 120,
+      "config": { "singleVisual": { "visualType": "card",
+        "projections": { "Values": [{ "queryRef": "Measures.Scoring p99 (ms)" }] },
+        "objects": { "categoryLabels": [{ "properties": { "show": true, "text": "p99 latency (ms)" } }] } } }
+    },
+    {
+      "name": "alerts_table",
+      "x": 16, "y": 208, "z": 4, "width": 624, "height": 248,
+      "config": { "singleVisual": { "visualType": "tableEx",
+        "projections": {
+          "Values": [
+            { "queryRef": "Dim_Country.CountryName" },
+            { "queryRef": "Dim_Instrument.InstrumentLabel" },
+            { "queryRef": "Measures.Total Fraud Count" },
+            { "queryRef": "Measures.Fraud Loss (€)" }
+          ]
+        },
+        "objects": { "title": [{ "properties": { "text": "Cases & alerts by country/instrument" } }] } } }
+    },
+    {
+      "name": "agent_perf",
+      "x": 656, "y": 208, "z": 5, "width": 608, "height": 248,
+      "config": { "singleVisual": { "visualType": "clusteredColumnChart",
+        "projections": {
+          "Category": [{ "queryRef": "Fact_Latency.ModelVersion" }],
+          "Y": [{ "queryRef": "Measures.Scoring p99 (ms)" }, { "queryRef": "Measures.Total Tx Count" }]
+        },
+        "objects": { "title": [{ "properties": { "text": "Agent / model performance" } }] } } }
+    },
+    {
+      "name": "drift_chart",
+      "x": 16, "y": 472, "z": 6, "width": 1248, "height": 232,
+      "config": { "singleVisual": { "visualType": "lineChart",
+        "projections": {
+          "Category": [{ "queryRef": "Dim_Date.Date" }],
+          "Y": [{ "queryRef": "Measures.Model Drift Index" }, { "queryRef": "Measures.Decline Rate %" }],
+          "Series": [{ "queryRef": "Fact_Latency.ModelVersion" }]
+        },
+        "objects": { "title": [{ "properties": { "text": "Model drift & decline-rate trend (alert > 25%)" } }] } } }
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "env": { "value": "dev" },
+    "primaryLocation": { "value": "swedencentral" },
+    "drLocation": { "value": "northeurope" },
+    "tags": {
+      "value": {
+        "project": "FraudIntelligence",
+        "env": "dev",
+        "costCenter": "AMA-Capstone",
+        "dataClass": "PII-Restricted",
+        "owner": "JRmon42"
+      }
+    },
+    "kvAdminPrincipalIds": {
+      "value": [ "00000000-0000-0000-0000-000000000000" ]
+    },
+    "fabricAdminMembers": {
+      "value": [ "JRmon42@example.onmicrosoft.com" ]
+    },
+    "synapseAadAdminObjectId": { "value": "00000000-0000-0000-0000-000000000000" },
+    "synapseAadAdminLogin":    { "value": "JRmon42@example.onmicrosoft.com" },
+    "synapseSqlAdminPassword": { "value": "ChangeMeOnFirstDeploy!Dev123" },
+    "alertEmailReceivers": { "value": [] },
+    "cmkKeyUri": { "value": "" }
+  }
+}

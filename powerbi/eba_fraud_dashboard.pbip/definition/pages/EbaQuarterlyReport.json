@@ -1,0 +1,93 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/1.4.0/schema.json",
+  "name": "EbaQuarterlyReport",
+  "displayName": "EBA quarterly report",
+  "displayOption": "FitToPage",
+  "height": 720,
+  "width": 1280,
+  "filters": [
+    {
+      "name": "PageFilter_Country",
+      "type": "Categorical",
+      "displayName": "Country (SE/NO/DK/FI/EE)",
+      "expression": { "Column": { "Expression": { "SourceRef": { "Entity": "Dim_Country" } }, "Property": "CountryCode" } },
+      "filter": {
+        "Where": [{ "Condition": { "In": { "Expressions": [{ "Column": { "Expression": { "SourceRef": { "Entity": "Dim_Country" } }, "Property": "CountryCode" } }],
+          "Values": [[{"Literal":{"Value":"'SE'"}}],[{"Literal":{"Value":"'NO'"}}],[{"Literal":{"Value":"'DK'"}}],[{"Literal":{"Value":"'FI'"}}],[{"Literal":{"Value":"'EE'"}}]] } } }]
+      }
+    },
+    {
+      "name": "PageFilter_Instrument",
+      "type": "Categorical",
+      "displayName": "Instrument type",
+      "expression": { "Column": { "Expression": { "SourceRef": { "Entity": "Dim_Instrument" } }, "Property": "Instrument" } }
+    },
+    {
+      "name": "PageFilter_Quarter",
+      "type": "Categorical",
+      "displayName": "Quarter",
+      "expression": { "Column": { "Expression": { "SourceRef": { "Entity": "Fact_Eba" } }, "Property": "Quarter" } }
+    }
+  ],
+  "visualContainers": [
+    {
+      "name": "title",
+      "x": 16, "y": 12, "z": 0, "width": 1248, "height": 48,
+      "config": { "singleVisual": { "visualType": "textbox",
+        "objects": { "general": [{ "properties": { "paragraphs": [{ "textRuns": [{ "value": "EBA/GL/2020/01 — Quarterly fraud report", "textStyle": { "fontSize": "22pt", "fontWeight": "bold", "color": { "solid": { "color": "#1F4E78" } } } }] }] } }] } } }
+    },
+    {
+      "name": "annex_a",
+      "x": 16, "y": 72, "z": 1, "width": 624, "height": 320,
+      "config": { "singleVisual": { "visualType": "tableEx",
+        "projections": {
+          "Values": [
+            { "queryRef": "Dim_Instrument.InstrumentLabel" },
+            { "queryRef": "Fact_Eba.Channel" },
+            { "queryRef": "Measures.Total Tx Count" },
+            { "queryRef": "Measures.Total Tx Value (€)" }
+          ]
+        },
+        "objects": { "title": [{ "properties": { "text": "Annex A — Volumes & values" } }] } } }
+    },
+    {
+      "name": "annex_b",
+      "x": 656, "y": 72, "z": 2, "width": 608, "height": 320,
+      "config": { "singleVisual": { "visualType": "tableEx",
+        "projections": {
+          "Values": [
+            { "queryRef": "Dim_Instrument.InstrumentLabel" },
+            { "queryRef": "Dim_FraudType.FraudTypeLabel" },
+            { "queryRef": "Measures.Total Fraud Count" },
+            { "queryRef": "Measures.Loss Borne by PSP (€)" }
+          ]
+        },
+        "objects": { "title": [{ "properties": { "text": "Annex B — Fraud breakdown" } }] } } }
+    },
+    {
+      "name": "annex_c",
+      "x": 16, "y": 408, "z": 3, "width": 624, "height": 296,
+      "config": { "singleVisual": { "visualType": "tableEx",
+        "projections": {
+          "Values": [
+            { "queryRef": "Dim_Exemption.ExemptionLabel" },
+            { "queryRef": "Dim_Exemption.RtsArticle" },
+            { "queryRef": "Measures.Total Tx Count" },
+            { "queryRef": "Measures.Total Fraud Count" },
+            { "queryRef": "Measures.EBA Annex C Fraud Rate (bps)" }
+          ]
+        },
+        "objects": { "title": [{ "properties": { "text": "Annex C — SCA exemptions" } }] } } }
+    },
+    {
+      "name": "annex_d",
+      "x": 656, "y": 408, "z": 4, "width": 608, "height": 296,
+      "config": { "singleVisual": { "visualType": "clusteredBarChart",
+        "projections": {
+          "Category": [{ "queryRef": "Fact_Eba.LossBearer" }, { "queryRef": "Fact_Eba.CounterpartyGeo" }],
+          "Y": [{ "queryRef": "Measures.Loss Borne by PSP (€)" }, { "queryRef": "Measures.Loss Borne by Payer (€)" }]
+        },
+        "objects": { "title": [{ "properties": { "text": "Annex D — Loss allocation by bearer & geo" } }] } } }
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "transaction_id": "txn-2025-05-12-000931",
+  "card_id": "card-A1",
+  "merchant_id": "merch-9001",
+  "device_id": "device-FP-7731",
+  "customer_id": "cust-44781",
+  "amount": 487.55,
+  "currency": "EUR",
+  "score": 0.94,
+  "reason_codes": ["velocity", "shared_device", "mcc_anomaly"],
+  "raw": {
+    "channel": "ecom",
+    "auth_response": "approved",
+    "tx_count_24h": 17
+  }
+}

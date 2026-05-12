@@ -1,0 +1,99 @@
+# Capstone Demo Script — 10 minutes
+
+> **Purpose.** A tightly choreographed 10-minute live demo that runs inside the 45-minute capstone presentation, showing the platform handling load, catching a fraud ring, driving the agentic case workflow, and producing the EBA report.
+
+**Pre-flight (do before the session starts, not on stage):**
+- `./scripts/deploy.sh` is already complete; both regions show green in Grafana.
+- `services/transaction-simulator` container image pre-pulled on the demo host.
+- Power BI workspace pinned in browser tab 1; Grafana SLO dashboard in tab 2; agentic console in tab 3; Fabric notebook in tab 4 (only opened if asked).
+- Demo timer visible.
+
+---
+
+## Phase 1 — Idle dashboard (0:00 → 2:00)
+
+**Show**: Power BI **Operations** page.
+
+Talk track:
+> "What you're seeing is real production traffic shape, replayed at 1× speed. We're scoring around 1 200 transactions per second across SE/NO/DK/FI/EE. p99 latency is **11 ms** end-to-end on the green tile. Decline rate sits at **1.1 %**, down from 2.8 % pre-launch. SCA exemption coverage is at **73 %**, mostly TRA. Notice the rolling fraud rate per band — all comfortably under our internal 30 %-below-EBA-cap triggers."
+
+Hover the tiles: TPS, p99, decline %, exemption mix, fraud rate per band.
+
+---
+
+## Phase 2 — Load to 2 000 TPS (2:00 → 4:00)
+
+**Action**: from terminal:
+```bash
+./scripts/demo.sh load --tps 2000 --duration 120s
+```
+This runs `services/transaction-simulator` against the Sweden Central AFD endpoint.
+
+**Show**: Grafana **Scoring API SLO** dashboard — replicas scale from 6 to ~22, p99 stays **under 18 ms** (typically 13–15 ms).
+
+Talk track:
+> "I've doubled the load. KEDA on Container Apps scales out the Dedicated D8 workload profile in under 30 seconds — you can see the replica count climb. p99 is holding at **14 ms** because the scorer is **ONNX in-process** — there is no separate model server in the hot path. Cosmos multi-master takes the writes locally; the cold path is async to Event Hubs."
+
+Switch to Power BI live page — the TPS tile updates within ~5 s.
+
+---
+
+## Phase 3 — Fraud-ring injection (4:00 → 7:00)
+
+**Action**:
+```bash
+./scripts/demo.sh inject --pattern ring --cards 10 --merchants 3 --topology circular
+```
+This emits 10 PAN-tokens across 3 merchants in a circular flow over 60 s.
+
+**Show**:
+- Grafana panel "GNN ring score" spikes.
+- Power BI **Risk** page → "Active rings" tile increments to 1; map highlights SE-DK corridor.
+- Sentinel incident appears (severity HIGH).
+
+Talk track:
+> "This is a textbook ring: ten cards, three merchants, circular value flow. The 1-hop graph features the scorer pulls from Cosmos Gremlin already nudge each individual transaction up by ~0.2 in score, but the **offline GNN** running on Fabric Spark catches the *topology* — the closed loop — and emits a ring alert. Sentinel correlates and opens a HIGH-severity incident."
+
+---
+
+## Phase 4 — Agentic console (7:00 → 9:00)
+
+**Show**: agentic console UI (browser tab 3) — the new case is at the top.
+
+Click into the case. The Semantic Kernel Process Framework state graph animates each agent transition:
+
+1. **TriageAgent** (gpt-4o-mini) — "Severity: HIGH. Pattern: circular merchant ring. 10 cards involved."
+2. **GraphAnalystAgent** (gpt-4o) — "Confirmed circular flow, depth 3, value €47 200, time-window 6 min. Merchant cluster previously associated with case CR-2024-0918."
+3. **PolicyAgent** (gpt-4o) — "PSD2 SCA: TRA was applied on 7/10. Within rolling-fraud guard. AML threshold for SAR met (FATF + national). Recommend: SAR draft + freeze + EBA tagging."
+4. **CaseManagerAgent** — opens case `CR-2025-Q3-00412`; freezes all 10 PAN-tokens; notifies issuer.
+5. **NarrativeAgent** (gpt-4o-mini) — produces a SAR narrative pre-filled with the graph evidence.
+
+Talk track:
+> "Every agent step is logged to an append-only Cosmos container plus immutable Storage — that's our **EU AI Act Article 12** record. The PolicyAgent has a hard rule that any decline of significant amount needs human review — that's our **Article 22 GDPR** safeguard. The reviewer signs the SAR; the agent never submits unilaterally."
+
+---
+
+## Phase 5 — EBA report (9:00 → 10:00)
+
+**Show**: Power BI **EBA Q-Report** workspace → open the Q1 paginated report.
+
+Scroll: Tables 1A–1D (issuer cards), 2A–2D (acquirer cards), 3A (SCT), 4A (e-money). Show the **fraud rate per TRA band** sub-page — all bands comfortably below the EBA caps.
+
+Talk track:
+> "This is the same Q1 file the Risk team submitted to Finansinspektionen last week, generated automatically from Fabric Gold. Zero manual hours — down from 320 per quarter. Lineage from this PDF back to the raw `tx.raw` topic is one click in Purview. The PDF and the XBRL are archived to immutable storage with WORM seven years."
+
+End on the **Outcomes vs targets** slide — fraud loss −41 %, decline 1.1 %, p99 14 ms, EBA hours 0, exemption 73 %, availability 99.99 %.
+
+---
+
+## Recovery cues (if something fails on stage)
+
+- **Load test refuses to start** → fall back to `./scripts/demo.sh replay --recording demo-baseline.jsonl` (pre-recorded run).
+- **Power BI Direct Lake stale** → switch to the cached "Operations (snapshot)" page.
+- **Agentic console hung** → open the pre-rendered walk-through under `slides/notes/agentic-walkthrough.png`.
+
+---
+
+## TL;DR
+
+Ten minutes: idle dashboard → 2 k TPS load with p99 holding under 18 ms → ring injection caught by GNN → five-agent SK workflow producing a SAR draft with full audit trail → automated EBA Q-report. Three terminal commands, four browser tabs, one timer.

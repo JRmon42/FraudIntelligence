@@ -1,0 +1,36 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
+type: command
+display_name: fraud-intel-train-ensemble
+experiment_name: fraud-intel-ensemble
+description: |
+  Train the stacked XGBoost + LightGBM + Logistic Regression fraud ensemble,
+  export to ONNX, log to MLflow.
+code: ../
+command: >-
+  python -m ml.train_ensemble
+  --input ${{inputs.train_data}}
+  --output ${{outputs.model_dir}}
+inputs:
+  train_data:
+    type: uri_file
+    path: azureml://datastores/fraudintel_gold/paths/transactions/latest/transactions.parquet
+    mode: ro_mount
+outputs:
+  model_dir:
+    type: uri_folder
+    mode: rw_mount
+environment:
+  conda_file: ../conda.yaml
+  image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
+compute: azureml:cpu-cluster
+resources:
+  instance_count: 1
+identity:
+  type: user_identity
+tags:
+  team: fraud-intel
+  model: ensemble
+  framework: sklearn-xgb-lgb
+services:
+  mlflow:
+    type: tracking

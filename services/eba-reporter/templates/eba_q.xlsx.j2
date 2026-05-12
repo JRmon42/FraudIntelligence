@@ -1,0 +1,32 @@
+{# ----------------------------------------------------------------------------
+   NOTE: This file is intentionally NOT a Jinja2 template.
+
+   The EBA report XLSX is built programmatically via openpyxl in `report.py`
+   (function `render_xlsx`). Jinja2 cannot reliably produce styled, multi-sheet
+   Excel binaries — the EBA submission portal validates cell formats, so we
+   construct the workbook from `models.EbaReport` rather than rendering a
+   template.
+
+   This file documents the layout that `render_xlsx` is contractually required
+   to produce. If you change the schema below, update `render_xlsx` to match.
+
+   Layout (one sheet per Annex):
+     * Cover     : header metadata (PSP LEI, name, country, quarter, period, submission ID)
+     * A         : Annex A  — payment volumes & values
+                   columns: instrument, channel, tx_count, tx_value_eur
+     * B         : Annex B  — fraud breakdown
+                   columns: instrument, channel, fraud_type, fraud_count,
+                            fraud_value_eur, loss_value_eur
+     * C         : Annex C  — SCA exemptions
+                   columns: instrument, sca_exemption, tx_count, tx_value_eur,
+                            fraud_count, fraud_value_eur, fraud_rate_bps
+     * D         : Annex D  — loss allocation
+                   columns: instrument, loss_bearer, counterparty_geo,
+                            fraud_count, loss_value_eur
+     * Totals    : period totals dictionary
+
+   Style:
+     * Header cells: fill #1F4E78, bold white 11pt, centred.
+     * Title row: bold 14pt #1F4E78, merged A1:H1.
+     * Frozen pane: A4 (header row visible while scrolling).
+   ---------------------------------------------------------------------------- #}

@@ -1,0 +1,196 @@
+name: fraudintel
+
+# Local dev stack for the FraudIntelligence platform.
+# `docker compose up` brings up:
+#   - mocked Azure infra (Event Hubs, Cosmos DB emulators, Redis cache)
+#   - all platform microservices in mock mode
+#   - the transaction simulator runs a 60s smoke test against the scoring API
+#   - Prometheus + Grafana + OpenTelemetry collector for observability
+
+x-svc-defaults: &svc-defaults
+  restart: unless-stopped
+  networks: [fraudnet]
+
+networks:
+  fraudnet:
+    driver: bridge
+
+volumes:
+  cosmos-data:
+  prometheus-data:
+  grafana-data:
+
+services:
+  # ------------------------------------------------------------------ infra emulators
+  eventhub-emulator:
+    <<: *svc-defaults
+    image: mcr.microsoft.com/azure-messaging/eventhubs-emulator:latest
+    container_name: fraud-eventhub
+    pull_policy: missing
+    environment:
+      ACCEPT_EULA: "Y"
+      BLOB_SERVER: azurite
+      METADATA_SERVER: azurite
+    ports:
+      - "5672:5672"   # AMQP
+      - "9093:9093"   # Kafka surface
+    volumes:
+      - ./eventhub-emulator/config.json:/Eventhubs_Emulator/ConfigFiles/Config.json:ro
+    depends_on:
+      azurite:
+        condition: service_started
+
+  azurite:
+    <<: *svc-defaults
+    # Required dependency of the Event Hubs emulator (uses Azurite for metadata/blob).
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: fraud-azurite
+    command: ["azurite", "--blobHost", "0.0.0.0", "--queueHost", "0.0.0.0", "--tableHost", "0.0.0.0"]
+    ports:
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+
+  cosmos-emulator:
+    <<: *svc-defaults
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
+    container_name: fraud-cosmos
+    pull_policy: missing
+    environment:
+      AZURE_COSMOS_EMULATOR_PARTITION_COUNT: "3"
+      AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE: "true"
+    ports:
+      - "8081:8081"
+      - "10250-10255:10250-10255"
+    volumes:
+      - cosmos-data:/data
+
+  redis:
+    <<: *svc-defaults
+    image: redis:7.4-alpine
+    container_name: fraud-redis
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "6379:6379"
+
+  # ------------------------------------------------------------------ services
+  scoring-api:
+    <<: *svc-defaults
+    build:
+      context: ./services/scoring-api
+    container_name: fraud-scoring-api
+    environment:
+      ENVIRONMENT: local
+      REDIS_URL: redis://redis:6379/0
+      COSMOS_ENDPOINT: https://cosmos-emulator:8081
+      COSMOS_KEY: C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==
+      EVENTHUB_CONNECTION: "Endpoint=sb://eventhub-emulator;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    ports:
+      - "8080:8080"
+    depends_on:
+      redis: { condition: service_started }
+      cosmos-emulator: { condition: service_started }
+      eventhub-emulator: { condition: service_started }
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+
+  agentic-orchestrator:
+    <<: *svc-defaults
+    build:
+      context: ./services/agentic-orchestrator
+    container_name: fraud-orchestrator
+    command: ["--mock-llm"]
+    environment:
+      SCORING_API_URL: http://scoring-api:8080
+      REDIS_URL: redis://redis:6379/1
+      EVENTHUB_CONNECTION: "Endpoint=sb://eventhub-emulator;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    ports:
+      - "8090:8090"
+    depends_on:
+      scoring-api: { condition: service_started }
+
+  feature-builder:
+    <<: *svc-defaults
+    image: mcr.microsoft.com/azure-functions/python:4-python3.11
+    container_name: fraud-feature-builder
+    environment:
+      AzureWebJobsStorage: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;TableEndpoint=http://azurite:10002/devstoreaccount1;"
+      EVENTHUB_CONNECTION: "Endpoint=sb://eventhub-emulator;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
+      COSMOS_ENDPOINT: https://cosmos-emulator:8081
+      FUNCTIONS_WORKER_RUNTIME: python
+      AzureFunctionsJobHost__Logging__Console__IsEnabled: "true"
+    volumes:
+      - ./services/feature-builder:/home/site/wwwroot:ro
+    depends_on:
+      eventhub-emulator: { condition: service_started }
+      azurite: { condition: service_started }
+      cosmos-emulator: { condition: service_started }
+
+  transaction-simulator:
+    <<: *svc-defaults
+    build:
+      context: ./services/transaction-simulator
+    container_name: fraud-simulator
+    command:
+      - run
+      - --target=http://scoring-api:8080
+      - --tps=200
+      - --pattern=mixed
+      - --duration=60
+      - --out-dir=/app/reports
+    volumes:
+      - ./reports:/app/reports
+    depends_on:
+      scoring-api:
+        condition: service_healthy
+    restart: "no"
+
+  # ------------------------------------------------------------------ observability
+  prometheus:
+    <<: *svc-defaults
+    image: prom/prometheus:v2.55.1
+    container_name: fraud-prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=2h
+    volumes:
+      - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+
+  grafana:
+    <<: *svc-defaults
+    image: grafana/grafana:11.2.2
+    container_name: fraud-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      prometheus: { condition: service_started }
+
+  otel-collector:
+    <<: *svc-defaults
+    image: otel/opentelemetry-collector-contrib:0.111.0
+    container_name: fraud-otel
+    command: ["--config=/etc/otel/config.yaml"]
+    volumes:
+      - ./ops/otel/config.yaml:/etc/otel/config.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "8889:8889"   # Prometheus exporter

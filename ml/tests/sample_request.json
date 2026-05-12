@@ -1,0 +1,24 @@
+{
+  "data": [
+    {
+      "card_id": "c_000001",
+      "amount": 142.5,
+      "amount_log": 4.965,
+      "hour": 14,
+      "dow": 2,
+      "is_weekend": 0,
+      "card_age_days": 720,
+      "merchant_risk": 0.05,
+      "card_txn_count_24h": 3,
+      "card_amount_sum_24h": 450.0,
+      "card_distinct_merchants_24h": 2,
+      "card_country": "SE",
+      "merchant_country": "SE",
+      "ip_country": "SE",
+      "card_brand": "VISA",
+      "channel": "ecom",
+      "device_os": "iOS",
+      "mcc": "5411"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "FUNCTIONS_EXTENSION_VERSION": "~4",
+
+    "EVENTHUB_TXN_CONN_STR": "<eh-namespace-conn-str-with-Listen-policy>",
+    "EVENTHUB_TXN_NAME": "txn.events",
+    "EVENTHUB_CONSUMER_GROUP": "feature-builder",
+
+    "EVENTHUB_FEATURE_CONN_STR": "<eh-namespace-conn-str-with-Send-policy>",
+    "EVENTHUB_FEATURE_NAME": "feature.events",
+
+    "COSMOS_ENDPOINT": "https://your-cosmos.documents.azure.com:443/",
+    "COSMOS_DATABASE": "fraudintel",
+    "COSMOS_FEATURES_CONTAINER": "features",
+    "COSMOS_DEDUP_CONTAINER": "dedup",
+
+    "OTEL_EXPORTER_OTLP_ENDPOINT": "",
+    "OTEL_SERVICE_NAME": "feature-builder",
+
+    "FEATURE_BUILDER_DEDUP_TTL_S": "3600"
+  }
+}
