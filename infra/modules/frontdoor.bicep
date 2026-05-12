@@ -110,9 +110,12 @@ resource scoringRoute 'Microsoft.Cdn/profiles/afdEndpoints/routes@2024-02-01' = 
   dependsOn: [ scoringOrigin ]
 }
 
-resource scoringSecurity 'Microsoft.Cdn/profiles/securityPolicies@2024-02-01' = {
+// AFD only permits one security policy per WAF policy on a profile.
+// Combine both endpoints (scoring + console) into a single security policy
+// with multiple associations rather than two policies referencing the same WAF.
+resource afdSecurity 'Microsoft.Cdn/profiles/securityPolicies@2024-02-01' = {
   parent: afd
-  name: 'sp-scoring'
+  name: 'sp-fraudintel'
   properties: {
     parameters: {
       type: 'WebApplicationFirewall'
@@ -122,9 +125,14 @@ resource scoringSecurity 'Microsoft.Cdn/profiles/securityPolicies@2024-02-01' = 
           domains: [ { id: scoringEp.id } ]
           patternsToMatch: [ '/*' ]
         }
+        {
+          domains: [ { id: consoleEp.id } ]
+          patternsToMatch: [ '/*' ]
+        }
       ]
     }
   }
+  dependsOn: [ consoleEp ]
 }
 
 // ---------- Agentic console endpoint ----------
@@ -183,22 +191,7 @@ resource consoleRoute 'Microsoft.Cdn/profiles/afdEndpoints/routes@2024-02-01' = 
   dependsOn: [ consoleOrigin ]
 }
 
-resource consoleSecurity 'Microsoft.Cdn/profiles/securityPolicies@2024-02-01' = {
-  parent: afd
-  name: 'sp-console'
-  properties: {
-    parameters: {
-      type: 'WebApplicationFirewall'
-      wafPolicy: { id: waf.id }
-      associations: [
-        {
-          domains: [ { id: consoleEp.id } ]
-          patternsToMatch: [ '/*' ]
-        }
-      ]
-    }
-  }
-}
+// (consoleSecurity merged into the unified afdSecurity policy above)
 
 resource afdDiag 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
   scope: afd
