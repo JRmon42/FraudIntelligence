@@ -1,3 +1,9 @@
+## [1.0.3](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.2...v1.0.3) (2026-05-12)
+
+### Bug Fixes
+
+* **infra:** ACA OTel schema + Cosmos DR AZ unavailability ([242402a](https://github.com/JRmon42/FraudIntelligence/commit/242402a49ef11761ef719414ce402b826df65609))
+
 ## [1.0.2](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.1...v1.0.2) (2026-05-12)
 
 ### Bug Fixes
