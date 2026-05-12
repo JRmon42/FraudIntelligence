@@ -63,7 +63,10 @@ resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
       {
         locationName: secondaryLocation
         failoverPriority: 1
-        isZoneRedundant: true
+        // Zone-redundant capacity is unavailable in some EU partner regions
+        // (notably North Europe at the time of writing). Disable AZ on the
+        // secondary so the geo-pair can still be added; primary remains AZ.
+        isZoneRedundant: false
       }
     ]
     backupPolicy: {

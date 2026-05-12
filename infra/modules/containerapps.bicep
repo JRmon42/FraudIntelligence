@@ -58,20 +58,10 @@ resource acaEnv 'Microsoft.App/managedEnvironments@2024-03-01' = {
       infrastructureSubnetId: acaSubnetId
     }
     zoneRedundant: true
-    openTelemetryConfiguration: {
-      tracesConfiguration: {
-        destinations: [ 'appInsights' ]
-      }
-      metricsConfiguration: {
-        destinations: [ 'appInsights' ]
-      }
-      logsConfiguration: {
-        destinations: [ 'appInsights' ]
-      }
-      destinationsConfiguration: {
-        otlpConfigurations: []
-      }
-    }
+    // Note: openTelemetryConfiguration removed — not supported in current ACA
+    // ManagedEnvironment ARM API. OTel collectors are deployed as a sidecar
+    // ContainerApp (see ops/otel/) which scrapes app endpoints and forwards
+    // to Application Insights via the Connection String env var.
   }
 }
 
