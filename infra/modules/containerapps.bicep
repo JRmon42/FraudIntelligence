@@ -133,14 +133,10 @@ resource scoring 'Microsoft.App/containerApps@2024-03-01' = {
         targetPort: 8080
         transport: 'auto'
         allowInsecure: false
-        ipSecurityRestrictions: [
-          {
-            name: 'AllowFrontDoorOnly'
-            ipAddressRange: 'AzureFrontDoor.Backend'
-            action: 'Allow'
-            description: 'Only Azure Front Door backends'
-          }
-        ]
+        // Note: ACA ipSecurityRestrictions only accepts CIDR ranges, not
+        // service tags. Front Door origin lock-down is enforced inside
+        // the app by validating the X-Azure-FDID header against the
+        // expected Front Door instance ID.
       }
       secrets: [
         {

@@ -48,9 +48,10 @@ resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
     minimalTlsVersion: 'Tls12'
     publicNetworkAccess: 'Disabled'
     disableLocalAuth: true
-    capabilities: [
-      { name: 'EnableGremlin' }
-    ]
+    // Note: Cosmos accounts are single-API. We use SQL (Core) here for
+    // transactional containers. Graph workloads use GNN embeddings served
+    // from the scoring API; if a Gremlin store is later required, deploy
+    // a separate Cosmos account with the EnableGremlin capability.
     consistencyPolicy: {
       defaultConsistencyLevel: 'Session'
     }
@@ -107,29 +108,9 @@ resource sqlContainersRes 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/co
   }
 }]
 
-// Gremlin DB: fraudgraph
-resource gremlinDb 'Microsoft.DocumentDB/databaseAccounts/gremlinDatabases@2024-05-15' = {
-  parent: cosmos
-  name: 'fraudgraph'
-  properties: {
-    resource: { id: 'fraudgraph' }
-  }
-}
-
-resource ringGraph 'Microsoft.DocumentDB/databaseAccounts/gremlinDatabases/graphs@2024-05-15' = {
-  parent: gremlinDb
-  name: 'rings'
-  properties: {
-    resource: {
-      id: 'rings'
-      partitionKey: {
-        paths: [ '/entityId' ]
-        kind: 'Hash'
-      }
-    }
-    options: { throughput: containerThroughput }
-  }
-}
+// Gremlin DB removed — see note on the account above. The GraphSAGE GNN
+// trains in batch from Bronze/Silver tables and serves embeddings inline
+// through the scoring API; an in-cluster graph store is not required.
 
 resource cosmosDiag 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
   scope: cosmos
