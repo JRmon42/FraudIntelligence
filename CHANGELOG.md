@@ -1,3 +1,9 @@
+## [1.0.5](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.4...v1.0.5) (2026-05-12)
+
+### Bug Fixes
+
+* **infra:** merge AFD security policies (one WAF -> one securityPolicy) ([32000df](https://github.com/JRmon42/FraudIntelligence/commit/32000dfb269e421154bdfcb74141b64c19420abb))
+
 ## [1.0.4](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.3...v1.0.4) (2026-05-12)
 
 ### Bug Fixes
