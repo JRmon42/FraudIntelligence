@@ -4,8 +4,8 @@ FROM mcr.microsoft.com/azurelinux/base/python:3.12 AS builder
 WORKDIR /build
 COPY pyproject.toml ./
 COPY report.py models.py ./
-RUN python -m pip install --no-cache-dir --upgrade pip build && \
-    python -m pip wheel --no-cache-dir --wheel-dir /wheels .
+RUN python3 -m pip install --no-cache-dir --upgrade pip build && \
+    python3 -m pip wheel --no-cache-dir --wheel-dir /wheels .
 
 FROM mcr.microsoft.com/azurelinux/base/python:3.12
 
@@ -23,12 +23,12 @@ USER ebareporter
 WORKDIR /home/ebareporter
 
 COPY --from=builder /wheels /wheels
-RUN pip install --user --no-cache-dir /wheels/*.whl && rm -rf /wheels
+RUN pip3 install --user --no-cache-dir /wheels/*.whl && rm -rf /wheels
 
 COPY --chown=ebareporter:ebareporter report.py models.py ./
 COPY --chown=ebareporter:ebareporter templates ./templates
 
 ENV PATH="/home/ebareporter/.local/bin:${PATH}"
 
-ENTRYPOINT ["python", "-m", "report"]
+ENTRYPOINT ["python3", "-m", "report"]
 CMD ["--help"]
