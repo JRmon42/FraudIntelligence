@@ -1,3 +1,9 @@
+## [1.0.1](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.0...v1.0.1) (2026-05-12)
+
+### Bug Fixes
+
+* **infra:** bicep compile errors - secure LA shared key + dedupe [@secure](https://github.com/secure) decorator ([72e104b](https://github.com/JRmon42/FraudIntelligence/commit/72e104b9db15626affc85bea48181c7d41e81f72))
+
 ## 1.0.0 (2026-05-12)
 
 ### Features
