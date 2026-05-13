@@ -1,3 +1,9 @@
+## [1.0.7](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.6...v1.0.7) (2026-05-13)
+
+### Bug Fixes
+
+* **infra:** v8 - keep ACR public, fix metric alerts, drop purview managedEventHubState ([2048105](https://github.com/JRmon42/FraudIntelligence/commit/204810550daff1569f4c2cb87536879925dcaeec))
+
 ## [1.0.6](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.5...v1.0.6) (2026-05-12)
 
 ### Bug Fixes
