@@ -1,3 +1,9 @@
+## [1.0.10](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.9...v1.0.10) (2026-05-13)
+
+### Bug Fixes
+
+* **eba-reporter:** chown /wheels to non-root before pip install ([e33cc2b](https://github.com/JRmon42/FraudIntelligence/commit/e33cc2bd78758acb9345d956f500d4dd7d1dfa56))
+
 ## [1.0.9](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.8...v1.0.9) (2026-05-13)
 
 ### Bug Fixes
