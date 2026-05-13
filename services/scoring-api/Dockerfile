@@ -18,6 +18,7 @@ RUN python -m venv /opt/venv \
 FROM gcr.io/distroless/python3-debian12:nonroot
 
 ENV PATH="/opt/venv/bin:${PATH}" \
+    PYTHONPATH="/opt/venv/lib/python3.11/site-packages" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     SCORING_API_PORT=8080
