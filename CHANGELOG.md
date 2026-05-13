@@ -1,3 +1,9 @@
+## [1.0.11](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.10...v1.0.11) (2026-05-13)
+
+### Bug Fixes
+
+* **infra,eba:** v13 - serialize OAI PE after model deployments; install eba wheels as root ([58478d4](https://github.com/JRmon42/FraudIntelligence/commit/58478d444ca0fcda40c492f9de11982431139841))
+
 ## [1.0.10](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.9...v1.0.10) (2026-05-13)
 
 ### Bug Fixes
