@@ -27,6 +27,9 @@ USER ebareporter
 WORKDIR /home/ebareporter
 
 COPY --from=builder /wheels /wheels
+USER root
+RUN chown -R ebareporter:ebareporter /wheels
+USER ebareporter
 RUN pip3 install --user --no-cache-dir /wheels/*.whl && rm -rf /wheels
 
 COPY --chown=ebareporter:ebareporter report.py models.py ./
