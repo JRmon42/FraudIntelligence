@@ -127,7 +127,7 @@ resource cosmosThrottle 'Microsoft.Insights/metricAlerts@2018-03-01' = {
           ]
           operator: 'GreaterThan'
           threshold: 50
-          timeAggregation: 'Total'
+          timeAggregation: 'Count'
           criterionType: 'StaticThresholdCriterion'
         }
       ]
@@ -183,14 +183,14 @@ resource amlErrors 'Microsoft.Insights/metricAlerts@2018-03-01' = {
       allOf: [
         {
           name: 'requestErrors'
-          metricNamespace: 'Microsoft.MachineLearningServices/workspaces/onlineEndpoints'
+          metricNamespace: 'Microsoft.MachineLearningServices/workspaces'
           metricName: 'RequestsPerMinute'
           dimensions: [
             { name: 'StatusCodeClass', operator: 'Include', values: [ '5xx' ] }
           ]
           operator: 'GreaterThan'
           threshold: 5
-          timeAggregation: 'Total'
+          timeAggregation: 'Count'
           criterionType: 'StaticThresholdCriterion'
         }
       ]

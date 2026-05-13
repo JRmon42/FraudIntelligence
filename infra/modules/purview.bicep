@@ -26,7 +26,9 @@ resource purview 'Microsoft.Purview/accounts@2024-04-01-preview' = {
   properties: {
     publicNetworkAccess: 'Disabled'
     managedResourcesPublicNetworkAccess: 'Disabled'
-    managedEventHubState: 'Enabled'
+    // managedEventHubState removed — the 2023-05-01-preview API doesn't
+    // support enabling the managed Event Hub namespace; Atlas-style streaming
+    // is configured post-deployment via the Purview data plane API.
   }
 }
 

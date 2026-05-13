@@ -25,8 +25,11 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = {
   identity: { type: 'SystemAssigned' }
   properties: {
     adminUserEnabled: false
-    publicNetworkAccess: 'Disabled'
+    publicNetworkAccess: 'Enabled'
     networkRuleBypassOptions: 'AzureServices'
+    networkRuleSet: {
+      defaultAction: 'Allow'
+    }
     zoneRedundancy: 'Enabled'
     policies: {
       quarantinePolicy: { status: 'enabled' }
