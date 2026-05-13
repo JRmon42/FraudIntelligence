@@ -1,3 +1,9 @@
+## [1.0.9](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.8...v1.0.9) (2026-05-13)
+
+### Bug Fixes
+
+* **infra,eba:** v10 - single Purview RG Reader RA, install shadow-utils in eba ([b1341b3](https://github.com/JRmon42/FraudIntelligence/commit/b1341b36ad7036eb639ea3e2123f5a399598bca5))
+
 ## [1.0.8](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.7...v1.0.8) (2026-05-13)
 
 ### Bug Fixes
