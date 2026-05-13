@@ -115,6 +115,10 @@ resource pe 'Microsoft.Network/privateEndpoints@2023-11-01' = {
       }
     ]
   }
+  // Model deployments transition the parent OAI account to a transient
+  // 'Accepted' state. Serialize PE creation after model deployments to
+  // avoid 'AccountProvisioningStateInvalid' on idempotent redeploys.
+  dependsOn: [ gpt4o, emb ]
 }
 
 resource peDns 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2023-11-01' = {

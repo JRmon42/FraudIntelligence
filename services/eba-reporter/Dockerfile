@@ -20,17 +20,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Run as non-root for Container Apps Job. Azure Linux base lacks shadow-utils
 # (no useradd), so we install it before creating the runtime user. Use tdnf
 # which is the package manager on the Azure Linux 3 base image.
-USER root
 RUN tdnf install -y shadow-utils && tdnf clean all && \
     useradd --create-home --uid 10001 ebareporter
-USER ebareporter
-WORKDIR /home/ebareporter
 
 COPY --from=builder /wheels /wheels
-USER root
-RUN chown -R ebareporter:ebareporter /wheels
+RUN pip3 install --no-cache-dir /wheels/*.whl && rm -rf /wheels
+
 USER ebareporter
-RUN pip3 install --user --no-cache-dir /wheels/*.whl && rm -rf /wheels
+WORKDIR /home/ebareporter
 
 COPY --chown=ebareporter:ebareporter report.py models.py ./
 COPY --chown=ebareporter:ebareporter templates ./templates
