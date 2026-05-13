@@ -4,7 +4,7 @@ FROM mcr.microsoft.com/azurelinux/base/python:3.12 AS builder
 WORKDIR /build
 COPY pyproject.toml ./
 COPY report.py models.py ./
-RUN python3 -m pip install --no-cache-dir --upgrade pip build && \
+RUN python3 -m pip install --no-cache-dir build && \
     python3 -m pip wheel --no-cache-dir --wheel-dir /wheels .
 
 FROM mcr.microsoft.com/azurelinux/base/python:3.12

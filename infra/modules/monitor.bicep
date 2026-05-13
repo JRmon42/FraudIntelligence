@@ -167,37 +167,12 @@ resource ehBacklog 'Microsoft.Insights/metricAlerts@2018-03-01' = {
 }
 
 // 5. AML online endpoint errors
-resource amlErrors 'Microsoft.Insights/metricAlerts@2018-03-01' = {
-  name: 'alert-aml-endpoint-errors'
-  location: 'global'
-  tags: tags
-  properties: {
-    description: 'AML online endpoint 5xx errors'
-    severity: 2
-    enabled: true
-    scopes: [ amlWorkspaceId ]
-    evaluationFrequency: 'PT1M'
-    windowSize: 'PT5M'
-    criteria: {
-      'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'
-      allOf: [
-        {
-          name: 'requestErrors'
-          metricNamespace: 'Microsoft.MachineLearningServices/workspaces'
-          metricName: 'RequestsPerMinute'
-          dimensions: [
-            { name: 'StatusCodeClass', operator: 'Include', values: [ '5xx' ] }
-          ]
-          operator: 'GreaterThan'
-          threshold: 5
-          timeAggregation: 'Count'
-          criterionType: 'StaticThresholdCriterion'
-        }
-      ]
-    }
-    actions: [ { actionGroupId: ag.id } ]
-  }
-}
+// NOTE: AML online endpoint metric alert removed.
+// AML workspace metric namespace doesn't expose RequestsPerMinute/StatusCodeClass
+// (those live on the AML data plane, not Microsoft.MachineLearningServices/workspaces).
+// Endpoint errors are surfaced via App Insights availability tests + the
+// generic scoring availability alert below. Re-add as a Log Analytics
+// scheduledQueryRule in a follow-up if endpoint-level metrics are required.
 
 // 6. Defender alerts (Activity Log alert on Microsoft.Security/locations/alerts)
 resource defenderAlert 'Microsoft.Insights/activityLogAlerts@2020-10-01' = {

@@ -43,7 +43,7 @@ resource purviewDiag 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' 
 }
 
 resource sourceReaderAssignments 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for (id, i) in sourceResourceIds: {
-  name: guid(purview.id, id, readerRoleId)
+  name: guid(purview.id, id, readerRoleId, string(i))
   scope: resourceGroup()
   properties: {
     principalId: purview.identity.principalId
