@@ -42,15 +42,19 @@ resource purviewDiag 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' 
   }
 }
 
-resource sourceReaderAssignments 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for (id, i) in sourceResourceIds: {
-  name: guid(purview.id, id, readerRoleId, string(i))
+// Purview MI Reader on the resource group covers all data sources at once.
+// We grant a single RG-scoped Reader rather than per-source assignments because
+// Azure RBAC dedupes by (scope, principal, role) — multiple RG-scoped assignments
+// for the same principal+role would all collide on the same triple.
+resource purviewRgReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(sourceResourceIds)) {
+  name: guid(purview.id, resourceGroup().id, readerRoleId)
   scope: resourceGroup()
   properties: {
     principalId: purview.identity.principalId
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', readerRoleId)
     principalType: 'ServicePrincipal'
   }
-}]
+}
 
 output purviewId string = purview.id
 output purviewName string = purview.name
