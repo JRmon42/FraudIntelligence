@@ -1,3 +1,9 @@
+## [1.0.14](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.13...v1.0.14) (2026-05-13)
+
+### Bug Fixes
+
+* **scoring-api:** add async-timeout to deps ([77e0a7b](https://github.com/JRmon42/FraudIntelligence/commit/77e0a7b4173014c8b06e74a4460b7061fe3560da))
+
 ## [1.0.13](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.12...v1.0.13) (2026-05-13)
 
 ### Bug Fixes
