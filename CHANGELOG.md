@@ -1,3 +1,9 @@
+## [1.0.15](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.14...v1.0.15) (2026-05-13)
+
+### Bug Fixes
+
+* **smoke-test:** hit /healthz (not /health) — matches scoring-api route ([9bd8763](https://github.com/JRmon42/FraudIntelligence/commit/9bd8763d88ee714469d141da1c8a3b4ae553f2a6))
+
 ## [1.0.14](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.13...v1.0.14) (2026-05-13)
 
 ### Bug Fixes
