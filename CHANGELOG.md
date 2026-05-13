@@ -1,3 +1,9 @@
+## [1.0.8](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.7...v1.0.8) (2026-05-13)
+
+### Bug Fixes
+
+* **infra,eba:** v9 - drop unsupported AML alert, unique purview RA guids, no pip upgrade ([05a4cf2](https://github.com/JRmon42/FraudIntelligence/commit/05a4cf2d815195b74709f28e80d13788ea8b1403))
+
 ## [1.0.7](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.6...v1.0.7) (2026-05-13)
 
 ### Bug Fixes
