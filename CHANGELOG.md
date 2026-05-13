@@ -1,3 +1,9 @@
+## [1.0.12](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.11...v1.0.12) (2026-05-13)
+
+### Bug Fixes
+
+* **infra:** v15 - serialize defender pricings via dependsOn chain ([2affa67](https://github.com/JRmon42/FraudIntelligence/commit/2affa67f9a2d297fbb7e2368c6869f1853b74853))
+
 ## [1.0.11](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.10...v1.0.11) (2026-05-13)
 
 ### Bug Fixes
