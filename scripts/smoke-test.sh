@@ -14,8 +14,8 @@ source .env.deployed
 SCORING_URL="https://${SCORING_FRONTDOOR_HOST}"
 SAMPLES="${SAMPLES:-100}"
 
-echo "==> 1. Health check: $SCORING_URL/health"
-curl --fail --silent --show-error --max-time 10 "$SCORING_URL/health" || {
+echo "==> 1. Health check: $SCORING_URL/healthz"
+curl --fail --silent --show-error --max-time 10 "$SCORING_URL/healthz" || {
   echo "FAIL: scoring health check"; exit 1; }
 echo "  OK"
 
