@@ -1,3 +1,9 @@
+## [1.0.13](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.12...v1.0.13) (2026-05-13)
+
+### Bug Fixes
+
+* **scoring-api:** set PYTHONPATH so distroless python finds venv packages ([e047e7b](https://github.com/JRmon42/FraudIntelligence/commit/e047e7be1712949d485462db406063a07ca411fd))
+
 ## [1.0.12](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.11...v1.0.12) (2026-05-13)
 
 ### Bug Fixes
