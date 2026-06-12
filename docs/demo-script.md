@@ -43,6 +43,10 @@ and are **not** reproduced by the CLI demo above (which exercises the live scori
 - Power BI workspace pinned in browser tab 1; Grafana SLO dashboard in tab 2; agentic console in tab 3; Fabric notebook in tab 4 (only opened if asked).
 - Demo timer visible.
 
+**Verified live URLs (Sweden Central, prod):**
+- **Scoring API** (Phases 1–3, via Front Door): `https://scoring-prod-dpbebwgrfud2egd2.b01.azurefd.net` — `/healthz` + `/readyz` return 200 (scorer currently runs the **stub** model, so all decisions are APPROVE ~0.22).
+- **Agentic console** (Phase 4): `https://ca-orchestrator-prod-swc.purpleforest-f993111a.swedencentral.azurecontainerapps.io` — direct Container Apps FQDN (external ingress); `/healthz` 200, `/v1/agents` lists the 5 agents. Use this URL on stage. _Note: the Front Door console endpoint (`console-prod-…b01.azurefd.net`) currently returns an AFD 404 (edge route not serving) — use the direct FQDN above instead._
+
 ---
 
 ## Phase 1 — Idle dashboard (0:00 → 2:00)
