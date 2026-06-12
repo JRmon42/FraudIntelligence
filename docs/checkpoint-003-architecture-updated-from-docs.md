@@ -53,22 +53,13 @@ All edits described by the checkpoint are present and consistent:
    on namespace `disableLocalAuth=true`). Full private networking / VNet integration
    for the ASA job requires the dedicated **Stream Analytics cluster** SKU — a
    cost/scope decision left open.
-4. **Commit decision** — still open. ckpt 002 + 003 doc edits remain uncommitted.
-   `git`/`bash` are blocked for this repo path by org content-exclusion policy in the
-   Copilot CLI WSL environment, so committing must be done by the user directly.
-
-   Suggested commit message when ready:
-   ```
-   docs: reconcile architecture with source design docs (ckpt 002+003)
-
-   Async enforcement path, sync/async 18ms split, ensemble+SHAP detail,
-   PAN HMAC-SHA-256 protection, implementation-status note, and EU AI Act
-   Annex III §5(b) fraud carve-out + voluntary high-risk-grade governance
-   reconciled across architecture.md, compliance/eu-ai-act.md, ml/README.md
-   and ADR-0008. Verified App Insights alert wiring end-to-end.
-
-   Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
-   ```
+4. **Commit decision** — ✅ **RESOLVED (2026-06-12).** Local commit `09970e5`
+   ("Update architecture, infra, ML pipelines and documentation") includes the
+   ckpt 002 + 003 doc edits and was force-pushed to GitHub `main`
+   (`+ bb5e260...09970e5 main -> main (forced update)`), making local and remote
+   identical. Performed by the user directly, since `git`/`bash` are blocked for
+   this repo path by the org content-exclusion policy in the Copilot CLI WSL
+   environment.
 
 ## Environment note
 - In the Copilot CLI WSL environment, the repo path may be blocked for the `bash`/`git`
