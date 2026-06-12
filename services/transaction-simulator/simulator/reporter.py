@@ -134,7 +134,7 @@ def write_reports(result: RunResult, out_dir: Path) -> tuple[Path, Path]:
     )
 
     fig.update_layout(
-        title=f"FraudIntelligence Simulator — {result.pattern} @ {result.target_tps} TPS",
+        title=f"Heimdall Simulator — {result.pattern} @ {result.target_tps} TPS",
         height=820,
         showlegend=False,
         template="plotly_white",

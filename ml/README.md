@@ -1,7 +1,7 @@
-# FraudIntelligence — ML
+# Heimdall — ML
 
 This folder contains all training, scoring and Azure ML deployment assets
-for the FraudIntelligence platform's two production models:
+for the Heimdall platform's two production models:
 
 | Model | Purpose | Runtime | Latency |
 |---|---|---|---|
@@ -102,9 +102,9 @@ short fast-feedback runs.
 | GNN | Nightly | Always (graph evolves daily) |
 | Emergency | Ad-hoc | Compliance request, P1 incident |
 
-## EU AI Act high-risk system
+## EU AI Act governance (high-risk-equivalent, voluntary)
 
-Both models are classified as Annex III high-risk. Required artefacts:
+Fraud detection is excluded from *mandatory* high-risk classification by the Annex III §5(b) financial-fraud carve-out; both models are nonetheless governed to **high-risk-equivalent** standards voluntarily, producing the same artefacts:
 
 * Model cards: `artifacts/ensemble_model_card.md`,
   `artifacts/gnn_model_card.md`

@@ -27,7 +27,7 @@ param orchestratorImage string = 'mcr.microsoft.com/k8se/quickstart:latest'
 @description('Container image for scoring API')
 param scoringImage string = 'mcr.microsoft.com/k8se/quickstart:latest'
 
-var envName = 'cae-fraudintel-${env}-${regionCode}'
+var envName = 'cae-heimdall-${env}-${regionCode}'
 
 resource acaEnv 'Microsoft.App/managedEnvironments@2024-03-01' = {
   name: envName

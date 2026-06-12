@@ -7,7 +7,7 @@
     "drLocation": { "value": "northeurope" },
     "tags": {
       "value": {
-        "project": "FraudIntelligence",
+        "project": "Heimdall",
         "env": "dev",
         "costCenter": "AMA-Capstone",
         "dataClass": "PII-Restricted",

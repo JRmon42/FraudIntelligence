@@ -1,4 +1,4 @@
-"""CLI entry point for the FraudIntelligence transaction simulator."""
+"""CLI entry point for the Heimdall transaction simulator."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from simulator import patterns
 from simulator.data import Population
 from simulator.reporter import RunResult, write_reports
 
-app = typer.Typer(add_completion=False, help="FraudIntelligence transaction simulator")
+app = typer.Typer(add_completion=False, help="Heimdall transaction simulator")
 console = Console()
 
 

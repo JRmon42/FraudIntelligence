@@ -1,7 +1,7 @@
 # `/agents/` — pointer
 
 This folder is intentionally empty. The runtime agents that make up the
-**FraudIntelligence agentic orchestrator** live with their service code:
+**Heimdall agentic orchestrator** live with their service code:
 
 ```
 services/agentic-orchestrator/app/agents/

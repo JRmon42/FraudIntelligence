@@ -1,6 +1,6 @@
 # Capstone Presentation
 
-`FraudIntelligence_AMA_Capstone.pptx` is the 45-minute capstone deck for AMA Case Study 30, generated from the official template `Azure Master Architect_Prezo_Template_v01.pptx`.
+`Heimdall_AMA_Capstone.pptx` is the 45-minute capstone deck for AMA Case Study 30, generated from the official template `Azure Master Architect_Prezo_Template_v01.pptx`.
 
 To regenerate (e.g. after editing content), drop the template into `/tmp/slidebuild/template.pptx` and run:
 

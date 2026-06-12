@@ -1,5 +1,5 @@
 """
-Build the 45-min AMA Capstone deck for Case Study 30 (FraudIntelligence)
+Build the 45-min AMA Capstone deck for Case Study 30 (Heimdall)
 using the supplied Azure Master Architect template.
 
 Structure (target ~22 slides for a 45-min talk with demo + Q&A):
@@ -32,7 +32,7 @@ from copy import deepcopy
 from pptx.oxml.ns import qn
 
 SRC = "/tmp/slidebuild/template.pptx"
-OUT = "/mnt/c/Users/jpontvianne/Documents/Azure/MasterArchitect/Code/FraudIntelligence/slides/FraudIntelligence_AMA_Capstone.pptx"
+OUT = "/mnt/c/Users/jpontvianne/Documents/Azure/MasterArchitect/Code/Heimdall/slides/Heimdall_AMA_Capstone.pptx"
 
 p = Presentation(SRC)
 
@@ -78,7 +78,7 @@ def add(layout_name, title=None, body_map=None, notes=None):
     return s
 
 # --- 1 Title ---
-add("Title slide", title="FraudIntelligence — AI-Driven Fraud Intelligence Platform\nNordic Payments Provider · AMA Capstone — Case Study 30",
+add("Title slide", title="Heimdall — AI-Driven Heimdall Platform\nNordic Payments Provider · AMA Capstone — Case Study 30",
     notes=("Welcome. Over the next 45 minutes I will walk you through how we deliver real-time, sovereign, "
            "agentic fraud intelligence on Azure for a Stockholm-based payments provider processing 4.2 billion "
            "transactions a year across the Nordics and Baltics. The session covers business case, architecture, "

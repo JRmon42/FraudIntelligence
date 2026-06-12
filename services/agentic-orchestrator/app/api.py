@@ -144,7 +144,7 @@ def build_router(ctx: ServiceContext) -> APIRouter:
 
 
 def build_app(*, mock_llm: bool | None = None, mock_cosmos: bool | None = None) -> FastAPI:
-    app = FastAPI(title="FraudIntelligence Agentic Orchestrator", version="0.1.0")
+    app = FastAPI(title="Heimdall Agentic Orchestrator", version="0.1.0")
     ctx = ServiceContext(mock_llm=mock_llm, mock_cosmos=mock_cosmos)
     app.state.ctx = ctx
     app.include_router(build_router(ctx))

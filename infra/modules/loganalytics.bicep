@@ -14,8 +14,8 @@ param sku string = 'PerGB2018'
 @description('Retention days')
 param retentionDays int = 90
 
-var laName = 'log-fraudintel-${env}-${regionCode}'
-var aiName = 'appi-fraudintel-${env}-${regionCode}'
+var laName = 'log-heimdall-${env}-${regionCode}'
+var aiName = 'appi-heimdall-${env}-${regionCode}'
 
 resource la 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: laName

@@ -16,7 +16,7 @@ param privateDnsZoneId string
 @description('Object IDs that should receive Key Vault Administrator role')
 param adminPrincipalIds array = []
 
-var kvName = 'kv-fraudintel-${env}-${regionCode}'
+var kvName = 'kv-heimdall-${env}-${regionCode}'
 // Key Vault Administrator role
 var kvAdminRoleId = '00482a5a-887f-4fb3-b363-3b7fe8e74483'
 

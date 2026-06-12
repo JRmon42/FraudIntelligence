@@ -1,6 +1,6 @@
 # eba-reporter
 
-Quarterly EBA fraud report generator (EBA/GL/2020/01) for the FraudIntelligence platform.
+Quarterly EBA fraud report generator (EBA/GL/2020/01) for the Heimdall platform.
 
 Produces, for each Nordic-Baltic reporting country (SE/NO/DK/FI/EE), three artefacts per quarter:
 

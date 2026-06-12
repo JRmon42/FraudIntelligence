@@ -32,7 +32,7 @@ param logAnalyticsWorkspaceId string
 @description('If true this is the primary region; private DNS zones live here')
 param isPrimary bool = true
 
-var vnetName = 'vnet-fraudintel-${env}-${regionCode}'
+var vnetName = 'vnet-heimdall-${env}-${regionCode}'
 
 // ---------------------------------------------------------------------------
 // NSGs

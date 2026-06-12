@@ -1,8 +1,8 @@
-# FraudIntelligence — Agentic Orchestrator
+# Heimdall — Agentic Orchestrator
 
 A multi-agent service that handles fraud alerts via a coordinated workflow with
 **autonomy, planning, reflection, and tool use**. Built for the
-FraudIntelligence platform and designed to score *Excellent* on the AMA rubric
+Heimdall platform and designed to score *Excellent* on the AMA rubric
 for both *Autonomy and orchestration* and *Multi-agent coordination*.
 
 ---
@@ -125,7 +125,7 @@ python -m app.demo
 Output (abridged):
 
 ```
-=== FraudIntelligence Agentic Orchestrator — DEMO ===
+=== Heimdall Agentic Orchestrator — DEMO ===
 Alert: alert-... amount=487.55 EUR reasons=['velocity', 'shared_device', 'mcc_anomaly']
 
 --- Timeline ---

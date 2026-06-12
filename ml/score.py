@@ -1,4 +1,4 @@
-"""Online scoring entrypoint for the FraudIntelligence ensemble model.
+"""Online scoring entrypoint for the Heimdall ensemble model.
 
 Compatible with Azure ML managed online endpoint contract:
     init()  — called once at container start; loads the ONNX session and the

@@ -13,7 +13,7 @@ param logAnalyticsWorkspaceId string
 @description('Resource IDs of data sources to grant Purview MSI Reader on')
 param sourceResourceIds array = []
 
-var purviewName = 'pv-fraudintel-${env}-${regionCode}'
+var purviewName = 'pv-heimdall-${env}-${regionCode}'
 // Reader role
 var readerRoleId = 'acdd72a7-3385-48ef-bd42-f606fba81ae7'
 

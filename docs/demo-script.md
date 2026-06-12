@@ -2,6 +2,41 @@
 
 > **Purpose.** A tightly choreographed 10-minute live demo that runs inside the 45-minute capstone presentation, showing the platform handling load, catching a fraud ring, driving the agentic case workflow, and producing the EBA report.
 
+---
+
+## ▶️ Runnable terminal demo (no dashboards required)
+
+The commands below are **real and verified** against the live Sweden Central deployment.
+They drive the scoring API over Azure Front Door using `scripts/demo.sh`
+(pure `python3` + stdlib — **no `curl`/`jq` needed**; host is read from `.env.deployed`).
+
+```bash
+# Verify health (GET /healthz + /readyz)
+./scripts/demo.sh health
+
+# Score one transaction with per-stage timings
+./scripts/demo.sh score --profile normal      # → APPROVE
+./scripts/demo.sh score --profile high         # high-amount/foreign/MOTO contrast
+
+# Representative load burst (capped for a laptop; raise --max/--workers for more)
+./scripts/demo.sh load --tps 2000 --duration 120 --max 600 --workers 40
+
+# Inject a circular fraud-ring (10 cards / 3 merchants)
+./scripts/demo.sh inject --pattern ring --cards 10 --merchants 3
+
+# One-shot scripted sequence (health → baseline → load → ring)
+./scripts/demo.sh all
+```
+
+> On the WSL host used for development, invoke with `/bin/bash scripts/demo.sh …`
+> and `export PATH="$HOME/snap/copilot-cli/common/local/bin:$PATH"` for `az`.
+
+The dashboard-driven narrative below is the **full 45-minute stage version**; the
+Power BI / Grafana / Fabric / agentic-console pieces require their own provisioning
+and are **not** reproduced by the CLI demo above (which exercises the live scoring path).
+
+---
+
 **Pre-flight (do before the session starts, not on stage):**
 - `./scripts/deploy.sh` is already complete; both regions show green in Grafana.
 - `services/transaction-simulator` container image pre-pulled on the demo host.
@@ -25,9 +60,9 @@ Hover the tiles: TPS, p99, decline %, exemption mix, fraud rate per band.
 
 **Action**: from terminal:
 ```bash
-./scripts/demo.sh load --tps 2000 --duration 120s
+./scripts/demo.sh load --tps 2000 --duration 120 --max 600 --workers 40
 ```
-This runs `services/transaction-simulator` against the Sweden Central AFD endpoint.
+This drives `scripts/demo_client.py` against the Sweden Central AFD endpoint (circular flow is built-in).
 
 **Show**: Grafana **Scoring API SLO** dashboard — replicas scale from 6 to ~22, p99 stays **under 18 ms** (typically 13–15 ms).
 
@@ -42,9 +77,9 @@ Switch to Power BI live page — the TPS tile updates within ~5 s.
 
 **Action**:
 ```bash
-./scripts/demo.sh inject --pattern ring --cards 10 --merchants 3 --topology circular
+./scripts/demo.sh inject --pattern ring --cards 10 --merchants 3
 ```
-This emits 10 PAN-tokens across 3 merchants in a circular flow over 60 s.
+This emits 10 cards across 3 merchants in a circular flow.
 
 **Show**:
 - Grafana panel "GNN ring score" spikes.
@@ -88,7 +123,7 @@ End on the **Outcomes vs targets** slide — fraud loss −41 %, decline 1.1 %, 
 
 ## Recovery cues (if something fails on stage)
 
-- **Load test refuses to start** → fall back to `./scripts/demo.sh replay --recording demo-baseline.jsonl` (pre-recorded run).
+- **Load test refuses to start** → fall back to a smaller burst `./scripts/demo.sh load --tps 200 --duration 10 --max 100`, or repeated `./scripts/demo.sh score --profile high`.
 - **Power BI Direct Lake stale** → switch to the cached "Operations (snapshot)" page.
 - **Agentic console hung** → open the pre-rendered walk-through under `slides/notes/agentic-walkthrough.png`.
 

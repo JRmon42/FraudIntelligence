@@ -24,6 +24,9 @@ param secondaryLocation string
 @description('Region code of partner region (for naming partner resources)')
 param partnerRegionCode string
 
+@description('Whether the DR region is being deployed alongside primary. Controls Cosmos multi-region writes and ACR geo-replication on the primary side.')
+param enableDr bool = false
+
 @description('RG that holds the private DNS zones consumed by this region. Defaults to the local RG so each region is independent.')
 param dnsZoneResourceGroupName string = resourceGroup().name
 
@@ -100,6 +103,7 @@ module acr 'modules/acr.bicep' = if (isPrimary) {
     logAnalyticsWorkspaceId: logs.outputs.workspaceId
     peSubnetId: net.outputs.subnetPeId
     privateDnsZoneId: acrDnsZoneId
+    enableReplica: enableDr
     replicaLocation: secondaryLocation
   }
   dependsOn: [ net ]
@@ -116,6 +120,7 @@ module cosmos 'modules/cosmos.bicep' = if (isPrimary) {
     peSubnetId: net.outputs.subnetPeId
     privateDnsZoneId: cosmosDnsZoneId
     secondaryLocation: secondaryLocation
+    enableSecondaryRegion: enableDr
     cmkKeyUri: cmkKeyUri
     keyVaultId: kv.outputs.keyVaultId
   }

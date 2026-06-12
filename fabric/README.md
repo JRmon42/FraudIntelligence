@@ -1,4 +1,4 @@
-# Microsoft Fabric — FraudIntelligence Medallion
+# Microsoft Fabric — Heimdall Medallion
 
 OneLake-backed Lakehouse `lh_fraud` in workspace `ws-fi-prod`, organised as:
 

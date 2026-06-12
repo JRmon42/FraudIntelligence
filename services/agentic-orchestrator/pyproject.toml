@@ -5,11 +5,11 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "fi-agentic-orchestrator"
 version = "0.1.0"
-description = "Multi-agent agentic orchestration service for the FraudIntelligence platform."
+description = "Multi-agent agentic orchestration service for the Heimdall platform."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
-authors = [{ name = "FraudIntelligence Platform Team" }]
+authors = [{ name = "Heimdall Platform Team" }]
 
 dependencies = [
     "fastapi>=0.110",

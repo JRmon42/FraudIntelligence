@@ -11,7 +11,7 @@ FROM mcr.microsoft.com/azurelinux/base/python:3.12
 
 LABEL org.opencontainers.image.title="eba-reporter" \
       org.opencontainers.image.description="EBA/GL/2020/01 quarterly fraud reporting batch job" \
-      org.opencontainers.image.source="https://github.com/FraudIntelligence/eba-reporter"
+      org.opencontainers.image.source="https://github.com/Heimdall/eba-reporter"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

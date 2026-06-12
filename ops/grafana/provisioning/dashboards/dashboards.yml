@@ -2,7 +2,7 @@ apiVersion: 1
 providers:
   - name: fraudintel
     orgId: 1
-    folder: FraudIntelligence
+    folder: Heimdall
     type: file
     disableDeletion: false
     updateIntervalSeconds: 30

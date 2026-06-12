@@ -1,15 +1,15 @@
-# FraudIntelligence — Infrastructure as Code (Bicep)
+# Heimdall — Infrastructure as Code (Bicep)
 
-Production-grade Azure deployment for the **FraudIntelligence** platform.
-All modules follow the naming convention `<svc>-fraudintel-<env>-<region>`
-(e.g. `kv-fraudintel-prod-swc`).
+Production-grade Azure deployment for the **Heimdall** platform.
+All modules follow the naming convention `<svc>-heimdall-<env>-<region>`
+(e.g. `kv-heimdall-prod-swc`).
 
 ## Topology
 
 | Region | Code | Resource Group | Role |
 |---|---|---|---|
-| Sweden Central | `swc` | `fraudintelligence_rg` | Primary |
-| North Europe   | `neu` | `fraudintelligence_dr_rg` | DR |
+| Sweden Central | `swc` | `heimdall_rg` | Primary |
+| North Europe   | `neu` | `heimdall_dr_rg` | DR |
 
 Cosmos DB runs **multi-region writes**; Event Hubs uses **geo-DR alias**;
 Front Door Premium fronts the scoring API and agentic console.
@@ -80,15 +80,15 @@ successful deployment:
    `synapse-sql-admin-password` for prod):
    ```bash
    az keyvault secret set -n synapse-sql-admin-password \
-       --vault-name kv-fraudintel-prod-swc --value '<strong password>'
+       --vault-name kv-heimdall-prod-swc --value '<strong password>'
    ```
 2. **Generate the CMK** in the Key Vault and re-deploy with `cmkKeyUri` set:
    ```bash
-   az keyvault key create --vault-name kv-fraudintel-prod-swc -n cmk-fraudintel \
+   az keyvault key create --vault-name kv-heimdall-prod-swc -n cmk-heimdall \
        --kty RSA --size 3072 --protection software
    ```
    Then re-run `scripts/deploy.sh` so OpenAI and Cosmos pick up the URI.
-3. **VNet peering** between `vnet-fraudintel-prod-swc` and `vnet-fraudintel-prod-neu`,
+3. **VNet peering** between `vnet-heimdall-prod-swc` and `vnet-heimdall-prod-neu`,
    plus link the private DNS zones to the DR VNet (the network module currently
    creates DNS zones only in primary — link them from DR after peering).
 4. **Purview scans**: register Cosmos / Storage / Synapse / Fabric data sources

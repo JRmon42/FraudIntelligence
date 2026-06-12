@@ -5,9 +5,10 @@
     "env": { "value": "prod" },
     "primaryLocation": { "value": "swedencentral" },
     "drLocation": { "value": "northeurope" },
+    "enableDr": { "value": false },
     "tags": {
       "value": {
-        "project": "FraudIntelligence",
+        "project": "Heimdall",
         "env": "prod",
         "costCenter": "AMA-Capstone",
         "dataClass": "PII-Restricted",

@@ -1,8 +1,8 @@
-# EU AI Act Compliance — Nordic Fraud Intelligence Platform
+# EU AI Act Compliance — Nordic Heimdall Platform
 
-> **Purpose.** Demonstrate that the platform meets the obligations applicable to **high-risk AI systems** under Regulation (EU) 2024/1689 (the EU AI Act), classified under **Annex III §5(b)** (AI systems intended to evaluate the creditworthiness of natural persons or to be used for risk assessment in financial services that affect access to essential services).
+> **Purpose.** Document how the platform is governed under Regulation (EU) 2024/1689 (the EU AI Act). Fraud detection is **excluded from *mandatory* high-risk classification** by the **Annex III §5(b) financial-fraud carve-out** ("…evaluate the creditworthiness of natural persons… *with the exception of AI systems used for the purpose of detecting financial fraud*"). The provider nonetheless **voluntarily** governs the system to **high-risk-equivalent** standards — implementing the Annex III high-risk obligations (Art 9–15) as internal controls.
 
-Although fraud scoring is not "credit scoring" in the classical sense, a decline materially affects a natural person's access to a financial service (the ability to pay). We treat the system as **high-risk** out of an abundance of caution and to align with the customer's risk appetite and Finansinspektionen guidance.
+This voluntary posture reflects the customer's risk appetite and Finansinspektionen alignment: a decline materially affects a natural person's access to a financial service, so the provider chooses to meet high-risk-grade controls even though they are not legally mandated for this use case. The carve-out removes the *mandatory high-risk* obligations and conformity-assessment/registration duties — it does **not** remove the Act's general transparency and governance expectations.
 
 **Provider role**: the customer (the Nordic payments provider). Microsoft provides components but is not the AI Act provider for this composed system.
 
@@ -58,10 +58,11 @@ Although fraud scoring is not "credit scoring" in the classical sense, a decline
 - **Cybersecurity**: signed container images (cosign), SBOM (Syft) in CI, dependency scanning (Defender for DevOps), Private Endpoints + mTLS, Defender for AI workloads, prompt-injection guards on LLM inputs (Azure AI Content Safety + custom regex).
 - Annual **red-team** including model-evasion and LLM jailbreak scenarios.
 
-### Conformity assessment (Art 43)
-- Internal control conformity assessment (Annex VI) — high-risk Annex III system relying on harmonised standards (ISO/IEC 42001, ISO/IEC 23894, ISO/IEC 5338) where available.
-- **Declaration of Conformity** signed by the provider before placing on market / putting into service; CE marking applied to the system documentation.
-- Registration in the **EU database for high-risk AI systems** (Art 49) before go-live.
+### Conformity assessment (Art 43) — *voluntary*
+
+Because the fraud-detection carve-out removes the **mandatory** high-risk obligations, the following are performed **voluntarily** as internal governance, not as legally required market-placement duties:
+- Internal control conformity assessment (Annex VI) — high-risk-equivalent system relying on harmonised standards (ISO/IEC 42001, ISO/IEC 23894, ISO/IEC 5338) where available.
+- **Declaration of Conformity** signed internally by the provider before putting into service; documentation maintained to high-risk standard. (CE marking and the Art 49 **EU high-risk database registration** are tracked as voluntary readiness measures and would only become mandatory if the use case were re-scoped outside the fraud carve-out.)
 
 ### Post-market monitoring (Art 72)
 - Post-Market Monitoring Plan in `docs/compliance/pmm-plan.md` (out of repo): KPIs, drift thresholds, incident triggers, reporting cadence.
@@ -85,4 +86,4 @@ Although fraud scoring is not "credit scoring" in the classical sense, a decline
 
 ## TL;DR
 
-The platform is treated as a **high-risk AI system (Annex III §5(b))**. Every Article 9–15 obligation has a concrete control implemented in Azure: Purview lineage + bias testing for Art 10; immutable Cosmos+WORM logs for Art 12; mandatory human review with kill-switch for Art 14; signed images, SBOM and red-team for Art 15. Internal conformity assessment, EU-database registration and post-market monitoring close the loop.
+The platform is governed to **high-risk-equivalent** standards **voluntarily** — fraud detection is excluded from *mandatory* high-risk classification by the **Annex III §5(b) financial-fraud carve-out**, but the provider implements every Article 9–15 obligation as a concrete Azure control: Purview lineage + bias testing for Art 10; immutable Cosmos+WORM logs for Art 12; mandatory human review with kill-switch for Art 14; signed images, SBOM and red-team for Art 15. Internal conformity assessment, EU-database readiness and post-market monitoring close the loop as voluntary measures.

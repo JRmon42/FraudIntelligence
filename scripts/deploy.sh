@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# deploy.sh — Idempotent FraudIntelligence platform deployment
+# deploy.sh — Idempotent Heimdall platform deployment
 # ============================================================================
 set -euo pipefail
 
@@ -8,7 +8,7 @@ SUBSCRIPTION_ID="ea8d83f8-8538-4914-ae12-24f954d61638"
 LOCATION="swedencentral"
 PARAM_FILE="${PARAM_FILE:-infra/parameters.prod.json}"
 TEMPLATE="infra/main.bicep"
-DEPLOYMENT_NAME="fraudintel-$(date +%Y%m%d-%H%M%S)"
+DEPLOYMENT_NAME="heimdall-$(date +%Y%m%d-%H%M%S)"
 
 cd "$(dirname "$0")/.."
 

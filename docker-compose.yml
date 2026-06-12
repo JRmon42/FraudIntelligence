@@ -1,6 +1,6 @@
 name: fraudintel
 
-# Local dev stack for the FraudIntelligence platform.
+# Local dev stack for the Heimdall platform.
 # `docker compose up` brings up:
 #   - mocked Azure infra (Event Hubs, Cosmos DB emulators, Redis cache)
 #   - all platform microservices in mock mode

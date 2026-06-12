@@ -1,6 +1,6 @@
 # Power BI — EBA Fraud Dashboard
 
-PBIP project for the FraudIntelligence Executive / EBA / Operational dashboards.
+PBIP project for the Heimdall Executive / EBA / Operational dashboards.
 
 ## Project layout
 

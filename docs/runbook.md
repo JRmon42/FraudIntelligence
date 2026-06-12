@@ -1,6 +1,6 @@
 # Day-2 Operations Runbook
 
-> **Purpose.** Standard operating procedures for running the Nordic Fraud Intelligence Platform after go-live: model rollout, blue/green for the scoring API, feature-store re-warm, Cosmos failover, key rotation, Defender alert response, and EBA report publication.
+> **Purpose.** Standard operating procedures for running the Nordic Heimdall Platform after go-live: model rollout, blue/green for the scoring API, feature-store re-warm, Cosmos failover, key rotation, Defender alert response, and EBA report publication.
 
 All procedures assume:
 - You are a member of `aad-fraudops-oncall` (PIM-elevated to `Contributor` on `rg-fraud-prod-*` for the duration of the change).
@@ -113,3 +113,44 @@ Goal: validate RTO ≤ 90 s for regional Cosmos failure.
 ## TL;DR
 
 Operations are **scripted, observable and reversible**: ACA revisions for blue/green, AML registry for model lifecycle, scripted Cosmos failover validated quarterly, HSM-backed key rotation, Defender → Sentinel for incidents with a wired GDPR breach playbook, and a fully automated EBA submission pipeline with WORM-archived evidence.
+
+---
+
+## 8. Stream Analytics & private networking
+
+The Event Hubs namespace `evhns-heimdall-prod-swc` is intentionally locked down:
+`publicNetworkAccess=Disabled`, `disableLocalAuth=true`, reachable only via its private
+endpoint. A standard **Stream Analytics cloud job** is a multi-tenant PaaS service and
+**cannot reach a private-only namespace**, so `scripts/scale-to-prod.sh` may report:
+
+> `Access to EventHub … is not authorized. Ip has been prevented to connect to the endpoint.`
+
+This is a **network-architecture constraint, not an RBAC bug** — the ASA managed identity
+already holds the required data-plane roles (granted in `infra/modules/streamanalytics.bicep`:
+Event Hubs Data Receiver + Data Sender on the namespace, DocumentDB Account Contributor and
+the Cosmos built-in Data Contributor on the account). The real-time **scoring API demo does
+not depend on ASA** and is unaffected.
+
+To run ASA against the stream live, choose one (both are deliberate decisions):
+
+**Option A — Trusted-service bypass (relaxes posture).** Allow Azure trusted services to
+bypass the namespace firewall. This flips `publicNetworkAccess` to `Enabled` with a
+default-deny rule, so the public internet is still blocked but trusted Azure services
+(incl. Stream Analytics via managed identity) may connect:
+
+```bash
+RG=heimdall_rg ; NS=evhns-heimdall-prod-swc
+az eventhubs namespace update -g $RG -n $NS --public-network-access Enabled
+az eventhubs namespace network-rule-set update -g $RG --namespace-name $NS \
+  --default-action Deny --trusted-service-access-enabled true
+# then re-run: ./scripts/scale-to-prod.sh   (ASA start should now succeed)
+```
+
+**Option B — ASA dedicated cluster (preserves private-only posture).** Provision a
+Stream Analytics **dedicated cluster** and create a **managed private endpoint** from the
+cluster to the Event Hubs namespace, then move the job into the cluster. This keeps
+`publicNetworkAccess=Disabled` but adds cost (dedicated cluster SKU). Recommended for
+production where the private boundary must not be relaxed.
+
+> Decision pending owner sign-off — the platform ships with the hardened private-only
+> default (Option B posture) and ASA left stopped, since the scoring demo does not need it.

@@ -18,7 +18,7 @@ param partnerNamespaceId string = ''
 @description('If true, create geo-DR alias (only on primary region)')
 param enableGeoDr bool = false
 
-var nsName = 'evhns-fraudintel-${env}-${regionCode}'
+var nsName = 'evhns-heimdall-${env}-${regionCode}'
 
 var hubs = [
   { name: 'txn.events',     partitions: 8, retention: 3 }
@@ -68,7 +68,7 @@ resource cgs 'Microsoft.EventHub/namespaces/eventhubs/consumergroups@2024-01-01'
 
 resource alias 'Microsoft.EventHub/namespaces/disasterRecoveryConfigs@2024-01-01' = if (enableGeoDr && !empty(partnerNamespaceId)) {
   parent: ns
-  name: 'fraudintel-${env}-dr-alias'
+  name: 'heimdall-${env}-dr-alias'
   properties: {
     partnerNamespace: partnerNamespaceId
   }

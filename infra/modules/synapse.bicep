@@ -23,8 +23,8 @@ param aadAdminObjectId string
 @description('AAD admin login name')
 param aadAdminLogin string
 
-var workspaceName = 'syn-fraudintel-${env}-${regionCode}'
-var storageName = replace('stsynfraud${env}${regionCode}', '-', '')
+var workspaceName = 'syn-heimdall-${env}-${regionCode}'
+var storageName = replace('stsynheimdall${env}${regionCode}', '-', '')
 var fsName = 'syn-fs'
 
 resource synStorage 'Microsoft.Storage/storageAccounts@2023-05-01' = {

@@ -1,6 +1,6 @@
-# Architecture — Nordic Fraud Intelligence Platform
+# Architecture — Nordic Heimdall Platform
 
-> **Purpose.** Define the end-to-end Azure architecture that scores 4.2 B card transactions/year across SE/NO/DK/FI/EE at p99 < 18 ms, optimises PSD2 SCA exemptions, detects fraud rings with GNNs, and produces automated EBA fraud reports — under EU AI Act high-risk and GDPR constraints.
+> **Purpose.** Define the end-to-end Azure architecture that scores 4.2 B card transactions/year across SE/NO/DK/FI/EE at p99 < 18 ms, optimises PSD2 SCA exemptions, detects fraud rings with GNNs, and produces automated EBA fraud reports — under GDPR, PSD2 and EU AI Act constraints (fraud detection sits under the Act's Annex III §5(b) financial-fraud carve-out; the platform voluntarily applies high-risk-grade AI governance).
 
 ---
 
@@ -17,7 +17,7 @@ The customer is a Nordic payments processor handling **~4.2 B transactions/year*
 | PSD2 exemption coverage | 22 % | **70 %+** (73 % achieved) | TRA optimiser staying < 0.13 % bps |
 | Availability | 99.95 % | **99.99 %** dual-region active/active | AFD + Cosmos multi-master |
 
-Regulatory non-negotiables: **GDPR** (incl. Art 22 automated decision-making + Art 44 transfers), **EU AI Act** high-risk Annex III §5(b), **PSD2 RTS on SCA**, **EBA/GL/2020/01** fraud reporting, and **DORA** ICT-risk for financial entities.
+Regulatory non-negotiables: **GDPR** (incl. Art 22 automated decision-making + Art 44 transfers), **EU AI Act** (fraud detection is excluded from *mandatory* high-risk classification by the Annex III §5(b) financial-fraud carve-out; the platform nonetheless adopts high-risk-grade governance **voluntarily**), **PSD2 RTS on SCA**, **EBA/GL/2020/01** fraud reporting, and **DORA** ICT-risk for financial entities.
 
 ---
 
@@ -42,6 +42,8 @@ flowchart LR
     FAB[Microsoft Fabric<br/>OneLake — Bronze/Silver/Gold]
     PBI[Power BI Premium<br/>EBA dashboards]
     AOAI[Azure OpenAI<br/>gpt-4o / gpt-4o-mini]
+    SBQ[Service Bus<br/>high-risk alert queue]
+    FUNC[Azure Functions<br/>enforcement + case open]
   end
 
   subgraph NE[North Europe — Active DR]
@@ -60,6 +62,11 @@ flowchart LR
   EH --> ASA
   ASA -->|hot aggregates| COS
   ASA -->|raw + scored| FAB
+  ASA -.high-risk signal.-> SBQ
+  ACA -.decline / step-up / manual-review.-> SBQ
+  SBQ --> FUNC
+  FUNC -.async block / step-up / notify.-> Client
+  FUNC -->|open case| COS
   FAB -->|Gold semantic model| PBI
   AML -->|model artefacts ONNX| ACA
   AOAI <-->|narrative + reasoning| FAB
@@ -118,6 +125,8 @@ flowchart TB
 | Cache | **Redis Enterprise E10**, zone-redundant | Feature cache, hot keys < 2 ms | 99.99 % | M |
 | Stream | **Event Hubs Dedicated CU=2**, geo-DR paired | Ingestion `tx.raw`, fan-out `tx.scored` | 99.99 % | H |
 | Stream proc | **Stream Analytics** SU=12, dedicated cluster | Tumbling windows, anomaly UDF, Cosmos sink | 99.9 % | M |
+| Eventing | **Service Bus** Premium, zone-redundant namespace | High-risk **alert queue** → async enforcement & case creation (out of the 18 ms path) | 99.9 % | S |
+| Action | **Azure Functions** (Flex Consumption) | `feature-builder` rolling aggregates + **enforcement** consumer (block / step-up / notify / open case) | 99.95 % | S |
 | State / Graph | **Cosmos DB** multi-master, Gremlin + SQL APIs, autoscale 50k–400k RU/s | Feature store + transaction graph | 99.999 % (multi-region writes) | H |
 | ML platform | **Azure ML** (compute clusters: STANDARD_NC24ads_A100_v4 for GNN train; STANDARD_F32s_v2 for ensemble) + Model Registry | Training, registry, online endpoints (fallback) | 99.9 % | M |
 | Lakehouse | **Microsoft Fabric F64** capacity, OneLake | Bronze/Silver/Gold, Spark + KQL | 99.9 % | H |
@@ -131,6 +140,8 @@ flowchart TB
 
 Cost classes: S < €2k/mo, M €2–15k/mo, H > €15k/mo (per region, prod baseline).
 
+> **Implementation status.** This is the **target** logical architecture. Not every component is yet represented in `infra/` Bicep — APIM, Redis Enterprise, Service Bus, Managed Grafana and Sentinel are currently *documented targets*; deployed modules live under `infra/modules/` (the `feature-builder` Function is implemented; the enforcement Function is a planned target).
+
 ---
 
 ## 4. Data flow
@@ -143,10 +154,12 @@ Cost classes: S < €2k/mo, M €2–15k/mo, H > €15k/mo (per region, prod bas
 4. **scoring-api** (FastAPI on **Container Apps Dedicated D8**, 3 min replicas/region):
    - Pulls feature vector from **Redis Enterprise** (hit ratio > 98 %); cache miss → Cosmos SQL API point-read (`<5 ms`).
    - Pulls 1-hop graph features from **Cosmos Gremlin** (PAN ↔ device ↔ merchant edges).
-   - Runs **ONNX Runtime in-process** (LightGBM ensemble + tiny GNN embedding lookup) — typical 4–7 ms inference.
+   - Runs the **ensemble in-process via ONNX Runtime** — gradient-boosted trees (LightGBM/XGBoost) + a compact neural net (LSTM over session sequences) combined by a meta-learner, plus the offline-trained **GNN entity-embedding** lookup — typical 4–7 ms inference.
    - Calls **SCA optimiser** (rule + small model) to pick exemption type if score < threshold.
-   - Returns `{decision, score, exemption, reason_codes[]}`.
+   - Returns `{decision ∈ approve|decline|step_up|manual_review, score, exemption, reason_codes[]}`. **Reason codes are derived from in-proc SHAP feature attributions**; the synchronous response carries the **full authorization decision** — `step_up` and `manual_review` are decision outcomes returned to the caller, *not* deferred actions.
 5. Asynchronously emits `tx.scored` to **Event Hubs** (fire-and-forget, batched, separate executor).
+
+> **Sync vs async.** The 18 ms budget covers **only** the synchronous decision returned to the payment flow. Durable enforcement (card block, step-up callback, customer notification), case creation and analyst review run on the **async action path (§4.3)** via Service Bus + Functions and are explicitly **out of** the latency budget.
 
 p99 budget: AFD 2 ms · APIM 1 ms · ACA hop 1 ms · feature fetch 2 ms · graph 3 ms · inference 6 ms · serialise 1 ms · headroom 2 ms = **18 ms**.
 
@@ -163,6 +176,20 @@ p99 budget: AFD 2 ms · APIM 1 ms · ACA hop 1 ms · feature fetch 2 ms · graph
 5. **Power BI Premium** semantic model on Gold → EBA dashboards + paginated PDF (auto-published quarterly).
 6. **Agentic orchestrator** (Semantic Kernel) reads Gold + case store, drafts SAR/EBA narratives via Azure OpenAI.
 
+### 4.3 Action path — enforcement, human-in-the-loop & adaptive controls (async)
+
+Triggered **after** the synchronous decision; never on the 18 ms path.
+
+1. **High-risk routing.** Stream Analytics (aggregate-level signals) and the scoring-api (for `decision ∈ {decline, step_up, manual_review}`) publish to an **Azure Service Bus** high-risk alert queue.
+2. **Enforcement Function.** An **Azure Functions** consumer takes durable action: instruct the issuer/processor to **block** the card or enforce **step-up SCA** on subsequent attempts, push customer notifications, and **open a case** in Cosmos (`fraud_cases`).
+3. **Human-in-the-loop.** Decision outcomes map to clear paths (no analyst is ever in the 18 ms path):
+   - **low** → approve / SCA-exempt (sync),
+   - **high** → decline or step-up (sync),
+   - **gray** → step-up or temporary hold (sync) **plus** a manual-review case for a fraud analyst.
+   Analysts work cases with the evidence bundle (features, **SHAP** reason codes, 1–2-hop graph context, Azure OpenAI narrative). Verdicts are captured as **labels** that feed the Silver layer and the next retrain — a closed feedback loop. LLM narratives are generated **only from deterministic reason codes + SHAP summaries** (never free-form speculation) and tagged `ai_generated=true`.
+4. **PSD2 SCA-exemption optimiser.** A controller monitors realised fraud rates **per instrument and country** in near-real-time and tunes the TRA exemption threshold **within hard, pre-approved bounds** (kept under the PSD2 reference-fraud-rate bps). All changes are **bounded, audited, reversible, and require risk-team sign-off**; a reinforcement-learning formulation is a documented future option, not the current production control.
+5. **Drift & performance monitoring.** **Azure ML Model Monitor** tracks input data-drift vs the training distribution and post-hoc precision/recall/AUC (via the confirmed-fraud feedback loop). Threshold breaches raise alerts and **retrain triggers**; promotion still requires the Responsible-AI scorecard (see §4.2 and `compliance/eu-ai-act.md`).
+
 ---
 
 ## 5. Non-functional requirements
@@ -177,7 +204,7 @@ p99 budget: AFD 2 ms · APIM 1 ms · ACA hop 1 ms · feature fetch 2 ms · graph
 | Scale-out | ACA 3 → 60 replicas/region in < 30 s (KEDA on `concurrent-requests`) |
 | Cold start | none (min replicas ≥ 3 on Dedicated profile) |
 | Backups | Cosmos PITR 30 d; OneLake delta time-travel 90 d; Key Vault soft-delete 90 d |
-| Security | mTLS east-west, Private Endpoints for Cosmos/Storage/AOAI/AML, no public data-plane endpoints, CMK on all stateful stores |
+| Security | mTLS east-west, Private Endpoints for Cosmos/Storage/AOAI/AML, no public data-plane endpoints, CMK on all stateful stores. **Raw PAN is never stored — tokenised / HMAC-SHA-256 with an HSM-managed key** (PCI DSS + GDPR minimisation); only the token and a salted device/IP hash reach the feature store. |
 
 ---
 
@@ -197,7 +224,7 @@ p99 budget: AFD 2 ms · APIM 1 ms · ACA hop 1 ms · feature fetch 2 ms · graph
 
 - **Data residency**: all stateful services pinned to **Sweden Central + North Europe** via Azure Policy initiative `NordicSovereignty v3` (deny-list of non-EU regions; deny public networking on data services).
 - **Norway** is non-EU/EEA-but-EEA — Personopplysningsloven mirrors GDPR; **Datatilsynet** notified for cross-border processing; data still EU-resident.
-- **EU AI Act**: classified **high-risk** Annex III §5(b) (creditworthiness / financial services access). See [eu-ai-act.md](./compliance/eu-ai-act.md). CE-style internal conformity assessment + EU database registration before go-live.
+- **EU AI Act**: fraud detection is **excluded from *mandatory* high-risk** classification by the **Annex III §5(b) financial-fraud carve-out** ("…evaluate the creditworthiness… *with the exception of AI systems used for the purpose of detecting financial fraud*"). This is **not** an exemption from the Act's general obligations — the platform **voluntarily** applies high-risk-grade governance (Art 9–15 controls) per customer risk appetite and Finansinspektionen alignment. See [eu-ai-act.md](./compliance/eu-ai-act.md). Internal conformity assessment and EU-database registration are performed as **voluntary** governance measures, not as legally mandated high-risk obligations.
 - **GDPR Art 44 transfers**: **no transfers outside EEA**. AOAI deployments locked to EU data zones; Microsoft EU Data Boundary in force; no `*.openai.azure.com` calls leave EU (verified via Defender for Cloud + NSG flow-logs).
 - **Country-specific**:
   - **SE**: Finansinspektionen — outsourcing notification (FFFS 2014:5).
@@ -226,4 +253,4 @@ p99 budget: AFD 2 ms · APIM 1 ms · ACA hop 1 ms · feature fetch 2 ms · graph
 
 ## TL;DR
 
-A two-region (Sweden Central + North Europe) active/active platform: AFD → APIM → **Container Apps Dedicated D8** running **ONNX in-proc** scoring against a **Cosmos multi-master graph + Redis** feature store delivers p99 < 18 ms at 5 k TPS sustained / 20 k peak. **Event Hubs → Stream Analytics → OneLake (Bronze/Silver/Gold) → Power BI** powers EBA reporting; **Semantic Kernel agents on Azure OpenAI** automate triage, graph analysis, policy, case management and SAR narratives. **Defender + Purview + Azure Policy** enforce GDPR, EU AI Act high-risk and Nordic sovereignty.
+A two-region (Sweden Central + North Europe) active/active platform: AFD → APIM → **Container Apps Dedicated D8** running an **ONNX in-proc ensemble** (GBDT + NN + meta-learner + GNN embeddings) against a **Cosmos multi-master graph + Redis** feature store delivers p99 < 18 ms at 5 k TPS sustained / 20 k peak, returning `approve|decline|step_up|manual_review` synchronously. **Event Hubs → Stream Analytics → OneLake (Bronze/Silver/Gold) → Power BI** powers EBA reporting; high-risk transactions trigger an **async Service Bus → Azure Functions** enforcement + case-management path, with analyst review (SHAP reason codes + OpenAI narratives) feeding model retraining. **Semantic Kernel agents on Azure OpenAI** automate triage, graph analysis, policy and SAR narratives. **Defender + Purview + Azure Policy** enforce GDPR, EU AI Act (fraud carve-out + **voluntary** high-risk-grade governance) and Nordic sovereignty.

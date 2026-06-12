@@ -23,14 +23,14 @@ param eventHubsNamespaceId string
 @description('AML online endpoint scope (workspace ID)')
 param amlWorkspaceId string
 
-var agName = 'ag-fraudintel-${env}-${regionCode}'
+var agName = 'ag-heimdall-${env}-${regionCode}'
 
 resource ag 'Microsoft.Insights/actionGroups@2024-10-01-preview' = {
   name: agName
   location: 'global'
   tags: tags
   properties: {
-    groupShortName: 'FraudIntel'
+    groupShortName: 'Heimdall'
     enabled: true
     emailReceivers: [for (e, i) in emailReceivers: {
       name: 'email-${i}'

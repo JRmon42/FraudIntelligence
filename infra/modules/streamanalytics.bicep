@@ -25,7 +25,7 @@ param cosmosContainerName string = 'features'
 @description('Streaming units')
 param streamingUnits int = 3
 
-var jobName = 'asa-fraudintel-${env}-${regionCode}'
+var jobName = 'asa-heimdall-${env}-${regionCode}'
 
 resource asa 'Microsoft.StreamAnalytics/streamingjobs@2021-10-01-preview' = {
   name: jobName
@@ -148,3 +148,63 @@ resource asaDiag 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
 output asaId string = asa.id
 output asaName string = asa.name
 output asaPrincipalId string = asa.identity.principalId
+
+// ---------------------------------------------------------------------------
+// RBAC for the ASA managed identity (namespace has disableLocalAuth=true, so
+// MSI data-plane roles are required for the txn.events input, feature.events
+// output, and the Cosmos `features` output).
+// ---------------------------------------------------------------------------
+resource ehns 'Microsoft.EventHub/namespaces@2024-01-01' existing = {
+  name: eventHubsNamespaceName
+}
+
+resource cosmosAcct 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' existing = {
+  name: cosmosAccountName
+}
+
+@description('Azure Event Hubs Data Receiver')
+var ehReceiverRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'a638d3c7-ab3a-418d-83e6-5f17a39d4fde')
+@description('Azure Event Hubs Data Sender')
+var ehSenderRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '2b629674-e913-4c01-ae53-ef4638d8f975')
+@description('DocumentDB Account Contributor (control plane, listKeys for ASA Cosmos output)')
+var docdbContributorRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '5bd9cd88-fe45-4216-938b-f97437e15450')
+
+resource asaEhReceiver 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(ehns.id, asa.id, 'eh-data-receiver')
+  scope: ehns
+  properties: {
+    principalId: asa.identity.principalId
+    roleDefinitionId: ehReceiverRoleId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource asaEhSender 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(ehns.id, asa.id, 'eh-data-sender')
+  scope: ehns
+  properties: {
+    principalId: asa.identity.principalId
+    roleDefinitionId: ehSenderRoleId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource asaCosmosControl 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(cosmosAcct.id, asa.id, 'docdb-account-contributor')
+  scope: cosmosAcct
+  properties: {
+    principalId: asa.identity.principalId
+    roleDefinitionId: docdbContributorRoleId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource asaCosmosData 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2024-05-15' = {
+  parent: cosmosAcct
+  name: guid(cosmosAcct.id, asa.id, 'cosmos-data-contributor')
+  properties: {
+    principalId: asa.identity.principalId
+    roleDefinitionId: '${cosmosAcct.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002'
+    scope: cosmosAcct.id
+  }
+}

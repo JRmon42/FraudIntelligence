@@ -52,7 +52,7 @@ properties:
           - name: EBA_PSP_LEI
             value: "5493001KJTIIGC8Y1R12"
           - name: EBA_PSP_NAME
-            value: "FraudIntelligence Nordic Payments AS"
+            value: "Heimdall Nordic Payments AS"
           - name: EBA_COSMOS_ENDPOINT
             secretRef: cosmos-endpoint
           - name: AZURE_CLIENT_ID

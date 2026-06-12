@@ -1,0 +1,252 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.43.8.12551",
+      "templateHash": "14997397730488177329"
+    }
+  },
+  "parameters": {
+    "env": {
+      "type": "string"
+    },
+    "regionCode": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "tags": {
+      "type": "object"
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string"
+    },
+    "eventHubsNamespaceName": {
+      "type": "string",
+      "metadata": {
+        "description": "Event Hubs namespace name (input + output)"
+      }
+    },
+    "cosmosAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Cosmos account name (output reference store)"
+      }
+    },
+    "cosmosDatabaseName": {
+      "type": "string",
+      "defaultValue": "fraud",
+      "metadata": {
+        "description": "Cosmos database for features output"
+      }
+    },
+    "cosmosContainerName": {
+      "type": "string",
+      "defaultValue": "features",
+      "metadata": {
+        "description": "Cosmos container for features output"
+      }
+    },
+    "streamingUnits": {
+      "type": "int",
+      "defaultValue": 3,
+      "metadata": {
+        "description": "Streaming units"
+      }
+    }
+  },
+  "variables": {
+    "jobName": "[format('asa-heimdall-{0}-{1}', parameters('env'), parameters('regionCode'))]",
+    "ehReceiverRoleId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'a638d3c7-ab3a-418d-83e6-5f17a39d4fde')]",
+    "ehSenderRoleId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '2b629674-e913-4c01-ae53-ef4638d8f975')]",
+    "docdbContributorRoleId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '5bd9cd88-fe45-4216-938b-f97437e15450')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.StreamAnalytics/streamingjobs",
+      "apiVersion": "2021-10-01-preview",
+      "name": "[variables('jobName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "sku": {
+          "name": "StandardV2"
+        },
+        "eventsOutOfOrderPolicy": "Adjust",
+        "outputErrorPolicy": "Drop",
+        "eventsOutOfOrderMaxDelayInSeconds": 5,
+        "eventsLateArrivalMaxDelayInSeconds": 16,
+        "dataLocale": "en-US",
+        "compatibilityLevel": "1.2",
+        "jobType": "Cloud",
+        "inputs": [
+          {
+            "name": "txnInput",
+            "properties": {
+              "type": "Stream",
+              "datasource": {
+                "type": "Microsoft.ServiceBus/EventHub",
+                "properties": {
+                  "serviceBusNamespace": "[parameters('eventHubsNamespaceName')]",
+                  "eventHubName": "txn.events",
+                  "consumerGroupName": "asa",
+                  "authenticationMode": "Msi"
+                }
+              },
+              "serialization": {
+                "type": "Json",
+                "properties": {
+                  "encoding": "UTF8"
+                }
+              }
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "name": "featuresHub",
+            "properties": {
+              "datasource": {
+                "type": "Microsoft.ServiceBus/EventHub",
+                "properties": {
+                  "serviceBusNamespace": "[parameters('eventHubsNamespaceName')]",
+                  "eventHubName": "feature.events",
+                  "authenticationMode": "Msi"
+                }
+              },
+              "serialization": {
+                "type": "Json",
+                "properties": {
+                  "encoding": "UTF8",
+                  "format": "LineSeparated"
+                }
+              }
+            }
+          },
+          {
+            "name": "featuresCosmos",
+            "properties": {
+              "datasource": {
+                "type": "Microsoft.Storage/DocumentDB",
+                "properties": {
+                  "accountId": "[parameters('cosmosAccountName')]",
+                  "database": "[parameters('cosmosDatabaseName')]",
+                  "collectionNamePattern": "[parameters('cosmosContainerName')]",
+                  "partitionKey": "cardId",
+                  "authenticationMode": "Msi"
+                }
+              }
+            }
+          }
+        ],
+        "transformation": {
+          "name": "features",
+          "properties": {
+            "streamingUnits": "[parameters('streamingUnits')]",
+            "query": "          WITH Enriched AS (\n            SELECT\n              t.transactionId,\n              t.cardId,\n              t.merchantId,\n              t.amount,\n              t.currency,\n              t.eventTimestamp,\n              System.Timestamp() AS processedAt\n            FROM txnInput t\n          ),\n          Aggregated AS (\n            SELECT\n              cardId,\n              System.Timestamp() AS windowEnd,\n              COUNT(*) AS txnCount5m,\n              SUM(amount) AS amountSum5m,\n              AVG(amount) AS amountAvg5m,\n              MAX(amount) AS amountMax5m\n            FROM Enriched\n            GROUP BY cardId, TumblingWindow(minute, 5)\n          )\n          SELECT * INTO featuresHub FROM Aggregated;\n          SELECT * INTO featuresCosmos FROM Aggregated;\n        "
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[resourceId('Microsoft.StreamAnalytics/streamingjobs', variables('jobName'))]",
+      "name": "[format('diag-{0}', variables('jobName'))]",
+      "properties": {
+        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+        "logs": [
+          {
+            "categoryGroup": "allLogs",
+            "enabled": true
+          }
+        ],
+        "metrics": [
+          {
+            "category": "AllMetrics",
+            "enabled": true
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.StreamAnalytics/streamingjobs', variables('jobName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.EventHub/namespaces', parameters('eventHubsNamespaceName'))]",
+      "name": "[guid(resourceId('Microsoft.EventHub/namespaces', parameters('eventHubsNamespaceName')), resourceId('Microsoft.StreamAnalytics/streamingjobs', variables('jobName')), 'eh-data-receiver')]",
+      "properties": {
+        "principalId": "[reference(resourceId('Microsoft.StreamAnalytics/streamingjobs', variables('jobName')), '2021-10-01-preview', 'full').identity.principalId]",
+        "roleDefinitionId": "[variables('ehReceiverRoleId')]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.StreamAnalytics/streamingjobs', variables('jobName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.EventHub/namespaces', parameters('eventHubsNamespaceName'))]",
+      "name": "[guid(resourceId('Microsoft.EventHub/namespaces', parameters('eventHubsNamespaceName')), resourceId('Microsoft.StreamAnalytics/streamingjobs', variables('jobName')), 'eh-data-sender')]",
+      "properties": {
+        "principalId": "[reference(resourceId('Microsoft.StreamAnalytics/streamingjobs', variables('jobName')), '2021-10-01-preview', 'full').identity.principalId]",
+        "roleDefinitionId": "[variables('ehSenderRoleId')]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.StreamAnalytics/streamingjobs', variables('jobName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosAccountName'))]",
+      "name": "[guid(resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosAccountName')), resourceId('Microsoft.StreamAnalytics/streamingjobs', variables('jobName')), 'docdb-account-contributor')]",
+      "properties": {
+        "principalId": "[reference(resourceId('Microsoft.StreamAnalytics/streamingjobs', variables('jobName')), '2021-10-01-preview', 'full').identity.principalId]",
+        "roleDefinitionId": "[variables('docdbContributorRoleId')]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.StreamAnalytics/streamingjobs', variables('jobName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments",
+      "apiVersion": "2024-05-15",
+      "name": "[format('{0}/{1}', parameters('cosmosAccountName'), guid(resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosAccountName')), resourceId('Microsoft.StreamAnalytics/streamingjobs', variables('jobName')), 'cosmos-data-contributor'))]",
+      "properties": {
+        "principalId": "[reference(resourceId('Microsoft.StreamAnalytics/streamingjobs', variables('jobName')), '2021-10-01-preview', 'full').identity.principalId]",
+        "roleDefinitionId": "[format('{0}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002', resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosAccountName')))]",
+        "scope": "[resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosAccountName'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.StreamAnalytics/streamingjobs', variables('jobName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "asaId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.StreamAnalytics/streamingjobs', variables('jobName'))]"
+    },
+    "asaName": {
+      "type": "string",
+      "value": "[variables('jobName')]"
+    },
+    "asaPrincipalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.StreamAnalytics/streamingjobs', variables('jobName')), '2021-10-01-preview', 'full').identity.principalId]"
+    }
+  }
+}

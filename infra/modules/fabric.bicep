@@ -14,7 +14,7 @@ param skuName string = 'F2'
 @description('AAD object IDs of capacity admins')
 param adminMembers array
 
-var capacityName = replace('fab-fraudintel-${env}-${regionCode}', '-', '')
+var capacityName = replace('fab-heimdall-${env}-${regionCode}', '-', '')
 
 resource cap 'Microsoft.Fabric/capacities@2023-11-01' = {
   name: capacityName

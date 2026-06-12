@@ -5,11 +5,11 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "eba-reporter"
 version = "1.0.0"
-description = "EBA/GL/2020/01 quarterly fraud report generator for FraudIntelligence platform"
+description = "EBA/GL/2020/01 quarterly fraud report generator for Heimdall platform"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
-authors = [{ name = "FraudIntelligence Team" }]
+authors = [{ name = "Heimdall Team" }]
 
 dependencies = [
     "pandas>=2.2.0",

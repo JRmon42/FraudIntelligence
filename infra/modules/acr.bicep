@@ -15,7 +15,10 @@ param privateDnsZoneId string
 @description('Geo-replication target region (e.g., northeurope)')
 param replicaLocation string
 
-var acrName = replace('acrfraudintel${env}${regionCode}', '-', '')
+@description('Create a geo-replica in replicaLocation. Set false for single-region deployment.')
+param enableReplica bool = false
+
+var acrName = replace('acrheimdall${env}${regionCode}', '-', '')
 
 resource acr 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = {
   name: acrName
@@ -32,15 +35,20 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = {
     }
     zoneRedundancy: 'Enabled'
     policies: {
-      quarantinePolicy: { status: 'enabled' }
-      trustPolicy: { type: 'Notary', status: 'enabled' }
+      // Quarantine and trust (Notary v1) policies were enabled originally but
+      // caused MANIFEST_UNKNOWN pull failures from Container Apps because images
+      // landed in Quarantined state. Disabled here so future redeploys do not
+      // re-enable them. Re-enable behind a feature flag once a quarantine
+      // scanner workflow is in place.
+      quarantinePolicy: { status: 'disabled' }
+      trustPolicy: { type: 'Notary', status: 'disabled' }
       retentionPolicy: { days: 30, status: 'enabled' }
       exportPolicy: { status: 'enabled' }
     }
   }
 }
 
-resource replica 'Microsoft.ContainerRegistry/registries/replications@2023-11-01-preview' = {
+resource replica 'Microsoft.ContainerRegistry/registries/replications@2023-11-01-preview' = if (enableReplica) {
   parent: acr
   name: replicaLocation
   location: replicaLocation

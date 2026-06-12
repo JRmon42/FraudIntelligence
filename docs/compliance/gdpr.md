@@ -1,4 +1,4 @@
-# GDPR Mapping — Nordic Fraud Intelligence Platform
+# GDPR Mapping — Nordic Heimdall Platform
 
 > **Purpose.** Map relevant GDPR articles to concrete platform controls and the evidence that demonstrates them, for use by the DPO, internal audit and supervisory authorities (SE IMY, NO Datatilsynet, DK Datatilsynet, FI Tietosuojavaltuutettu, EE AKI).
 

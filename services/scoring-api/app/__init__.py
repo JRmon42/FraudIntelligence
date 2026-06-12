@@ -1,3 +1,3 @@
-"""Application package for the FraudIntelligence scoring API."""
+"""Application package for the Heimdall scoring API."""
 
 __version__ = "0.1.0"

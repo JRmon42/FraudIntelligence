@@ -1,11 +1,11 @@
 [project]
 name = "scoring-api"
 version = "0.1.0"
-description = "FraudIntelligence real-time scoring API (p99 < 18 ms)"
+description = "Heimdall real-time scoring API (p99 < 18 ms)"
 requires-python = ">=3.11"
 readme = "README.md"
 license = { text = "MIT" }
-authors = [{ name = "FraudIntelligence" }]
+authors = [{ name = "Heimdall" }]
 dependencies = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",

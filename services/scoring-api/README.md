@@ -1,6 +1,6 @@
 # scoring-api
 
-Real-time card-transaction scoring service for the FraudIntelligence platform.
+Real-time card-transaction scoring service for the Heimdall platform.
 
 - **SLO:** p99 latency `< 18 ms` end-to-end (Cosmos point-read + Redis aggregates + ONNX inference + PSD2 optimiser + Event Hub emit).
 - **Stack:** Python 3.11, FastAPI, ONNX Runtime, `azure-cosmos`, `redis.asyncio`, `azure-eventhub`, OpenTelemetry, structlog.

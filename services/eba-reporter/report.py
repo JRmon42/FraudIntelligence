@@ -72,7 +72,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="EBA_", case_sensitive=False)
 
     psp_lei: str = "5493001KJTIIGC8Y1R12"  # placeholder LEI
-    psp_name: str = "FraudIntelligence Nordic Payments AS"
+    psp_name: str = "Heimdall Nordic Payments AS"
 
     lakehouse_account: str = "fiprodlh"
     lakehouse_container: str = "lakehouse"

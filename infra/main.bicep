@@ -12,9 +12,12 @@ param primaryLocation string = 'swedencentral'
 @description('Disaster recovery location')
 param drLocation string = 'northeurope'
 
+@description('Deploy the secondary (DR) region. When false, only the primary region is built. Set true later to add cross-region active/active without redeploying primary.')
+param enableDr bool = false
+
 @description('Common tags applied to every resource')
 param tags object = {
-  project: 'FraudIntelligence'
+  project: 'Heimdall'
   env: 'prod'
   costCenter: 'AMA-Capstone'
   dataClass: 'PII-Restricted'
@@ -47,13 +50,13 @@ param cmkKeyUri string = ''
 // Resource groups
 // ---------------------------------------------------------------------------
 resource primaryRg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
-  name: 'fraudintelligence_rg'
+  name: 'heimdall_rg'
   location: primaryLocation
   tags: tags
 }
 
-resource drRg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
-  name: 'fraudintelligence_dr_rg'
+resource drRg 'Microsoft.Resources/resourceGroups@2024-03-01' = if (enableDr) {
+  name: 'heimdall_dr_rg'
   location: drLocation
   tags: tags
 }
@@ -84,6 +87,7 @@ module primary 'platform.bicep' = {
     tags: tags
     secondaryLocation: drLocation
     partnerRegionCode: 'neu'
+    enableDr: enableDr
     kvAdminPrincipalIds: kvAdminPrincipalIds
     fabricAdminMembers: fabricAdminMembers
     amlAadAdminObjectId: synapseAadAdminObjectId
@@ -97,7 +101,7 @@ module primary 'platform.bicep' = {
   }
 }
 
-module dr 'platform.bicep' = {
+module dr 'platform.bicep' = if (enableDr) {
   name: 'platform-dr'
   scope: drRg
   params: {
@@ -108,6 +112,7 @@ module dr 'platform.bicep' = {
     tags: tags
     secondaryLocation: primaryLocation
     partnerRegionCode: 'swc'
+    enableDr: true
     kvAdminPrincipalIds: kvAdminPrincipalIds
     fabricAdminMembers: fabricAdminMembers
     amlAadAdminObjectId: synapseAadAdminObjectId
@@ -122,13 +127,13 @@ module dr 'platform.bicep' = {
 // Outputs
 // ---------------------------------------------------------------------------
 output primaryResourceGroup string = primaryRg.name
-output drResourceGroup string = drRg.name
+output drResourceGroup string = enableDr ? drRg.name : ''
 output primaryKeyVaultUri string = primary.outputs.keyVaultUri
 output primaryAcrLoginServer string = primary.outputs.acrLoginServer
 output primaryCosmosEndpoint string = primary.outputs.cosmosEndpoint
 output primaryOpenAiEndpoint string = primary.outputs.openAiEndpoint
 output primaryEventHubsNamespace string = primary.outputs.eventHubsNamespaceName
-output drEventHubsNamespace string = dr.outputs.eventHubsNamespaceName
+output drEventHubsNamespace string = enableDr ? dr.outputs.eventHubsNamespaceName : ''
 output scoringFrontDoorHost string = primary.outputs.frontDoorScoringHost
 output consoleFrontDoorHost string = primary.outputs.frontDoorConsoleHost
 output synapseServerlessEndpoint string = primary.outputs.synapseServerlessEndpoint

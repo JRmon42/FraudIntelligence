@@ -15,7 +15,7 @@ command: >-
 inputs:
   train_data:
     type: uri_file
-    path: azureml://datastores/fraudintel_gold/paths/transactions/latest/transactions.parquet
+    path: azureml://datastores/heimdall_gold/paths/transactions/latest/transactions.parquet
     mode: ro_mount
 outputs:
   model_dir:

@@ -13,8 +13,8 @@ param scoringOriginHost string
 @description('Origin host for agentic console (ACA FQDN)')
 param consoleOriginHost string
 
-var profileName = 'afd-fraudintel-${env}'
-var wafName = 'wafFraudIntel${env}'
+var profileName = 'afd-heimdall-${env}'
+var wafName = 'wafHeimdall${env}'
 
 resource afd 'Microsoft.Cdn/profiles@2024-02-01' = {
   name: profileName
@@ -115,7 +115,7 @@ resource scoringRoute 'Microsoft.Cdn/profiles/afdEndpoints/routes@2024-02-01' = 
 // with multiple associations rather than two policies referencing the same WAF.
 resource afdSecurity 'Microsoft.Cdn/profiles/securityPolicies@2024-02-01' = {
   parent: afd
-  name: 'sp-fraudintel'
+  name: 'sp-heimdall'
   properties: {
     parameters: {
       type: 'WebApplicationFirewall'

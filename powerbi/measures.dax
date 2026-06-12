@@ -1,5 +1,5 @@
 // ============================================================================
-// FraudIntelligence — Power BI DAX measures
+// Heimdall — Power BI DAX measures
 // ----------------------------------------------------------------------------
 // This file is the single source of truth for every measure used by the
 // `eba_fraud_dashboard.pbip` semantic model. The same expressions are embedded

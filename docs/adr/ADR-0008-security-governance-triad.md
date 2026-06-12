@@ -7,7 +7,7 @@
 
 ## Context
 
-A high-risk AI system in five jurisdictions needs verifiable controls for:
+A system governed to **high-risk-equivalent** AI standards (voluntarily — see [EU AI Act compliance](../compliance/eu-ai-act.md)) across five jurisdictions needs verifiable controls for:
 - **Posture & threat detection** across compute, data, AI services.
 - **Data discovery, classification, lineage** (GDPR Art 5/30, EU AI Act Art 10).
 - **Preventive guardrails** for region pinning, networking, encryption, identity (sovereignty + DORA).

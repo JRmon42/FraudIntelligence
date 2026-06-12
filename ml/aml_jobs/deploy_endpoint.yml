@@ -1,7 +1,7 @@
 $schema: https://azuremlschemas.azureedge.net/latest/managedOnlineEndpoint.schema.json
 name: fraud-intel-scoring
 auth_mode: aml_token
-description: Online endpoint for the FraudIntelligence ensemble fraud scorer.
+description: Online endpoint for the Heimdall ensemble fraud scorer.
 tags:
   team: fraud-intel
   data_residency: sweden-central

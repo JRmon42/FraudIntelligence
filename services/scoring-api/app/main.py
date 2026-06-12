@@ -87,7 +87,7 @@ def create_app(settings: Settings | None = None, hot: HotPath | None = None) -> 
     if hot is not None:
         # Pre-built deps for tests: skip lifespan construction.
         app = FastAPI(
-            title="FraudIntelligence Scoring API",
+            title="Heimdall Scoring API",
             version="0.1.0",
             default_response_class=_orjson_response(),
         )
@@ -96,7 +96,7 @@ def create_app(settings: Settings | None = None, hot: HotPath | None = None) -> 
         app.state.closeables = []
     else:
         app = FastAPI(
-            title="FraudIntelligence Scoring API",
+            title="Heimdall Scoring API",
             version="0.1.0",
             lifespan=lifespan,
             default_response_class=_orjson_response(),

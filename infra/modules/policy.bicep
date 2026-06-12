@@ -20,9 +20,9 @@ var storageTlsId = '/providers/Microsoft.Authorization/policyDefinitions/fe83a0e
 // Diagnostic settings are deployed inline by each module instead.
 
 resource allowedLocs 'Microsoft.Authorization/policyAssignments@2023-04-01' = {
-  name: 'fraudintel-allowed-locations'
+  name: 'heimdall-allowed-locations'
   properties: {
-    displayName: 'FraudIntel — Allowed locations (EU only)'
+    displayName: 'Heimdall — Allowed locations (EU only)'
     policyDefinitionId: allowedLocationsPolicyId
     parameters: {
       listOfAllowedLocations: { value: allowedLocations }
@@ -32,36 +32,36 @@ resource allowedLocs 'Microsoft.Authorization/policyAssignments@2023-04-01' = {
 }
 
 resource storagePe 'Microsoft.Authorization/policyAssignments@2023-04-01' = {
-  name: 'fraudintel-storage-pe'
+  name: 'heimdall-storage-pe'
   properties: {
-    displayName: 'FraudIntel — Storage requires private link'
+    displayName: 'Heimdall — Storage requires private link'
     policyDefinitionId: storagePeId
     enforcementMode: 'Default'
   }
 }
 
 resource cosmosPe 'Microsoft.Authorization/policyAssignments@2023-04-01' = {
-  name: 'fraudintel-cosmos-pe'
+  name: 'heimdall-cosmos-pe'
   properties: {
-    displayName: 'FraudIntel — Cosmos requires private link'
+    displayName: 'Heimdall — Cosmos requires private link'
     policyDefinitionId: cosmosPeId
     enforcementMode: 'Default'
   }
 }
 
 resource kvPe 'Microsoft.Authorization/policyAssignments@2023-04-01' = {
-  name: 'fraudintel-kv-pe'
+  name: 'heimdall-kv-pe'
   properties: {
-    displayName: 'FraudIntel — Key Vault requires private link'
+    displayName: 'Heimdall — Key Vault requires private link'
     policyDefinitionId: kvPeId
     enforcementMode: 'Default'
   }
 }
 
 resource storageTls 'Microsoft.Authorization/policyAssignments@2023-04-01' = {
-  name: 'fraudintel-storage-tls'
+  name: 'heimdall-storage-tls'
   properties: {
-    displayName: 'FraudIntel — Secure transfer required'
+    displayName: 'Heimdall — Secure transfer required'
     policyDefinitionId: storageTlsId
     enforcementMode: 'Default'
   }

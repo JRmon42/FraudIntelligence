@@ -15,6 +15,9 @@ param privateDnsZoneId string
 @description('Secondary region for multi-region writes')
 param secondaryLocation string = 'northeurope'
 
+@description('Whether to add the secondary region to the Cosmos account locations array. Set false for single-region deployment; can be flipped to true later (Cosmos supports adding regions online).')
+param enableSecondaryRegion bool = false
+
 @description('Customer-managed key URI (Key Vault key) — leave empty to skip CMK')
 param cmkKeyUri string = ''
 
@@ -24,7 +27,7 @@ param keyVaultId string = ''
 @description('Throughput per container')
 param containerThroughput int = 400
 
-var accountName = 'cosmos-fraudintel-${env}-${regionCode}'
+var accountName = 'cosmos-heimdall-${env}-${regionCode}'
 
 var sqlContainers = [
   { name: 'transactions', pk: '/cardId' }
@@ -42,8 +45,8 @@ resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
   identity: { type: 'SystemAssigned' }
   properties: {
     databaseAccountOfferType: 'Standard'
-    enableMultipleWriteLocations: true
-    enableAutomaticFailover: true
+    enableMultipleWriteLocations: enableSecondaryRegion
+    enableAutomaticFailover: enableSecondaryRegion
     enableFreeTier: false
     minimalTlsVersion: 'Tls12'
     publicNetworkAccess: 'Disabled'
@@ -55,7 +58,7 @@ resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
     consistencyPolicy: {
       defaultConsistencyLevel: 'Session'
     }
-    locations: [
+    locations: enableSecondaryRegion ? [
       {
         locationName: location
         failoverPriority: 0
@@ -68,6 +71,12 @@ resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
         // (notably North Europe at the time of writing). Disable AZ on the
         // secondary so the geo-pair can still be added; primary remains AZ.
         isZoneRedundant: false
+      }
+    ] : [
+      {
+        locationName: location
+        failoverPriority: 0
+        isZoneRedundant: true
       }
     ]
     backupPolicy: {

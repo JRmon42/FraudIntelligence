@@ -1,5 +1,5 @@
 """Train a stacked XGBoost + LightGBM + Logistic Regression ensemble for the
-FraudIntelligence platform.
+Heimdall platform.
 
 Pipeline
 --------
@@ -265,12 +265,12 @@ MODEL_CARD_TEMPLATE = """# Ensemble Fraud Scorer — Model Card
 * **Type**: Stacked ensemble (XGBoost + LightGBM + Logistic Regression) with
   isotonic calibration; final meta logistic regression. Exported to ONNX
   (opset 15) for sub-5 ms CPU inference.
-* **Owner**: FraudIntelligence ML team
+* **Owner**: Heimdall ML team
 * **Trained on**: {n_train:,} synthetic Nordic card-not-present transactions
 
 ## Intended use
 * Real-time risk scoring of card transactions for the Nordic acquirer
-  FraudIntelligence platform.
+  Heimdall platform.
 * Output: probability ∈ [0, 1] used by the policy layer to authorise / decline
   / step-up (PSD2 SCA).
 
@@ -310,7 +310,7 @@ Max TPR disparity across the 5 Nordic countries: **{disparity:.2%}**
 ## EU AI Act (high-risk system) requirements
 * **Risk classification**: Annex III (creditworthiness / essential services).
 * **Human oversight**: All step-up / decline decisions can be reviewed by an
-  analyst in the FraudIntelligence Ops UI; manual override logged to Purview.
+  analyst in the Heimdall Ops UI; manual override logged to Purview.
 * **Data governance**: Purview lineage, GDPR DPIA on file
   (`docs/compliance/dpia.md`).
 * **Technical documentation**: This card + `ml/README.md`.

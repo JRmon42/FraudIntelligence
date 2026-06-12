@@ -2,7 +2,7 @@
   "name": "orchestrate_medallion",
   "objectId": "8c1c5f3a-medallion-pipeline",
   "properties": {
-    "description": "FraudIntelligence medallion orchestration: bronze ingest -> silver clean -> gold marts. Hourly trigger; the gold step also fans out the EBA quarterly cube once a day at 02:00 UTC.",
+    "description": "Heimdall medallion orchestration: bronze ingest -> silver clean -> gold marts. Hourly trigger; the gold step also fans out the EBA quarterly cube once a day at 02:00 UTC.",
     "activities": [
       {
         "name": "bronze_ingest",

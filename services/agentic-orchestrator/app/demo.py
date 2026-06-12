@@ -32,7 +32,7 @@ async def main() -> None:
     planner = Planner(agents)
 
     state = WorkflowState(alert=alert, reflection_budget=2)
-    print(f"\n=== FraudIntelligence Agentic Orchestrator — DEMO ===")
+    print(f"\n=== Heimdall Agentic Orchestrator — DEMO ===")
     print(f"Alert: {alert.alert_id} amount={alert.amount} {alert.currency} reasons={alert.reason_codes}\n")
 
     await planner.run(state)

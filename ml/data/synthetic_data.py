@@ -1,7 +1,7 @@
 """Synthetic transaction / card / merchant data generator.
 
 Produces realistic-looking card-not-present transaction data for the
-FraudIntelligence platform with:
+Heimdall platform with:
 
 * ~0.7 % global fraud rate (matching Nordic acquirer baselines)
 * 5 Nordic country codes (SE, NO, DK, FI, EE)

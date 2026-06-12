@@ -83,7 +83,7 @@ jobs:
           file: services/${{ matrix.service }}/Dockerfile
           push: true
           tags: |
-            ${{ secrets.ACR_NAME }}.azurecr.io/fraudintel/${{ matrix.service }}:${{ github.sha }}
-            ${{ secrets.ACR_NAME }}.azurecr.io/fraudintel/${{ matrix.service }}:latest
-          cache-from: type=registry,ref=${{ secrets.ACR_NAME }}.azurecr.io/fraudintel/${{ matrix.service }}:buildcache
-          cache-to: type=registry,ref=${{ secrets.ACR_NAME }}.azurecr.io/fraudintel/${{ matrix.service }}:buildcache,mode=max
+            ${{ secrets.ACR_NAME }}.azurecr.io/heimdall/${{ matrix.service }}:${{ github.sha }}
+            ${{ secrets.ACR_NAME }}.azurecr.io/heimdall/${{ matrix.service }}:latest
+          cache-from: type=registry,ref=${{ secrets.ACR_NAME }}.azurecr.io/heimdall/${{ matrix.service }}:buildcache
+          cache-to: type=registry,ref=${{ secrets.ACR_NAME }}.azurecr.io/heimdall/${{ matrix.service }}:buildcache,mode=max

@@ -18,8 +18,8 @@ param amlApiDnsZoneId string
 @description('Private DNS zone ID for privatelink.notebooks.azure.net')
 param amlNotebooksDnsZoneId string
 
-var workspaceName = 'mlw-fraudintel-${env}-${regionCode}'
-var storageName = replace('stamlfraud${env}${regionCode}', '-', '')
+var workspaceName = 'mlw-heimdall-${env}-${regionCode}'
+var storageName = replace('stamlheimdall${env}${regionCode}', '-', '')
 
 resource amlStorage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: storageName
@@ -53,7 +53,7 @@ resource aml 'Microsoft.MachineLearningServices/workspaces@2024-04-01' = {
   identity: { type: 'SystemAssigned' }
   sku: { name: 'Basic', tier: 'Basic' }
   properties: {
-    friendlyName: 'FraudIntel ML ${env}'
+    friendlyName: 'Heimdall ML ${env}'
     storageAccount: amlStorage.id
     keyVault: keyVaultId
     applicationInsights: appInsightsId

@@ -1,3 +1,3 @@
-"""FraudIntelligence agentic orchestration service."""
+"""Heimdall agentic orchestration service."""
 
 __version__ = "0.1.0"

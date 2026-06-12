@@ -1,6 +1,6 @@
 # Transaction Simulator
 
-Async load generator that drives realistic Nordic card-payment traffic against the FraudIntelligence
+Async load generator that drives realistic Nordic card-payment traffic against the Heimdall
 scoring API. Used for performance benchmarking, fraud-pattern replay and CI smoke tests.
 
 ## Usage

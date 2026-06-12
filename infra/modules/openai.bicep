@@ -16,7 +16,7 @@ param privateDnsZoneId string
 param cmkKeyUri string = ''
 
 @description('Custom subdomain (must be globally unique)')
-param customSubdomain string = 'oai-fraudintel-${env}-${regionCode}'
+param customSubdomain string = 'oai-heimdall-${env}-${regionCode}'
 
 @description('TPM for chat model in thousands per minute (e.g., 60 -> 60K TPM)')
 param chatModelCapacity int = 60
@@ -24,7 +24,7 @@ param chatModelCapacity int = 60
 @description('TPM for embedding model in thousands per minute')
 param embeddingModelCapacity int = 60
 
-var accountName = 'oai-fraudintel-${env}-${regionCode}'
+var accountName = 'oai-heimdall-${env}-${regionCode}'
 
 resource oai 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
   name: accountName

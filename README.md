@@ -1,6 +1,12 @@
-# FraudIntelligence — AMA Capstone (Case Study 30)
+<div align="center">
+  <img src="docs/assets/heimdall-logo.svg" alt="Heimdall" width="120" />
+</div>
 
-**AI-Driven Fraud Intelligence Platform for a Nordic Payments Provider**
+# 🛡️ Heimdall — AMA Capstone (Case Study 30)
+
+> ***The watchful guardian of every transaction.***
+
+**AI-driven real-time fraud-intelligence platform for a Nordic payments provider.**
 
 A real-time, multi-region, agentic AI platform that scores 4.2 B yearly card transactions at p99 < 18 ms, optimises PSD2 SCA exemptions, detects fraud rings via Graph Neural Networks, and produces automated EBA regulatory fraud reports — all on Azure with sovereignty for SE/NO/DK/FI/EE.
 
