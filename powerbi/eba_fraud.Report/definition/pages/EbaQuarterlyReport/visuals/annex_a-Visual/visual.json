@@ -1,0 +1,88 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "name": "annex_a",
+  "position": {
+    "x": 16,
+    "y": 72,
+    "z": 1,
+    "height": 320,
+    "width": 624,
+    "tabOrder": 1
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "objects": {
+      "title": [
+        {
+          "properties": {
+            "text": "Annex A — Volumes & values"
+          }
+        }
+      ]
+    },
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Dim_Instrument"
+                    }
+                  },
+                  "Property": "InstrumentLabel"
+                }
+              },
+              "queryRef": "Dim_Instrument.InstrumentLabel",
+              "nativeQueryRef": "InstrumentLabel"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_Eba"
+                    }
+                  },
+                  "Property": "Channel"
+                }
+              },
+              "queryRef": "Fact_Eba.Channel",
+              "nativeQueryRef": "Channel"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Total Tx Count"
+                }
+              },
+              "queryRef": "_Measures.Total Tx Count",
+              "nativeQueryRef": "Total Tx Count"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Total Tx Value (€)"
+                }
+              },
+              "queryRef": "_Measures.Total Tx Value (€)",
+              "nativeQueryRef": "Total Tx Value (€)"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

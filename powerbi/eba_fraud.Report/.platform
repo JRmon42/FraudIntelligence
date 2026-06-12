@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "EBA Fraud Dashboard"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "aa2e8c9a-f6d5-4b68-a811-1b7cf4d8e504"
+  }
+}

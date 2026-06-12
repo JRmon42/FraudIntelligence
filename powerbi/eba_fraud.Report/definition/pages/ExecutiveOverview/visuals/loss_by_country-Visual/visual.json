@@ -1,0 +1,64 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "name": "loss_by_country",
+  "position": {
+    "x": 16,
+    "y": 216,
+    "z": 6,
+    "height": 320,
+    "width": 624,
+    "tabOrder": 6
+  },
+  "visual": {
+    "visualType": "barChart",
+    "objects": {
+      "title": [
+        {
+          "properties": {
+            "text": "Fraud loss € by country"
+          }
+        }
+      ]
+    },
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Dim_Country"
+                    }
+                  },
+                  "Property": "CountryName"
+                }
+              },
+              "queryRef": "Dim_Country.CountryName",
+              "nativeQueryRef": "CountryName"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Fraud Loss (€)"
+                }
+              },
+              "queryRef": "_Measures.Fraud Loss (€)",
+              "nativeQueryRef": "Fraud Loss (€)"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

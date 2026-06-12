@@ -1,0 +1,96 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "name": "drift_chart",
+  "position": {
+    "x": 16,
+    "y": 472,
+    "z": 6,
+    "height": 232,
+    "width": 1248,
+    "tabOrder": 6
+  },
+  "visual": {
+    "visualType": "lineChart",
+    "objects": {
+      "title": [
+        {
+          "properties": {
+            "text": "Model drift & decline-rate trend (alert > 25%)"
+          }
+        }
+      ]
+    },
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Dim_Date"
+                    }
+                  },
+                  "Property": "Date"
+                }
+              },
+              "queryRef": "Dim_Date.Date",
+              "nativeQueryRef": "Date"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Model Drift Index"
+                }
+              },
+              "queryRef": "_Measures.Model Drift Index",
+              "nativeQueryRef": "Model Drift Index"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Decline Rate %"
+                }
+              },
+              "queryRef": "_Measures.Decline Rate %",
+              "nativeQueryRef": "Decline Rate %"
+            }
+          ]
+        },
+        "Series": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_Latency"
+                    }
+                  },
+                  "Property": "ModelVersion"
+                }
+              },
+              "queryRef": "Fact_Latency.ModelVersion",
+              "nativeQueryRef": "ModelVersion"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

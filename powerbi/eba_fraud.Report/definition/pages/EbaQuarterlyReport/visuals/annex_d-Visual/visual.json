@@ -1,0 +1,92 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "name": "annex_d",
+  "position": {
+    "x": 656,
+    "y": 408,
+    "z": 4,
+    "height": 296,
+    "width": 608,
+    "tabOrder": 4
+  },
+  "visual": {
+    "visualType": "clusteredBarChart",
+    "objects": {
+      "title": [
+        {
+          "properties": {
+            "text": "Annex D — Loss allocation by bearer & geo"
+          }
+        }
+      ]
+    },
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_Eba"
+                    }
+                  },
+                  "Property": "LossBearer"
+                }
+              },
+              "queryRef": "Fact_Eba.LossBearer",
+              "nativeQueryRef": "LossBearer"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_Eba"
+                    }
+                  },
+                  "Property": "CounterpartyGeo"
+                }
+              },
+              "queryRef": "Fact_Eba.CounterpartyGeo",
+              "nativeQueryRef": "CounterpartyGeo"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Loss Borne by PSP (€)"
+                }
+              },
+              "queryRef": "_Measures.Loss Borne by PSP (€)",
+              "nativeQueryRef": "Loss Borne by PSP (€)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Loss Borne by Payer (€)"
+                }
+              },
+              "queryRef": "_Measures.Loss Borne by Payer (€)",
+              "nativeQueryRef": "Loss Borne by Payer (€)"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

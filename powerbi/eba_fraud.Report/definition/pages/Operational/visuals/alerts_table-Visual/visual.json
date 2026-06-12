@@ -1,0 +1,88 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "name": "alerts_table",
+  "position": {
+    "x": 16,
+    "y": 208,
+    "z": 4,
+    "height": 248,
+    "width": 624,
+    "tabOrder": 4
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "objects": {
+      "title": [
+        {
+          "properties": {
+            "text": "Cases & alerts by country/instrument"
+          }
+        }
+      ]
+    },
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Dim_Country"
+                    }
+                  },
+                  "Property": "CountryName"
+                }
+              },
+              "queryRef": "Dim_Country.CountryName",
+              "nativeQueryRef": "CountryName"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Dim_Instrument"
+                    }
+                  },
+                  "Property": "InstrumentLabel"
+                }
+              },
+              "queryRef": "Dim_Instrument.InstrumentLabel",
+              "nativeQueryRef": "InstrumentLabel"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Total Fraud Count"
+                }
+              },
+              "queryRef": "_Measures.Total Fraud Count",
+              "nativeQueryRef": "Total Fraud Count"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Fraud Loss (€)"
+                }
+              },
+              "queryRef": "_Measures.Fraud Loss (€)",
+              "nativeQueryRef": "Fraud Loss (€)"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "name": "kpi_p99",
+  "position": {
+    "x": 532,
+    "y": 80,
+    "z": 3,
+    "height": 120,
+    "width": 250,
+    "tabOrder": 3
+  },
+  "visual": {
+    "visualType": "card",
+    "objects": {
+      "categoryLabels": [
+        {
+          "properties": {
+            "show": true,
+            "text": "Scoring p99 (ms)"
+          }
+        }
+      ]
+    },
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Scoring p99 (ms)"
+                }
+              },
+              "queryRef": "_Measures.Scoring p99 (ms)",
+              "nativeQueryRef": "Scoring p99 (ms)"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

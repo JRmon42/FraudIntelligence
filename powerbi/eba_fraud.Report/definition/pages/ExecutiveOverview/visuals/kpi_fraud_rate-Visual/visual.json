@@ -1,0 +1,47 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "name": "kpi_fraud_rate",
+  "position": {
+    "x": 1048,
+    "y": 80,
+    "z": 5,
+    "height": 120,
+    "width": 216,
+    "tabOrder": 5
+  },
+  "visual": {
+    "visualType": "card",
+    "objects": {
+      "categoryLabels": [
+        {
+          "properties": {
+            "show": true,
+            "text": "Fraud rate (bps)"
+          }
+        }
+      ]
+    },
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Fraud Rate (bps)"
+                }
+              },
+              "queryRef": "_Measures.Fraud Rate (bps)",
+              "nativeQueryRef": "Fraud Rate (bps)"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

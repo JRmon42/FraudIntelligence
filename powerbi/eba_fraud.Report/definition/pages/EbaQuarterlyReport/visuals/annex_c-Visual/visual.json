@@ -1,0 +1,102 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "name": "annex_c",
+  "position": {
+    "x": 16,
+    "y": 408,
+    "z": 3,
+    "height": 296,
+    "width": 624,
+    "tabOrder": 3
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "objects": {
+      "title": [
+        {
+          "properties": {
+            "text": "Annex C — SCA exemptions"
+          }
+        }
+      ]
+    },
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Dim_Exemption"
+                    }
+                  },
+                  "Property": "ExemptionLabel"
+                }
+              },
+              "queryRef": "Dim_Exemption.ExemptionLabel",
+              "nativeQueryRef": "ExemptionLabel"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Dim_Exemption"
+                    }
+                  },
+                  "Property": "RtsArticle"
+                }
+              },
+              "queryRef": "Dim_Exemption.RtsArticle",
+              "nativeQueryRef": "RtsArticle"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Total Tx Count"
+                }
+              },
+              "queryRef": "_Measures.Total Tx Count",
+              "nativeQueryRef": "Total Tx Count"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Total Fraud Count"
+                }
+              },
+              "queryRef": "_Measures.Total Fraud Count",
+              "nativeQueryRef": "Total Fraud Count"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "EBA Annex C Fraud Rate (bps)"
+                }
+              },
+              "queryRef": "_Measures.EBA Annex C Fraud Rate (bps)",
+              "nativeQueryRef": "EBA Annex C Fraud Rate (bps)"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -2,6 +2,27 @@
 
 PBIP project for the Heimdall Executive / EBA / Operational dashboards.
 
+> **⚠️ Two project variants in this folder**
+>
+> * **`eba_fraud.pbip`** + `eba_fraud.Report/` + `eba_fraud.SemanticModel/` — **the openable project.**
+>   Open *this* one in Power BI Desktop. It is a valid PBIP whose report is stored in the
+>   modern **PBIR enhanced format** (`eba_fraud.Report/definition/` folder with one
+>   `visual.json` per visual, plus `page.json`/`pages.json`/`report.json`/`version.json`);
+>   `definition.pbir` (version 4.0) links the semantic model by path. All 21 visuals across
+>   the 3 pages and the `model.bim` semantic model are preserved, and every PBIR file is
+>   validated against the official Microsoft JSON schemas.
+>   Its fact tables are **import mode with inline sample data** (the Direct Lake
+>   `entity` partitions cannot be loaded in local Desktop), so the dashboard opens
+>   and renders standalone for demos. The real Direct Lake model lives in the
+>   mockup folder below and on the Fabric workspace.
+> * **`eba_fraud_dashboard.pbip/`** (folder) — the original hand-authored **mockup**.
+>   It is **not** a valid PBIP (it declares new-PBIR page schemas but uses legacy
+>   `visualContainers` content, and its `.pbip` lists a `dataset` artifact that
+>   current Desktop rejects). Kept for reference only — do not try to open it.
+>
+> The openable variant is generated from the mockup; if you edit the mockup, re-run
+> the conversion rather than hand-editing both.
+
 ## Project layout
 
 ```

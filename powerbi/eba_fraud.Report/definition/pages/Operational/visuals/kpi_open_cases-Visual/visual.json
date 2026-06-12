@@ -1,0 +1,47 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "name": "kpi_open_cases",
+  "position": {
+    "x": 16,
+    "y": 72,
+    "z": 1,
+    "height": 120,
+    "width": 250,
+    "tabOrder": 1
+  },
+  "visual": {
+    "visualType": "card",
+    "objects": {
+      "categoryLabels": [
+        {
+          "properties": {
+            "show": true,
+            "text": "Open cases"
+          }
+        }
+      ]
+    },
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Open Cases"
+                }
+              },
+              "queryRef": "_Measures.Open Cases",
+              "nativeQueryRef": "Open Cases"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "name": "kpi_drift",
+  "position": {
+    "x": 274,
+    "y": 72,
+    "z": 2,
+    "height": 120,
+    "width": 250,
+    "tabOrder": 2
+  },
+  "visual": {
+    "visualType": "card",
+    "objects": {
+      "categoryLabels": [
+        {
+          "properties": {
+            "show": true,
+            "text": "Model drift (vs 30d)"
+          }
+        }
+      ]
+    },
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Model Drift Index"
+                }
+              },
+              "queryRef": "_Measures.Model Drift Index",
+              "nativeQueryRef": "Model Drift Index"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

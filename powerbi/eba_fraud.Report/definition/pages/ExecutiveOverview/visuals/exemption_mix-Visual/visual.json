@@ -1,0 +1,64 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "name": "exemption_mix",
+  "position": {
+    "x": 656,
+    "y": 216,
+    "z": 7,
+    "height": 320,
+    "width": 608,
+    "tabOrder": 7
+  },
+  "visual": {
+    "visualType": "donutChart",
+    "objects": {
+      "title": [
+        {
+          "properties": {
+            "text": "PSD2 exemption mix"
+          }
+        }
+      ]
+    },
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Dim_Exemption"
+                    }
+                  },
+                  "Property": "ExemptionLabel"
+                }
+              },
+              "queryRef": "Dim_Exemption.ExemptionLabel",
+              "nativeQueryRef": "ExemptionLabel"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Total Tx Count"
+                }
+              },
+              "queryRef": "_Measures.Total Tx Count",
+              "nativeQueryRef": "Total Tx Count"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
