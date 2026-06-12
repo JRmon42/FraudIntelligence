@@ -1,0 +1,39 @@
+table Dim_Date
+	lineageTag: dim-date
+
+	column Date
+		dataType: string
+		lineageTag: 5c51fe81-8527-4e2f-ac04-192a1644fb34
+		summarizeBy: none
+		sourceColumn: Date
+
+		annotation SummarizationSetBy = Automatic
+
+	column Year
+		dataType: int64
+		lineageTag: 5da239d1-2779-4257-be4a-3bef26a76ca8
+		summarizeBy: none
+		sourceColumn: Year
+
+	column Quarter
+		dataType: string
+		lineageTag: 49879941-2a57-4fcc-a8af-096515806fe0
+		summarizeBy: none
+		sourceColumn: Quarter
+
+	column Month
+		dataType: int64
+		lineageTag: de4e6aa5-5a12-454b-a0c4-3ac7828f457e
+		summarizeBy: none
+		sourceColumn: Month
+
+	column MonthName
+		dataType: string
+		lineageTag: 2fced97b-d184-496c-811e-675580c01860
+		summarizeBy: none
+		sourceColumn: MonthName
+
+	partition Dim_Date = m
+		mode: import
+		source = let Source = List.Dates(#date(2023,1,1), Duration.Days(#date(2027,12,31)-#date(2023,1,1))+1, #duration(1,0,0,0)), T = Table.FromList(Source, Splitter.SplitByNothing(), {"Date"}), T2 = Table.AddColumn(T,"Year", each Date.Year([Date]), Int64.Type), T3 = Table.AddColumn(T2,"Quarter", each Text.From(Date.Year([Date])) & "-Q" & Text.From(Date.QuarterOfYear([Date])) ), T4 = Table.AddColumn(T3,"Month", each Date.Month([Date]), Int64.Type), T5 = Table.AddColumn(T4,"MonthName", each Date.MonthName([Date])) in T5
+

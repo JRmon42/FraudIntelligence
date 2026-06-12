@@ -1,0 +1,19 @@
+table Dim_Instrument
+	lineageTag: 3b0a8b9c-9bb5-43c6-a1b9-4dc6b1f19d79
+
+	column Instrument
+		dataType: string
+		lineageTag: 5ff5550e-a472-4398-9fd0-295fd2b014a2
+		summarizeBy: none
+		sourceColumn: Instrument
+
+	column InstrumentLabel
+		dataType: string
+		lineageTag: f6ee3978-f3d1-4e1d-99a0-8c96658e454a
+		summarizeBy: none
+		sourceColumn: InstrumentLabel
+
+	partition Dim_Instrument = m
+		mode: import
+		source = let Source = #table({"Instrument","InstrumentLabel"},{{"card","Card"},{"credit_transfer","Credit transfer"},{"direct_debit","Direct debit"},{"e_money","E-money"},{"cash_withdrawal","Cash withdrawal"}}) in Source
+

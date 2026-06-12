@@ -1,0 +1,44 @@
+relationship rel_tx_country
+	fromColumn: Fact_Tx.CountryCode
+	toColumn: Dim_Country.CountryCode
+
+relationship rel_tx_date
+	fromColumn: Fact_Tx.BookingDate
+	toColumn: Dim_Date.Date
+
+relationship rel_tx_instr
+	fromColumn: Fact_Tx.Instrument
+	toColumn: Dim_Instrument.Instrument
+
+relationship rel_eba_country
+	fromColumn: Fact_Eba.CountryCode
+	toColumn: Dim_Country.CountryCode
+
+relationship rel_eba_instr
+	fromColumn: Fact_Eba.Instrument
+	toColumn: Dim_Instrument.Instrument
+
+relationship rel_eba_exempt
+	fromColumn: Fact_Eba.ExemptionCode
+	toColumn: Dim_Exemption.ExemptionCode
+
+relationship rel_eba_fraud
+	fromColumn: Fact_Eba.FraudTypeCode
+	toColumn: Dim_FraudType.FraudTypeCode
+
+relationship rel_exempt_date
+	fromColumn: Fact_Exemption.KpiDate
+	toColumn: Dim_Date.Date
+
+relationship rel_exempt_country
+	fromColumn: Fact_Exemption.CountryCode
+	toColumn: Dim_Country.CountryCode
+
+relationship rel_exempt_code
+	fromColumn: Fact_Exemption.ExemptionCode
+	toColumn: Dim_Exemption.ExemptionCode
+
+relationship rel_lat_date
+	fromColumn: Fact_Latency.KpiDate
+	toColumn: Dim_Date.Date
+

@@ -1,0 +1,81 @@
+table _Measures
+	lineageTag: 93d1786c-ed90-4489-acd3-9098c87089f0
+
+	/// Sum of EUR-converted booked transaction value across the selected period and country filter.
+	measure 'Total Tx Value (€)' = SUM(Fact_Tx[TxValueEur])
+		formatString: "€"#,0
+		lineageTag: 9759159f-1680-4ac9-a4fd-e1aa068eaf4f
+
+	/// Sum of authorised payment transactions (excludes pre-auth and reversals) per Fact_Tx grain.
+	measure 'Total Tx Count' = SUM(Fact_Tx[TxCount])
+		formatString: #,0
+		lineageTag: 7b6c686a-11c3-4983-b1b9-2810caec65b6
+
+	/// Declines divided by total decisions — KPI tracked vs the 1.1% target.
+	measure 'Decline Rate %' = DIVIDE(SUM(Fact_Tx[DeclineCount]), SUM(Fact_Tx[TxCount]))
+		formatString: 0.00%
+		lineageTag: e662ca5f-98b7-454c-826c-1362a5312527
+
+	/// Confirmed fraud loss amount borne by the PSP (sourced from Cases mart).
+	measure 'Fraud Loss (€)' = SUM(Fact_Tx[LossValueEur])
+		formatString: "€"#,0
+		lineageTag: d6ac554a-f592-4983-828f-7df721c24152
+
+	/// Fraud rate in basis points (€ fraud / € authorised × 10 000) — EBA Annex C convention.
+	measure 'Fraud Rate (bps)' = DIVIDE(SUM(Fact_Tx[FraudValueEur]), SUM(Fact_Tx[TxValueEur])) * 10000
+		formatString: 0.00
+		lineageTag: 2374e880-ed58-4b7e-9524-92c39ac815a7
+
+	/// Average daily p99 scoring latency across model versions — target < 18 ms.
+	measure 'Scoring p99 (ms)' = AVERAGE(Fact_Latency[P99Ms])
+		formatString: 0.0
+		lineageTag: 45dd8c08-dc7b-4014-8a76-38a2dc193b3b
+
+	/// Share of in-scope transactions that successfully used an SCA exemption (target > 70%).
+	measure 'PSD2 Exemption Coverage %' = DIVIDE(CALCULATE(SUM(Fact_Exemption[TxCount]), Fact_Exemption[ExemptionCode] <> "sca_applied"), SUM(Fact_Exemption[TxCount]))
+		formatString: 0.00%
+		lineageTag: 931ce879-809b-4e2a-a163-82627f92070c
+
+	/// Confirmed fraudulent transactions for EBA Annex B.
+	measure 'Total Fraud Count' = SUM(Fact_Eba[FraudCount])
+		formatString: #,0
+		lineageTag: e4801e58-56b4-4197-92c1-b506d965f6b8
+
+	/// Annex C basis-points fraud rate computed on the EBA aggregates (matches submitted XLSX).
+	measure 'EBA Annex C Fraud Rate (bps)' = DIVIDE(SUM(Fact_Eba[FraudValueEur]), SUM(Fact_Eba[TxValueEur])) * 10000
+		formatString: 0.00
+		lineageTag: 9182dd2e-72fa-4e25-b22c-abfe7beeffaf
+
+	/// Loss amount allocated to the PSP per EBA Annex D.
+	measure 'Loss Borne by PSP (€)' = CALCULATE(SUM(Fact_Eba[LossValueEur]), Fact_Eba[LossBearer] = "psp")
+		formatString: "€"#,0
+		lineageTag: 786c375c-9609-408a-8d3a-05bb0cf69ef3
+
+	/// Loss amount allocated to the payer per EBA Annex D.
+	measure 'Loss Borne by Payer (€)' = CALCULATE(SUM(Fact_Eba[LossValueEur]), Fact_Eba[LossBearer] = "payer")
+		formatString: "€"#,0
+		lineageTag: 1f809f04-1078-4c02-9cc3-bc8519759abc
+
+	/// Distinct EBA aggregate rows that contributed at least one fraud — proxy for case workload.
+	measure 'Open Cases' = COUNTROWS(FILTER(Fact_Eba, Fact_Eba[FraudCount] > 0))
+		formatString: #,0
+		lineageTag: 7afd8567-6dfb-4b6f-ad1f-9ea9d0a5448b
+
+	/// Relative drift in p99 latency vs the 30-day-prior baseline — alert at > 25%.
+	measure 'Model Drift Index' = VAR p99_today = AVERAGE(Fact_Latency[P99Ms]) VAR p99_baseline = CALCULATE(AVERAGE(Fact_Latency[P99Ms]), DATEADD(Dim_Date[Date], -30, DAY)) RETURN DIVIDE(p99_today - p99_baseline, p99_baseline)
+		formatString: 0.00%
+		lineageTag: 51f4efa1-924f-4a0a-8644-8db928c3d900
+
+	column _dummy
+		dataType: string
+		isHidden
+		lineageTag: 1082eaed-820e-45b0-9d02-ab103c3d049f
+		summarizeBy: none
+		sourceColumn: _dummy
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = m
+		mode: import
+		source = let Source = #table({"_dummy"},{{0}}) in Source
+

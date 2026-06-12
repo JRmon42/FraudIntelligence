@@ -36,11 +36,7 @@
     "objects": {
       "labels": [
         {
-          "properties": {
-            "color": {
-              "solid": {}
-            }
-          }
+          "properties": {}
         }
       ],
       "categoryLabels": [

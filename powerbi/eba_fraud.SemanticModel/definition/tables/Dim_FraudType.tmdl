@@ -1,0 +1,19 @@
+table Dim_FraudType
+	lineageTag: 82676014-2f08-48ac-94da-5b188a87221f
+
+	column FraudTypeCode
+		dataType: string
+		lineageTag: 809a2475-e21d-4c49-8c7c-25ddd9388852
+		summarizeBy: none
+		sourceColumn: FraudTypeCode
+
+	column FraudTypeLabel
+		dataType: string
+		lineageTag: 48cdfce2-e294-40ab-8b72-7f1adda841c0
+		summarizeBy: none
+		sourceColumn: FraudTypeLabel
+
+	partition Dim_FraudType = m
+		mode: import
+		source = let Source = #table({"FraudTypeCode","FraudTypeLabel"},{{"unauthorised_issuance","Issuance by fraudster"},{"unauthorised_modification","Modification by fraudster"},{"manipulation_of_payer","Manipulation of the payer"},{"lost_stolen","Lost / stolen"},{"card_not_received","Card not received"},{"counterfeit","Counterfeit"},{"other","Other"}}) in Source
+

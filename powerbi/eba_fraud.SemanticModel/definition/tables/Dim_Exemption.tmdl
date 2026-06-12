@@ -1,0 +1,25 @@
+table Dim_Exemption
+	lineageTag: d9eb6836-38ca-4bcc-a344-3a5bf6142277
+
+	column ExemptionCode
+		dataType: string
+		lineageTag: 1f6f457c-5cb0-4377-829e-0b6d14693f1f
+		summarizeBy: none
+		sourceColumn: ExemptionCode
+
+	column ExemptionLabel
+		dataType: string
+		lineageTag: f7b4789c-f616-4c17-a149-8201fed4ccf6
+		summarizeBy: none
+		sourceColumn: ExemptionLabel
+
+	column RtsArticle
+		dataType: string
+		lineageTag: 4232bc01-e6d1-4d78-89e0-caae1f28e0f8
+		summarizeBy: none
+		sourceColumn: RtsArticle
+
+	partition Dim_Exemption = m
+		mode: import
+		source = let Source = #table({"ExemptionCode","ExemptionLabel","RtsArticle"},{{"sca_applied","SCA applied",""},{"low_value","Low value","Art. 16"},{"tra","Transaction risk analysis","Art. 18"},{"trusted","Trusted beneficiary","Art. 13"},{"recurring","Recurring","Art. 14"},{"corporate","Corporate","Art. 17"},{"secure_corp","Secure corporate","Art. 17"},{"mit","Merchant initiated","out of scope"},{"contactless_lv","Contactless low value","Art. 11"},{"unattended","Unattended transport","Art. 12"}}) in Source
+

@@ -1,0 +1,28 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	discourageImplicitMeasures
+	sourceQueryCulture: en-GB
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["Fact_Tx","Fact_Eba","Fact_Latency","Dim_Country","Dim_Date","Dim_Instrument","Dim_Exemption","Dim_FraudType","Fact_Exemption","_Measures"]
+
+annotation __PBI_TimeIntelligenceEnabled = 1
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table Dim_Country
+ref table Dim_Date
+ref table Dim_Instrument
+ref table Dim_Exemption
+ref table Dim_FraudType
+ref table Fact_Tx
+ref table Fact_Eba
+ref table Fact_Exemption
+ref table Fact_Latency
+ref table _Measures
+
+ref cultureInfo en-US
+

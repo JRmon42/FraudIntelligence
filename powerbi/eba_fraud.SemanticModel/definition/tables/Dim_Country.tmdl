@@ -1,0 +1,25 @@
+table Dim_Country
+	lineageTag: dim-country
+
+	column CountryCode
+		dataType: string
+		lineageTag: d35cfd9f-c7ef-40a2-9192-8c75ae10b802
+		summarizeBy: none
+		sourceColumn: CountryCode
+
+	column CountryName
+		dataType: string
+		lineageTag: b1253f22-de50-4ad7-8cee-fb9cda71d1a3
+		summarizeBy: none
+		sourceColumn: CountryName
+
+	column Region
+		dataType: string
+		lineageTag: f9a7736c-511b-4c10-affe-19ecd6037b56
+		summarizeBy: none
+		sourceColumn: Region
+
+	partition Dim_Country = m
+		mode: import
+		source = let Source = #table({"CountryCode","CountryName","Region"},{{"SE","Sweden","Nordics"},{"NO","Norway","Nordics"},{"DK","Denmark","Nordics"},{"FI","Finland","Nordics"},{"EE","Estonia","Baltics"}}) in Source
+

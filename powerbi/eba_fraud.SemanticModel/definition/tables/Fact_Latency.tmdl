@@ -1,0 +1,43 @@
+table Fact_Latency
+	lineageTag: ca1bad04-60a9-4459-97b2-4fdb72a034f5
+
+	column KpiDate
+		dataType: dateTime
+		lineageTag: 471ea732-4c96-41f8-9559-ba09f43fae20
+		summarizeBy: none
+		sourceColumn: kpi_date
+
+	column ModelVersion
+		dataType: string
+		lineageTag: 1a43f287-ea1f-4092-8c80-f3a2c579aafa
+		summarizeBy: none
+		sourceColumn: model_version
+
+	column P50Ms
+		dataType: double
+		lineageTag: f70449a7-bc51-4969-b2cf-a0bae1710e59
+		summarizeBy: average
+		sourceColumn: p50_ms
+
+	column P95Ms
+		dataType: double
+		lineageTag: 56c41fa6-2a2b-4f54-b8ef-7d916419a67a
+		summarizeBy: average
+		sourceColumn: p95_ms
+
+	column P99Ms
+		dataType: double
+		lineageTag: a4d45cd1-a1f9-4eeb-8b6c-6da9b9919e8d
+		summarizeBy: average
+		sourceColumn: p99_ms
+
+	column SampleCount
+		dataType: int64
+		lineageTag: f73674fc-816e-4337-b97d-354eb401441c
+		summarizeBy: sum
+		sourceColumn: sample_count
+
+	partition Fact_Latency = m
+		mode: import
+		source = let Source = #table({"kpi_date","model_version","p50_ms","p95_ms","p99_ms","sample_count"},{{#datetime(2025,1,1,0,0,0),"v2.3.1",5.8,9.5,13.2,392712},{#datetime(2025,1,1,0,0,0),"v2.4.0",7.0,10.9,16.9,285789},{#datetime(2025,1,8,0,0,0),"v2.3.1",5.1,10.7,13.0,111544},{#datetime(2025,1,8,0,0,0),"v2.4.0",7.1,10.8,16.0,358241},{#datetime(2025,1,15,0,0,0),"v2.3.1",6.8,12.4,16.8,274482},{#datetime(2025,1,15,0,0,0),"v2.4.0",4.7,8.1,10.9,158497},{#datetime(2025,1,22,0,0,0),"v2.3.1",7.2,11.9,16.0,362925},{#datetime(2025,1,22,0,0,0),"v2.4.0",6.2,10.2,15.0,201693},{#datetime(2025,2,1,0,0,0),"v2.3.1",6.3,12.2,16.3,99925},{#datetime(2025,2,1,0,0,0),"v2.4.0",4.5,9.8,13.4,81082},{#datetime(2025,2,8,0,0,0),"v2.3.1",8.0,13.6,16.1,119568},{#datetime(2025,2,8,0,0,0),"v2.4.0",5.0,10.1,15.4,255888},{#datetime(2025,2,15,0,0,0),"v2.3.1",6.0,10.7,13.8,267173},{#datetime(2025,2,15,0,0,0),"v2.4.0",5.5,8.7,13.9,98808},{#datetime(2025,2,22,0,0,0),"v2.3.1",5.6,10.8,15.6,243499},{#datetime(2025,2,22,0,0,0),"v2.4.0",5.8,10.3,14.6,98833},{#datetime(2025,3,1,0,0,0),"v2.3.1",6.9,11.3,16.0,237811},{#datetime(2025,3,1,0,0,0),"v2.4.0",7.4,12.8,16.4,275256},{#datetime(2025,3,8,0,0,0),"v2.3.1",7.3,11.8,15.1,198684},{#datetime(2025,3,8,0,0,0),"v2.4.0",5.4,10.1,14.4,304456},{#datetime(2025,3,15,0,0,0),"v2.3.1",7.2,12.9,17.9,74087},{#datetime(2025,3,15,0,0,0),"v2.4.0",4.4,9.8,13.6,115136},{#datetime(2025,3,22,0,0,0),"v2.3.1",7.7,11.2,15.0,274290},{#datetime(2025,3,22,0,0,0),"v2.4.0",4.8,9.9,12.4,390785},{#datetime(2025,4,1,0,0,0),"v2.3.1",5.2,10.8,16.3,98937},{#datetime(2025,4,1,0,0,0),"v2.4.0",6.6,10.4,13.9,390216},{#datetime(2025,4,8,0,0,0),"v2.3.1",4.7,8.9,12.1,172758},{#datetime(2025,4,8,0,0,0),"v2.4.0",5.7,9.0,11.4,161894},{#datetime(2025,4,15,0,0,0),"v2.3.1",5.9,9.3,12.2,283343},{#datetime(2025,4,15,0,0,0),"v2.4.0",4.0,9.1,14.4,271414},{#datetime(2025,4,22,0,0,0),"v2.3.1",6.8,11.2,14.1,96835},{#datetime(2025,4,22,0,0,0),"v2.4.0",6.9,10.2,13.5,206895},{#datetime(2025,5,1,0,0,0),"v2.3.1",4.5,9.8,14.8,119806},{#datetime(2025,5,1,0,0,0),"v2.4.0",6.6,11.6,13.9,345326},{#datetime(2025,5,8,0,0,0),"v2.3.1",4.0,9.0,12.8,161702},{#datetime(2025,5,8,0,0,0),"v2.4.0",6.5,10.0,13.6,281936},{#datetime(2025,5,15,0,0,0),"v2.3.1",7.4,10.7,13.1,114569},{#datetime(2025,5,15,0,0,0),"v2.4.0",6.4,10.6,16.5,214890},{#datetime(2025,5,22,0,0,0),"v2.3.1",7.2,10.9,15.5,180110},{#datetime(2025,5,22,0,0,0),"v2.4.0",6.2,11.0,15.4,64063},{#datetime(2025,6,1,0,0,0),"v2.3.1",7.4,12.4,15.6,321449},{#datetime(2025,6,1,0,0,0),"v2.4.0",6.4,10.0,13.6,388779},{#datetime(2025,6,8,0,0,0),"v2.3.1",4.2,9.9,15.7,309463},{#datetime(2025,6,8,0,0,0),"v2.4.0",5.5,9.2,13.8,87230},{#datetime(2025,6,15,0,0,0),"v2.3.1",6.1,12.0,17.9,215922},{#datetime(2025,6,15,0,0,0),"v2.4.0",4.5,10.1,14.4,241581},{#datetime(2025,6,22,0,0,0),"v2.3.1",6.2,9.7,13.6,88268},{#datetime(2025,6,22,0,0,0),"v2.4.0",4.1,7.3,10.3,70880}}), Typed = Table.TransformColumnTypes(Source,{{"kpi_date", type datetime},{"model_version", type text},{"p50_ms", type number},{"p95_ms", type number},{"p99_ms", type number},{"sample_count", Int64.Type}}) in Typed
+
