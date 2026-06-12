@@ -1,104 +1,210 @@
 {
-  "name": "EBA Fraud Semantic Model",
-  "compatibilityLevel": 1567,
+  "compatibilityLevel": 1600,
   "model": {
+    "annotations": [
+      {
+        "name": "PBI_QueryOrder",
+        "value": "[\"Fact_Tx\",\"Fact_Eba\",\"Fact_Latency\",\"Dim_Country\",\"Dim_Date\",\"Dim_Instrument\",\"Dim_Exemption\",\"Dim_FraudType\",\"Fact_Exemption\",\"_Measures\"]"
+      },
+      {
+        "name": "__PBI_TimeIntelligenceEnabled",
+        "value": "1"
+      },
+      {
+        "name": "PBI_ProTooling",
+        "value": "[\"DevMode\"]"
+      }
+    ],
     "culture": "en-US",
-    "defaultPowerBIDataSourceVersion": "powerBI_V3",
-    "sourceQueryCulture": "en-GB",
+    "cultures": [
+      {
+        "name": "en-US",
+        "linguisticMetadata": {
+          "content": {
+            "Language": "en-US",
+            "Version": "1.0.0"
+          },
+          "contentType": "json"
+        }
+      }
+    ],
     "dataAccessOptions": {
       "legacyRedirects": true,
       "returnErrorValuesAsNull": true
     },
+    "defaultPowerBIDataSourceVersion": "powerBI_V3",
     "discourageImplicitMeasures": true,
-    "annotations": [
+    "relationships": [
       {
-        "name": "PBIDesktopVersion",
-        "value": "2.130.1"
+        "name": "rel_tx_country",
+        "fromColumn": "CountryCode",
+        "fromTable": "Fact_Tx",
+        "toColumn": "CountryCode",
+        "toTable": "Dim_Country"
       },
       {
-        "name": "PBI_QueryOrder",
-        "value": "[\"Fact_Tx\",\"Fact_Decisions\",\"Fact_Cases\",\"Fact_Eba\",\"Fact_Latency\",\"Dim_Country\",\"Dim_Date\",\"Dim_Instrument\",\"Dim_Exemption\",\"Dim_FraudType\"]"
+        "name": "rel_tx_date",
+        "fromColumn": "BookingDate",
+        "fromTable": "Fact_Tx",
+        "toColumn": "Date",
+        "toTable": "Dim_Date"
+      },
+      {
+        "name": "rel_tx_instr",
+        "fromColumn": "Instrument",
+        "fromTable": "Fact_Tx",
+        "toColumn": "Instrument",
+        "toTable": "Dim_Instrument"
+      },
+      {
+        "name": "rel_eba_country",
+        "fromColumn": "CountryCode",
+        "fromTable": "Fact_Eba",
+        "toColumn": "CountryCode",
+        "toTable": "Dim_Country"
+      },
+      {
+        "name": "rel_eba_instr",
+        "fromColumn": "Instrument",
+        "fromTable": "Fact_Eba",
+        "toColumn": "Instrument",
+        "toTable": "Dim_Instrument"
+      },
+      {
+        "name": "rel_eba_exempt",
+        "fromColumn": "ExemptionCode",
+        "fromTable": "Fact_Eba",
+        "toColumn": "ExemptionCode",
+        "toTable": "Dim_Exemption"
+      },
+      {
+        "name": "rel_eba_fraud",
+        "fromColumn": "FraudTypeCode",
+        "fromTable": "Fact_Eba",
+        "toColumn": "FraudTypeCode",
+        "toTable": "Dim_FraudType"
+      },
+      {
+        "name": "rel_exempt_date",
+        "fromColumn": "KpiDate",
+        "fromTable": "Fact_Exemption",
+        "toColumn": "Date",
+        "toTable": "Dim_Date"
+      },
+      {
+        "name": "rel_exempt_country",
+        "fromColumn": "CountryCode",
+        "fromTable": "Fact_Exemption",
+        "toColumn": "CountryCode",
+        "toTable": "Dim_Country"
+      },
+      {
+        "name": "rel_exempt_code",
+        "fromColumn": "ExemptionCode",
+        "fromTable": "Fact_Exemption",
+        "toColumn": "ExemptionCode",
+        "toTable": "Dim_Exemption"
+      },
+      {
+        "name": "rel_lat_date",
+        "fromColumn": "KpiDate",
+        "fromTable": "Fact_Latency",
+        "toColumn": "Date",
+        "toTable": "Dim_Date"
       }
     ],
+    "sourceQueryCulture": "en-GB",
     "tables": [
       {
         "name": "Dim_Country",
-        "lineageTag": "dim-country",
         "columns": [
           {
             "name": "CountryCode",
             "dataType": "string",
+            "lineageTag": "d35cfd9f-c7ef-40a2-9192-8c75ae10b802",
             "sourceColumn": "CountryCode",
             "summarizeBy": "none"
           },
           {
             "name": "CountryName",
             "dataType": "string",
+            "lineageTag": "b1253f22-de50-4ad7-8cee-fb9cda71d1a3",
             "sourceColumn": "CountryName",
             "summarizeBy": "none"
           },
           {
             "name": "Region",
             "dataType": "string",
+            "lineageTag": "f9a7736c-511b-4c10-affe-19ecd6037b56",
             "sourceColumn": "Region",
             "summarizeBy": "none"
           }
         ],
+        "lineageTag": "dim-country",
         "partitions": [
           {
             "name": "Dim_Country",
             "mode": "import",
             "source": {
-              "type": "m",
-              "expression": "let Source = #table({\"CountryCode\",\"CountryName\",\"Region\"},{{\"SE\",\"Sweden\",\"Nordics\"},{\"NO\",\"Norway\",\"Nordics\"},{\"DK\",\"Denmark\",\"Nordics\"},{\"FI\",\"Finland\",\"Nordics\"},{\"EE\",\"Estonia\",\"Baltics\"}}) in Source"
+              "expression": "let Source = #table({\"CountryCode\",\"CountryName\",\"Region\"},{{\"SE\",\"Sweden\",\"Nordics\"},{\"NO\",\"Norway\",\"Nordics\"},{\"DK\",\"Denmark\",\"Nordics\"},{\"FI\",\"Finland\",\"Nordics\"},{\"EE\",\"Estonia\",\"Baltics\"}}) in Source",
+              "type": "m"
             }
           }
         ]
       },
       {
         "name": "Dim_Date",
-        "lineageTag": "dim-date",
-        "dataCategory": "Time",
         "columns": [
           {
             "name": "Date",
-            "dataType": "dateTime",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ],
+            "dataType": "string",
+            "lineageTag": "5c51fe81-8527-4e2f-ac04-192a1644fb34",
             "sourceColumn": "Date",
-            "summarizeBy": "none",
-            "isKey": true
+            "summarizeBy": "none"
           },
           {
             "name": "Year",
             "dataType": "int64",
+            "lineageTag": "5da239d1-2779-4257-be4a-3bef26a76ca8",
             "sourceColumn": "Year",
             "summarizeBy": "none"
           },
           {
             "name": "Quarter",
             "dataType": "string",
+            "lineageTag": "49879941-2a57-4fcc-a8af-096515806fe0",
             "sourceColumn": "Quarter",
             "summarizeBy": "none"
           },
           {
             "name": "Month",
             "dataType": "int64",
+            "lineageTag": "de4e6aa5-5a12-454b-a0c4-3ac7828f457e",
             "sourceColumn": "Month",
             "summarizeBy": "none"
           },
           {
             "name": "MonthName",
             "dataType": "string",
+            "lineageTag": "2fced97b-d184-496c-811e-675580c01860",
             "sourceColumn": "MonthName",
             "summarizeBy": "none"
           }
         ],
+        "lineageTag": "dim-date",
         "partitions": [
           {
             "name": "Dim_Date",
             "mode": "import",
             "source": {
-              "type": "m",
-              "expression": "let Source = List.Dates(#date(2023,1,1), Duration.Days(#date(2027,12,31)-#date(2023,1,1))+1, #duration(1,0,0,0)), T = Table.FromList(Source, Splitter.SplitByNothing(), {\"Date\"}), T2 = Table.AddColumn(T,\"Year\", each Date.Year([Date]), Int64.Type), T3 = Table.AddColumn(T2,\"Quarter\", each Text.From(Date.Year([Date])) & \"-Q\" & Text.From(Date.QuarterOfYear([Date])) ), T4 = Table.AddColumn(T3,\"Month\", each Date.Month([Date]), Int64.Type), T5 = Table.AddColumn(T4,\"MonthName\", each Date.MonthName([Date])) in T5"
+              "expression": "let Source = List.Dates(#date(2023,1,1), Duration.Days(#date(2027,12,31)-#date(2023,1,1))+1, #duration(1,0,0,0)), T = Table.FromList(Source, Splitter.SplitByNothing(), {\"Date\"}), T2 = Table.AddColumn(T,\"Year\", each Date.Year([Date]), Int64.Type), T3 = Table.AddColumn(T2,\"Quarter\", each Text.From(Date.Year([Date])) & \"-Q\" & Text.From(Date.QuarterOfYear([Date])) ), T4 = Table.AddColumn(T3,\"Month\", each Date.Month([Date]), Int64.Type), T5 = Table.AddColumn(T4,\"MonthName\", each Date.MonthName([Date])) in T5",
+              "type": "m"
             }
           }
         ]
@@ -109,23 +215,26 @@
           {
             "name": "Instrument",
             "dataType": "string",
+            "lineageTag": "5ff5550e-a472-4398-9fd0-295fd2b014a2",
             "sourceColumn": "Instrument",
             "summarizeBy": "none"
           },
           {
             "name": "InstrumentLabel",
             "dataType": "string",
+            "lineageTag": "f6ee3978-f3d1-4e1d-99a0-8c96658e454a",
             "sourceColumn": "InstrumentLabel",
             "summarizeBy": "none"
           }
         ],
+        "lineageTag": "3b0a8b9c-9bb5-43c6-a1b9-4dc6b1f19d79",
         "partitions": [
           {
             "name": "Dim_Instrument",
             "mode": "import",
             "source": {
-              "type": "m",
-              "expression": "let Source = #table({\"Instrument\",\"InstrumentLabel\"},{{\"card\",\"Card\"},{\"credit_transfer\",\"Credit transfer\"},{\"direct_debit\",\"Direct debit\"},{\"e_money\",\"E-money\"},{\"cash_withdrawal\",\"Cash withdrawal\"}}) in Source"
+              "expression": "let Source = #table({\"Instrument\",\"InstrumentLabel\"},{{\"card\",\"Card\"},{\"credit_transfer\",\"Credit transfer\"},{\"direct_debit\",\"Direct debit\"},{\"e_money\",\"E-money\"},{\"cash_withdrawal\",\"Cash withdrawal\"}}) in Source",
+              "type": "m"
             }
           }
         ]
@@ -136,29 +245,33 @@
           {
             "name": "ExemptionCode",
             "dataType": "string",
+            "lineageTag": "1f6f457c-5cb0-4377-829e-0b6d14693f1f",
             "sourceColumn": "ExemptionCode",
             "summarizeBy": "none"
           },
           {
             "name": "ExemptionLabel",
             "dataType": "string",
+            "lineageTag": "f7b4789c-f616-4c17-a149-8201fed4ccf6",
             "sourceColumn": "ExemptionLabel",
             "summarizeBy": "none"
           },
           {
             "name": "RtsArticle",
             "dataType": "string",
+            "lineageTag": "4232bc01-e6d1-4d78-89e0-caae1f28e0f8",
             "sourceColumn": "RtsArticle",
             "summarizeBy": "none"
           }
         ],
+        "lineageTag": "d9eb6836-38ca-4bcc-a344-3a5bf6142277",
         "partitions": [
           {
             "name": "Dim_Exemption",
             "mode": "import",
             "source": {
-              "type": "m",
-              "expression": "let Source = #table({\"ExemptionCode\",\"ExemptionLabel\",\"RtsArticle\"},{{\"sca_applied\",\"SCA applied\",\"\"},{\"low_value\",\"Low value\",\"Art. 16\"},{\"tra\",\"Transaction risk analysis\",\"Art. 18\"},{\"trusted\",\"Trusted beneficiary\",\"Art. 13\"},{\"recurring\",\"Recurring\",\"Art. 14\"},{\"corporate\",\"Corporate\",\"Art. 17\"},{\"secure_corp\",\"Secure corporate\",\"Art. 17\"},{\"mit\",\"Merchant initiated\",\"out of scope\"},{\"contactless_lv\",\"Contactless low value\",\"Art. 11\"},{\"unattended\",\"Unattended transport\",\"Art. 12\"}}) in Source"
+              "expression": "let Source = #table({\"ExemptionCode\",\"ExemptionLabel\",\"RtsArticle\"},{{\"sca_applied\",\"SCA applied\",\"\"},{\"low_value\",\"Low value\",\"Art. 16\"},{\"tra\",\"Transaction risk analysis\",\"Art. 18\"},{\"trusted\",\"Trusted beneficiary\",\"Art. 13\"},{\"recurring\",\"Recurring\",\"Art. 14\"},{\"corporate\",\"Corporate\",\"Art. 17\"},{\"secure_corp\",\"Secure corporate\",\"Art. 17\"},{\"mit\",\"Merchant initiated\",\"out of scope\"},{\"contactless_lv\",\"Contactless low value\",\"Art. 11\"},{\"unattended\",\"Unattended transport\",\"Art. 12\"}}) in Source",
+              "type": "m"
             }
           }
         ]
@@ -169,193 +282,218 @@
           {
             "name": "FraudTypeCode",
             "dataType": "string",
+            "lineageTag": "809a2475-e21d-4c49-8c7c-25ddd9388852",
             "sourceColumn": "FraudTypeCode",
             "summarizeBy": "none"
           },
           {
             "name": "FraudTypeLabel",
             "dataType": "string",
+            "lineageTag": "48cdfce2-e294-40ab-8b72-7f1adda841c0",
             "sourceColumn": "FraudTypeLabel",
             "summarizeBy": "none"
           }
         ],
+        "lineageTag": "82676014-2f08-48ac-94da-5b188a87221f",
         "partitions": [
           {
             "name": "Dim_FraudType",
             "mode": "import",
             "source": {
-              "type": "m",
-              "expression": "let Source = #table({\"FraudTypeCode\",\"FraudTypeLabel\"},{{\"unauthorised_issuance\",\"Issuance by fraudster\"},{\"unauthorised_modification\",\"Modification by fraudster\"},{\"manipulation_of_payer\",\"Manipulation of the payer\"},{\"lost_stolen\",\"Lost / stolen\"},{\"card_not_received\",\"Card not received\"},{\"counterfeit\",\"Counterfeit\"},{\"other\",\"Other\"}}) in Source"
+              "expression": "let Source = #table({\"FraudTypeCode\",\"FraudTypeLabel\"},{{\"unauthorised_issuance\",\"Issuance by fraudster\"},{\"unauthorised_modification\",\"Modification by fraudster\"},{\"manipulation_of_payer\",\"Manipulation of the payer\"},{\"lost_stolen\",\"Lost / stolen\"},{\"card_not_received\",\"Card not received\"},{\"counterfeit\",\"Counterfeit\"},{\"other\",\"Other\"}}) in Source",
+              "type": "m"
             }
           }
         ]
       },
       {
         "name": "Fact_Tx",
-        "lineageTag": "fact-tx",
         "columns": [
           {
             "name": "BookingDate",
             "dataType": "dateTime",
+            "lineageTag": "cd63dc04-6988-4a22-8af8-87e4234d86f3",
             "sourceColumn": "kpi_date",
             "summarizeBy": "none"
           },
           {
             "name": "CountryCode",
             "dataType": "string",
+            "lineageTag": "7083df1f-2c7f-47e5-b908-12e21cc19dcb",
             "sourceColumn": "issuer_country",
             "summarizeBy": "none"
           },
           {
             "name": "Instrument",
             "dataType": "string",
+            "lineageTag": "be167773-2892-45b7-b2b8-c3cf31969af9",
             "sourceColumn": "instrument_type",
             "summarizeBy": "none"
           },
           {
             "name": "TxCount",
             "dataType": "int64",
+            "lineageTag": "024eca18-99a3-4aac-9c27-1ab81d615ccd",
             "sourceColumn": "tx_count",
             "summarizeBy": "sum"
           },
           {
             "name": "TxValueEur",
-            "dataType": "decimal",
+            "dataType": "double",
+            "formatString": "\"€\"#,0.00",
+            "lineageTag": "7d41b64e-4c6c-4c22-9cda-4c03cfe6c9b2",
             "sourceColumn": "tx_value_eur",
-            "summarizeBy": "sum",
-            "formatString": "\"€\"#,0.00"
+            "summarizeBy": "sum"
           },
           {
             "name": "DeclineCount",
             "dataType": "int64",
+            "lineageTag": "95f9e78a-f090-426c-9c34-f0af04acb894",
             "sourceColumn": "decline_count",
             "summarizeBy": "sum"
           },
           {
             "name": "FraudCount",
             "dataType": "int64",
+            "lineageTag": "08c0ce54-58c2-45df-ae81-959a06aa6948",
             "sourceColumn": "fraud_count",
             "summarizeBy": "sum"
           },
           {
             "name": "FraudValueEur",
-            "dataType": "decimal",
+            "dataType": "double",
+            "formatString": "\"€\"#,0.00",
+            "lineageTag": "aa2a7839-2004-4a9c-aeba-9baef20f2ba3",
             "sourceColumn": "fraud_value_eur",
-            "summarizeBy": "sum",
-            "formatString": "\"€\"#,0.00"
+            "summarizeBy": "sum"
           },
           {
             "name": "LossValueEur",
-            "dataType": "decimal",
+            "dataType": "double",
+            "formatString": "\"€\"#,0.00",
+            "lineageTag": "eee42e05-eb7c-42f4-bed9-50984916aacd",
             "sourceColumn": "loss_value_eur",
-            "summarizeBy": "sum",
-            "formatString": "\"€\"#,0.00"
+            "summarizeBy": "sum"
           }
         ],
+        "lineageTag": "fact-tx",
         "partitions": [
           {
             "name": "Fact_Tx",
             "mode": "import",
             "source": {
-              "type": "m",
-              "expression": "let Source = #table({\"kpi_date\",\"issuer_country\",\"instrument_type\",\"tx_count\",\"tx_value_eur\",\"decline_count\",\"fraud_count\",\"fraud_value_eur\",\"loss_value_eur\"},{{#datetime(2025,1,15,0,0,0),\"SE\",\"card\",69184,2776160.54,567,34,2943.41,2121.26},{#datetime(2025,1,15,0,0,0),\"SE\",\"credit_transfer\",182964,9664608.7,1715,59,4625.64,3016.57},{#datetime(2025,1,15,0,0,0),\"SE\",\"direct_debit\",46956,7045993.75,550,43,11261.82,7091.38},{#datetime(2025,1,15,0,0,0),\"SE\",\"e_money\",112926,22690587.47,683,115,48700.56,28543.41},{#datetime(2025,1,15,0,0,0),\"SE\",\"cash_withdrawal\",80758,6391133.3,977,31,4155.69,2466.78},{#datetime(2025,1,15,0,0,0),\"NO\",\"card\",130165,20665494.77,1621,124,37347.6,31343.84},{#datetime(2025,1,15,0,0,0),\"NO\",\"credit_transfer\",139230,7122177.07,1161,120,14432.11,8582.11},{#datetime(2025,1,15,0,0,0),\"NO\",\"direct_debit\",90407,16222381.33,575,45,12727.34,6133.52},{#datetime(2025,1,15,0,0,0),\"NO\",\"e_money\",101024,21480647.42,913,71,34485.98,17762.41},{#datetime(2025,1,15,0,0,0),\"NO\",\"cash_withdrawal\",133132,10377498.45,1083,152,24199.39,16785.97},{#datetime(2025,1,15,0,0,0),\"DK\",\"card\",84862,12262446.54,675,60,13446.46,11028.2},{#datetime(2025,1,15,0,0,0),\"DK\",\"credit_transfer\",186001,14884006.6,1598,184,18739.37,14592.74},{#datetime(2025,1,15,0,0,0),\"DK\",\"direct_debit\",122694,14384495.04,801,137,31116.9,22938.31},{#datetime(2025,1,15,0,0,0),\"DK\",\"e_money\",95738,16214659.32,877,107,32556.39,18099.79},{#datetime(2025,1,15,0,0,0),\"DK\",\"cash_withdrawal\",104651,19645372.6,1079,101,33312.03,22765.88},{#datetime(2025,1,15,0,0,0),\"FI\",\"card\",134895,10786306.13,1885,102,10751.09,5040.61},{#datetime(2025,1,15,0,0,0),\"FI\",\"credit_transfer\",68743,4559893.02,500,62,8123.78,4906.01},{#datetime(2025,1,15,0,0,0),\"FI\",\"direct_debit\",196208,46933911.67,2007,230,127585.46,57999.38},{#datetime(2025,1,15,0,0,0),\"FI\",\"e_money\",70029,12237611.56,721,37,13146.54,6502.55},{#datetime(2025,1,15,0,0,0),\"FI\",\"cash_withdrawal\",153971,10381085.06,927,146,21021.97,17632.29},{#datetime(2025,1,15,0,0,0),\"EE\",\"card\",86832,12076138.11,594,74,23610.52,15419.21},{#datetime(2025,1,15,0,0,0),\"EE\",\"credit_transfer\",92143,6112034.09,1114,72,10565.33,6995.74},{#datetime(2025,1,15,0,0,0),\"EE\",\"direct_debit\",40149,6334855.35,397,16,4220.71,3562.82},{#datetime(2025,1,15,0,0,0),\"EE\",\"e_money\",120612,10141988.52,956,97,10622.91,7890.3},{#datetime(2025,1,15,0,0,0),\"EE\",\"cash_withdrawal\",58143,13691910.25,596,24,11629.33,9637.68},{#datetime(2025,2,15,0,0,0),\"SE\",\"card\",83287,7440578.15,1081,56,7380.89,4913.59},{#datetime(2025,2,15,0,0,0),\"SE\",\"credit_transfer\",92730,16798460.44,852,83,25342.08,20523.17},{#datetime(2025,2,15,0,0,0),\"SE\",\"direct_debit\",158354,9470497.18,1234,95,11163.13,6050.93},{#datetime(2025,2,15,0,0,0),\"SE\",\"e_money\",97728,3564542.99,1139,34,1596.8,738.62},{#datetime(2025,2,15,0,0,0),\"SE\",\"cash_withdrawal\",126619,6270901.79,1000,114,8347.56,4198.19},{#datetime(2025,2,15,0,0,0),\"NO\",\"card\",189695,29046741.12,1506,137,36274.53,17692.19},{#datetime(2025,2,15,0,0,0),\"NO\",\"credit_transfer\",152997,16467220.28,1421,164,22424.84,15952.63},{#datetime(2025,2,15,0,0,0),\"NO\",\"direct_debit\",65799,3120556.94,778,67,4264.38,2245.78},{#datetime(2025,2,15,0,0,0),\"NO\",\"e_money\",180584,22927987.93,1692,99,19165.5,15702.41},{#datetime(2025,2,15,0,0,0),\"NO\",\"cash_withdrawal\",156164,31333457.09,2006,60,24652.66,16424.47},{#datetime(2025,2,15,0,0,0),\"DK\",\"card\",43868,10249505.2,588,46,15220.85,9806.13},{#datetime(2025,2,15,0,0,0),\"DK\",\"credit_transfer\",96032,20383111.86,1269,43,10977.85,6654.43},{#datetime(2025,2,15,0,0,0),\"DK\",\"direct_debit\",159277,14888591.49,1843,152,31519.41,22528.45},{#datetime(2025,2,15,0,0,0),\"DK\",\"e_money\",167577,11182974.46,1403,196,25543.87,17034.65},{#datetime(2025,2,15,0,0,0),\"DK\",\"cash_withdrawal\",122209,5709467.72,1304,91,9814.55,5034.6},{#datetime(2025,2,15,0,0,0),\"FI\",\"card\",173124,8902529.55,1296,144,15385.71,8371.08},{#datetime(2025,2,15,0,0,0),\"FI\",\"credit_transfer\",71427,16287299.25,754,58,16553.98,7992.15},{#datetime(2025,2,15,0,0,0),\"FI\",\"direct_debit\",193006,29119108.47,1646,103,32177.32,18523.63},{#datetime(2025,2,15,0,0,0),\"FI\",\"e_money\",109629,12731884.35,1246,62,11600.12,8708.74},{#datetime(2025,2,15,0,0,0),\"FI\",\"cash_withdrawal\",59016,2178261.01,647,47,2307.18,1534.4},{#datetime(2025,2,15,0,0,0),\"EE\",\"card\",172614,15425837.4,2324,188,39365.19,23532.94},{#datetime(2025,2,15,0,0,0),\"EE\",\"credit_transfer\",81352,10154994.23,841,46,14234.67,11001.12},{#datetime(2025,2,15,0,0,0),\"EE\",\"direct_debit\",178658,6539550.44,2239,101,7624.67,6294.71},{#datetime(2025,2,15,0,0,0),\"EE\",\"e_money\",75203,6709274.29,986,72,9006.3,5067.87},{#datetime(2025,2,15,0,0,0),\"EE\",\"cash_withdrawal\",95215,17339651.1,726,82,23044.39,14873.14},{#datetime(2025,3,15,0,0,0),\"SE\",\"card\",53316,2874861.95,500,29,1883.67,1428.67},{#datetime(2025,3,15,0,0,0),\"SE\",\"credit_transfer\",108670,7403068.24,1036,101,13273.82,6567.22},{#datetime(2025,3,15,0,0,0),\"SE\",\"direct_debit\",79073,11611554.49,1002,65,13291.61,6658.81},{#datetime(2025,3,15,0,0,0),\"SE\",\"e_money\",120808,13259108.15,1626,141,19372.9,11490.53},{#datetime(2025,3,15,0,0,0),\"SE\",\"cash_withdrawal\",105412,18101490.86,930,84,33712.1,28302.48},{#datetime(2025,3,15,0,0,0),\"NO\",\"card\",80515,18098289.21,635,35,17621.72,9177.76},{#datetime(2025,3,15,0,0,0),\"NO\",\"credit_transfer\",148080,5935224.72,1761,88,8500.64,6553.09},{#datetime(2025,3,15,0,0,0),\"NO\",\"direct_debit\",105055,9422926.13,1292,41,8582.62,6809.77},{#datetime(2025,3,15,0,0,0),\"NO\",\"e_money\",98309,7462875.1,1312,60,10324.23,8244.2},{#datetime(2025,3,15,0,0,0),\"NO\",\"cash_withdrawal\",98438,3922873.32,742,58,5370.84,4494.08},{#datetime(2025,3,15,0,0,0),\"DK\",\"card\",113170,12107487.52,1140,103,25309.03,14741.5},{#datetime(2025,3,15,0,0,0),\"DK\",\"credit_transfer\",47235,2770099.37,650,21,3018.88,1679.06},{#datetime(2025,3,15,0,0,0),\"DK\",\"direct_debit\",68417,10761796.19,599,68,18903.53,15948.8},{#datetime(2025,3,15,0,0,0),\"DK\",\"e_money\",70315,8013453.46,746,37,8945.41,4031.49},{#datetime(2025,3,15,0,0,0),\"DK\",\"cash_withdrawal\",181151,31847381.1,2449,174,44543.78,27729.35},{#datetime(2025,3,15,0,0,0),\"FI\",\"card\",126559,20597079.73,1431,52,20057.44,13094.48},{#datetime(2025,3,15,0,0,0),\"FI\",\"credit_transfer\",147057,14980328.29,1702,117,17274.58,12368.11},{#datetime(2025,3,15,0,0,0),\"FI\",\"direct_debit\",139390,24232976.42,1843,119,32919.74,22029.06},{#datetime(2025,3,15,0,0,0),\"FI\",\"e_money\",40106,3902087.79,308,40,7739.42,4480.35},{#datetime(2025,3,15,0,0,0),\"FI\",\"cash_withdrawal\",155811,19576523.9,1201,113,33670.18,25872.5},{#datetime(2025,3,15,0,0,0),\"EE\",\"card\",84483,14367550.94,698,75,25573.93,12463.58},{#datetime(2025,3,15,0,0,0),\"EE\",\"credit_transfer\",101569,17563627.61,791,48,10223.93,5602.07},{#datetime(2025,3,15,0,0,0),\"EE\",\"direct_debit\",164554,26379843.36,1998,116,43737.61,29753.31},{#datetime(2025,3,15,0,0,0),\"EE\",\"e_money\",140657,19178204.94,1118,125,20574.95,15439.15},{#datetime(2025,3,15,0,0,0),\"EE\",\"cash_withdrawal\",67941,13219700.48,526,69,28256.99,17966.36},{#datetime(2025,4,15,0,0,0),\"SE\",\"card\",186120,16022260.68,2379,132,25474.73,18266.17},{#datetime(2025,4,15,0,0,0),\"SE\",\"credit_transfer\",186518,29295957.98,2536,205,64283.4,47422.48},{#datetime(2025,4,15,0,0,0),\"SE\",\"direct_debit\",172324,21106563.21,2284,120,20678.44,16431.05},{#datetime(2025,4,15,0,0,0),\"SE\",\"e_money\",157983,13923715.97,1260,138,26703.54,17584.81},{#datetime(2025,4,15,0,0,0),\"SE\",\"cash_withdrawal\",102716,9377198.03,679,57,8082.5,4670.75},{#datetime(2025,4,15,0,0,0),\"NO\",\"card\",181597,9355590.48,1308,117,8430.56,4515.25},{#datetime(2025,4,15,0,0,0),\"NO\",\"credit_transfer\",148755,17636076.07,1538,100,17414.78,10763.33},{#datetime(2025,4,15,0,0,0),\"NO\",\"direct_debit\",193112,44211585.94,1188,210,93675.0,60026.18},{#datetime(2025,4,15,0,0,0),\"NO\",\"e_money\",132211,12720759.86,1205,145,31898.82,21221.91},{#datetime(2025,4,15,0,0,0),\"NO\",\"cash_withdrawal\",183165,36444884.97,2414,135,41764.46,26907.04},{#datetime(2025,4,15,0,0,0),\"DK\",\"card\",141936,14748081.0,1622,94,13816.3,8800.38},{#datetime(2025,4,15,0,0,0),\"DK\",\"credit_transfer\",73456,17339142.28,754,81,37655.87,26931.47},{#datetime(2025,4,15,0,0,0),\"DK\",\"direct_debit\",62006,10340348.61,439,44,9284.78,5586.11},{#datetime(2025,4,15,0,0,0),\"DK\",\"e_money\",95485,12242452.84,830,104,20824.45,17294.32},{#datetime(2025,4,15,0,0,0),\"DK\",\"cash_withdrawal\",150510,13051574.59,1001,47,7748.78,6586.18},{#datetime(2025,4,15,0,0,0),\"FI\",\"card\",131740,10666400.76,862,153,15513.59,7173.67},{#datetime(2025,4,15,0,0,0),\"FI\",\"credit_transfer\",104823,7952809.89,646,45,4657.13,3342.81},{#datetime(2025,4,15,0,0,0),\"FI\",\"direct_debit\",187841,43070098.5,1825,99,38125.64,26396.56},{#datetime(2025,4,15,0,0,0),\"FI\",\"e_money\",70024,13615980.3,511,40,15184.7,12475.06},{#datetime(2025,4,15,0,0,0),\"FI\",\"cash_withdrawal\",190941,33196275.5,2609,125,46278.76,22232.25},{#datetime(2025,4,15,0,0,0),\"EE\",\"card\",103661,5793589.2,1262,110,12176.08,6068.83},{#datetime(2025,4,15,0,0,0),\"EE\",\"credit_transfer\",188355,36812147.54,1653,129,42399.73,27660.92},{#datetime(2025,4,15,0,0,0),\"EE\",\"direct_debit\",129451,4866540.87,1211,95,6298.45,3746.79},{#datetime(2025,4,15,0,0,0),\"EE\",\"e_money\",160517,28892782.62,1522,154,68055.16,37977.02},{#datetime(2025,4,15,0,0,0),\"EE\",\"cash_withdrawal\",181078,35093187.53,1759,188,71784.23,41557.46},{#datetime(2025,5,15,0,0,0),\"SE\",\"card\",104355,21424066.77,698,114,35504.67,22576.83},{#datetime(2025,5,15,0,0,0),\"SE\",\"credit_transfer\",199994,34394695.42,1738,148,41297.7,26637.84},{#datetime(2025,5,15,0,0,0),\"SE\",\"direct_debit\",133015,26410877.54,1160,145,60792.4,34074.59},{#datetime(2025,5,15,0,0,0),\"SE\",\"e_money\",42661,6011301.21,321,22,5357.89,3600.88},{#datetime(2025,5,15,0,0,0),\"SE\",\"cash_withdrawal\",102999,18187039.63,1150,76,29936.82,14585.86},{#datetime(2025,5,15,0,0,0),\"NO\",\"card\",98090,11565029.88,779,88,17427.83,11700.86},{#datetime(2025,5,15,0,0,0),\"NO\",\"credit_transfer\",130113,15903488.4,1557,77,19893.36,11107.79},{#datetime(2025,5,15,0,0,0),\"NO\",\"direct_debit\",105903,8711612.39,1246,61,10867.45,9023.8},{#datetime(2025,5,15,0,0,0),\"NO\",\"e_money\",88535,6575131.41,1054,48,7009.97,5286.1},{#datetime(2025,5,15,0,0,0),\"NO\",\"cash_withdrawal\",196445,18272279.45,1336,93,12938.6,6751.06},{#datetime(2025,5,15,0,0,0),\"DK\",\"card\",43708,7873724.75,306,14,3205.19,1816.88},{#datetime(2025,5,15,0,0,0),\"DK\",\"credit_transfer\",73103,12117793.01,878,28,5643.65,3181.53},{#datetime(2025,5,15,0,0,0),\"DK\",\"direct_debit\",165492,20735502.78,1237,57,17307.5,11095.69},{#datetime(2025,5,15,0,0,0),\"DK\",\"e_money\",57129,6692378.17,376,49,7288.17,3714.63},{#datetime(2025,5,15,0,0,0),\"DK\",\"cash_withdrawal\",187545,43054847.56,1253,98,43319.66,26705.25},{#datetime(2025,5,15,0,0,0),\"FI\",\"card\",196271,38685381.15,1531,151,53145.76,33327.09},{#datetime(2025,5,15,0,0,0),\"FI\",\"credit_transfer\",194278,46229695.11,1640,166,78706.07,58717.54},{#datetime(2025,5,15,0,0,0),\"FI\",\"direct_debit\",94470,15420393.01,766,35,8637.16,5793.78},{#datetime(2025,5,15,0,0,0),\"FI\",\"e_money\",81034,2880639.02,778,67,3759.92,2040.1},{#datetime(2025,5,15,0,0,0),\"FI\",\"cash_withdrawal\",114112,20438879.83,1099,104,44726.67,34221.77},{#datetime(2025,5,15,0,0,0),\"EE\",\"card\",194609,33189110.01,2621,132,42950.61,30454.3},{#datetime(2025,5,15,0,0,0),\"EE\",\"credit_transfer\",109633,22415496.05,720,49,16028.57,12014.75},{#datetime(2025,5,15,0,0,0),\"EE\",\"direct_debit\",189214,42354507.25,1800,136,48566.04,29674.02},{#datetime(2025,5,15,0,0,0),\"EE\",\"e_money\",111367,15323742.41,1108,41,7062.1,4398.36},{#datetime(2025,5,15,0,0,0),\"EE\",\"cash_withdrawal\",124494,19764828.83,772,62,20440.27,16233.8},{#datetime(2025,6,15,0,0,0),\"SE\",\"card\",193910,44582078.26,2714,175,62378.07,29073.96},{#datetime(2025,6,15,0,0,0),\"SE\",\"credit_transfer\",85925,11295070.56,963,96,18120.73,12396.97},{#datetime(2025,6,15,0,0,0),\"SE\",\"direct_debit\",168902,39465020.33,1648,112,42325.93,20817.58},{#datetime(2025,6,15,0,0,0),\"SE\",\"e_money\",82159,8430314.54,948,45,11214.61,8696.1},{#datetime(2025,6,15,0,0,0),\"SE\",\"cash_withdrawal\",184204,7832890.43,1234,97,5571.25,4228.69},{#datetime(2025,6,15,0,0,0),\"NO\",\"card\",174898,35698444.19,1050,189,69460.21,32763.11},{#datetime(2025,6,15,0,0,0),\"NO\",\"credit_transfer\",175905,19202628.63,2119,151,36066.53,19166.59},{#datetime(2025,6,15,0,0,0),\"NO\",\"direct_debit\",183974,11380210.7,1527,201,22754.68,10502.37},{#datetime(2025,6,15,0,0,0),\"NO\",\"e_money\",199612,39694705.65,2331,115,27849.12,17076.98},{#datetime(2025,6,15,0,0,0),\"NO\",\"cash_withdrawal\",98903,23579732.61,1315,70,22575.16,17673.13},{#datetime(2025,6,15,0,0,0),\"DK\",\"card\",170646,38599080.38,1422,159,62583.74,40241.33},{#datetime(2025,6,15,0,0,0),\"DK\",\"credit_transfer\",163789,13916305.48,1705,105,21397.12,13978.66},{#datetime(2025,6,15,0,0,0),\"DK\",\"direct_debit\",75784,16075720.53,622,76,28042.21,23098.35},{#datetime(2025,6,15,0,0,0),\"DK\",\"e_money\",173100,15539255.54,1042,165,33900.77,23119.29},{#datetime(2025,6,15,0,0,0),\"DK\",\"cash_withdrawal\",168356,35755181.6,1611,123,42636.49,32196.91},{#datetime(2025,6,15,0,0,0),\"FI\",\"card\",138883,17825028.42,1190,65,17575.48,11928.81},{#datetime(2025,6,15,0,0,0),\"FI\",\"credit_transfer\",101226,21306317.75,940,59,22537.91,18376.78},{#datetime(2025,6,15,0,0,0),\"FI\",\"direct_debit\",139937,15973268.99,1582,145,40965.25,26550.87},{#datetime(2025,6,15,0,0,0),\"FI\",\"e_money\",49704,3026003.64,682,29,2349.0,1851.05},{#datetime(2025,6,15,0,0,0),\"FI\",\"cash_withdrawal\",66138,9445827.36,638,62,15345.19,10924.43},{#datetime(2025,6,15,0,0,0),\"EE\",\"card\",80464,4050540.93,985,43,4351.38,2649.96},{#datetime(2025,6,15,0,0,0),\"EE\",\"credit_transfer\",61054,12797644.02,782,65,23080.53,13309.72},{#datetime(2025,6,15,0,0,0),\"EE\",\"direct_debit\",167912,35906053.33,1055,60,25923.76,21215.27},{#datetime(2025,6,15,0,0,0),\"EE\",\"e_money\",99634,18739870.64,943,38,14465.24,11558.19},{#datetime(2025,6,15,0,0,0),\"EE\",\"cash_withdrawal\",156307,10801561.05,1312,50,5603.32,2647.28}}), Typed = Table.TransformColumnTypes(Source,{{\"kpi_date\", type datetime},{\"issuer_country\", type text},{\"instrument_type\", type text},{\"tx_count\", Int64.Type},{\"tx_value_eur\", type number},{\"decline_count\", Int64.Type},{\"fraud_count\", Int64.Type},{\"fraud_value_eur\", type number},{\"loss_value_eur\", type number}}) in Typed"
+              "expression": "let Source = #table({\"kpi_date\",\"issuer_country\",\"instrument_type\",\"tx_count\",\"tx_value_eur\",\"decline_count\",\"fraud_count\",\"fraud_value_eur\",\"loss_value_eur\"},{{#datetime(2025,1,15,0,0,0),\"SE\",\"card\",69184,2776160.54,567,34,2943.41,2121.26},{#datetime(2025,1,15,0,0,0),\"SE\",\"credit_transfer\",182964,9664608.7,1715,59,4625.64,3016.57},{#datetime(2025,1,15,0,0,0),\"SE\",\"direct_debit\",46956,7045993.75,550,43,11261.82,7091.38},{#datetime(2025,1,15,0,0,0),\"SE\",\"e_money\",112926,22690587.47,683,115,48700.56,28543.41},{#datetime(2025,1,15,0,0,0),\"SE\",\"cash_withdrawal\",80758,6391133.3,977,31,4155.69,2466.78},{#datetime(2025,1,15,0,0,0),\"NO\",\"card\",130165,20665494.77,1621,124,37347.6,31343.84},{#datetime(2025,1,15,0,0,0),\"NO\",\"credit_transfer\",139230,7122177.07,1161,120,14432.11,8582.11},{#datetime(2025,1,15,0,0,0),\"NO\",\"direct_debit\",90407,16222381.33,575,45,12727.34,6133.52},{#datetime(2025,1,15,0,0,0),\"NO\",\"e_money\",101024,21480647.42,913,71,34485.98,17762.41},{#datetime(2025,1,15,0,0,0),\"NO\",\"cash_withdrawal\",133132,10377498.45,1083,152,24199.39,16785.97},{#datetime(2025,1,15,0,0,0),\"DK\",\"card\",84862,12262446.54,675,60,13446.46,11028.2},{#datetime(2025,1,15,0,0,0),\"DK\",\"credit_transfer\",186001,14884006.6,1598,184,18739.37,14592.74},{#datetime(2025,1,15,0,0,0),\"DK\",\"direct_debit\",122694,14384495.04,801,137,31116.9,22938.31},{#datetime(2025,1,15,0,0,0),\"DK\",\"e_money\",95738,16214659.32,877,107,32556.39,18099.79},{#datetime(2025,1,15,0,0,0),\"DK\",\"cash_withdrawal\",104651,19645372.6,1079,101,33312.03,22765.88},{#datetime(2025,1,15,0,0,0),\"FI\",\"card\",134895,10786306.13,1885,102,10751.09,5040.61},{#datetime(2025,1,15,0,0,0),\"FI\",\"credit_transfer\",68743,4559893.02,500,62,8123.78,4906.01},{#datetime(2025,1,15,0,0,0),\"FI\",\"direct_debit\",196208,46933911.67,2007,230,127585.46,57999.38},{#datetime(2025,1,15,0,0,0),\"FI\",\"e_money\",70029,12237611.56,721,37,13146.54,6502.55},{#datetime(2025,1,15,0,0,0),\"FI\",\"cash_withdrawal\",153971,10381085.06,927,146,21021.97,17632.29},{#datetime(2025,1,15,0,0,0),\"EE\",\"card\",86832,12076138.11,594,74,23610.52,15419.21},{#datetime(2025,1,15,0,0,0),\"EE\",\"credit_transfer\",92143,6112034.09,1114,72,10565.33,6995.74},{#datetime(2025,1,15,0,0,0),\"EE\",\"direct_debit\",40149,6334855.35,397,16,4220.71,3562.82},{#datetime(2025,1,15,0,0,0),\"EE\",\"e_money\",120612,10141988.52,956,97,10622.91,7890.3},{#datetime(2025,1,15,0,0,0),\"EE\",\"cash_withdrawal\",58143,13691910.25,596,24,11629.33,9637.68},{#datetime(2025,2,15,0,0,0),\"SE\",\"card\",83287,7440578.15,1081,56,7380.89,4913.59},{#datetime(2025,2,15,0,0,0),\"SE\",\"credit_transfer\",92730,16798460.44,852,83,25342.08,20523.17},{#datetime(2025,2,15,0,0,0),\"SE\",\"direct_debit\",158354,9470497.18,1234,95,11163.13,6050.93},{#datetime(2025,2,15,0,0,0),\"SE\",\"e_money\",97728,3564542.99,1139,34,1596.8,738.62},{#datetime(2025,2,15,0,0,0),\"SE\",\"cash_withdrawal\",126619,6270901.79,1000,114,8347.56,4198.19},{#datetime(2025,2,15,0,0,0),\"NO\",\"card\",189695,29046741.12,1506,137,36274.53,17692.19},{#datetime(2025,2,15,0,0,0),\"NO\",\"credit_transfer\",152997,16467220.28,1421,164,22424.84,15952.63},{#datetime(2025,2,15,0,0,0),\"NO\",\"direct_debit\",65799,3120556.94,778,67,4264.38,2245.78},{#datetime(2025,2,15,0,0,0),\"NO\",\"e_money\",180584,22927987.93,1692,99,19165.5,15702.41},{#datetime(2025,2,15,0,0,0),\"NO\",\"cash_withdrawal\",156164,31333457.09,2006,60,24652.66,16424.47},{#datetime(2025,2,15,0,0,0),\"DK\",\"card\",43868,10249505.2,588,46,15220.85,9806.13},{#datetime(2025,2,15,0,0,0),\"DK\",\"credit_transfer\",96032,20383111.86,1269,43,10977.85,6654.43},{#datetime(2025,2,15,0,0,0),\"DK\",\"direct_debit\",159277,14888591.49,1843,152,31519.41,22528.45},{#datetime(2025,2,15,0,0,0),\"DK\",\"e_money\",167577,11182974.46,1403,196,25543.87,17034.65},{#datetime(2025,2,15,0,0,0),\"DK\",\"cash_withdrawal\",122209,5709467.72,1304,91,9814.55,5034.6},{#datetime(2025,2,15,0,0,0),\"FI\",\"card\",173124,8902529.55,1296,144,15385.71,8371.08},{#datetime(2025,2,15,0,0,0),\"FI\",\"credit_transfer\",71427,16287299.25,754,58,16553.98,7992.15},{#datetime(2025,2,15,0,0,0),\"FI\",\"direct_debit\",193006,29119108.47,1646,103,32177.32,18523.63},{#datetime(2025,2,15,0,0,0),\"FI\",\"e_money\",109629,12731884.35,1246,62,11600.12,8708.74},{#datetime(2025,2,15,0,0,0),\"FI\",\"cash_withdrawal\",59016,2178261.01,647,47,2307.18,1534.4},{#datetime(2025,2,15,0,0,0),\"EE\",\"card\",172614,15425837.4,2324,188,39365.19,23532.94},{#datetime(2025,2,15,0,0,0),\"EE\",\"credit_transfer\",81352,10154994.23,841,46,14234.67,11001.12},{#datetime(2025,2,15,0,0,0),\"EE\",\"direct_debit\",178658,6539550.44,2239,101,7624.67,6294.71},{#datetime(2025,2,15,0,0,0),\"EE\",\"e_money\",75203,6709274.29,986,72,9006.3,5067.87},{#datetime(2025,2,15,0,0,0),\"EE\",\"cash_withdrawal\",95215,17339651.1,726,82,23044.39,14873.14},{#datetime(2025,3,15,0,0,0),\"SE\",\"card\",53316,2874861.95,500,29,1883.67,1428.67},{#datetime(2025,3,15,0,0,0),\"SE\",\"credit_transfer\",108670,7403068.24,1036,101,13273.82,6567.22},{#datetime(2025,3,15,0,0,0),\"SE\",\"direct_debit\",79073,11611554.49,1002,65,13291.61,6658.81},{#datetime(2025,3,15,0,0,0),\"SE\",\"e_money\",120808,13259108.15,1626,141,19372.9,11490.53},{#datetime(2025,3,15,0,0,0),\"SE\",\"cash_withdrawal\",105412,18101490.86,930,84,33712.1,28302.48},{#datetime(2025,3,15,0,0,0),\"NO\",\"card\",80515,18098289.21,635,35,17621.72,9177.76},{#datetime(2025,3,15,0,0,0),\"NO\",\"credit_transfer\",148080,5935224.72,1761,88,8500.64,6553.09},{#datetime(2025,3,15,0,0,0),\"NO\",\"direct_debit\",105055,9422926.13,1292,41,8582.62,6809.77},{#datetime(2025,3,15,0,0,0),\"NO\",\"e_money\",98309,7462875.1,1312,60,10324.23,8244.2},{#datetime(2025,3,15,0,0,0),\"NO\",\"cash_withdrawal\",98438,3922873.32,742,58,5370.84,4494.08},{#datetime(2025,3,15,0,0,0),\"DK\",\"card\",113170,12107487.52,1140,103,25309.03,14741.5},{#datetime(2025,3,15,0,0,0),\"DK\",\"credit_transfer\",47235,2770099.37,650,21,3018.88,1679.06},{#datetime(2025,3,15,0,0,0),\"DK\",\"direct_debit\",68417,10761796.19,599,68,18903.53,15948.8},{#datetime(2025,3,15,0,0,0),\"DK\",\"e_money\",70315,8013453.46,746,37,8945.41,4031.49},{#datetime(2025,3,15,0,0,0),\"DK\",\"cash_withdrawal\",181151,31847381.1,2449,174,44543.78,27729.35},{#datetime(2025,3,15,0,0,0),\"FI\",\"card\",126559,20597079.73,1431,52,20057.44,13094.48},{#datetime(2025,3,15,0,0,0),\"FI\",\"credit_transfer\",147057,14980328.29,1702,117,17274.58,12368.11},{#datetime(2025,3,15,0,0,0),\"FI\",\"direct_debit\",139390,24232976.42,1843,119,32919.74,22029.06},{#datetime(2025,3,15,0,0,0),\"FI\",\"e_money\",40106,3902087.79,308,40,7739.42,4480.35},{#datetime(2025,3,15,0,0,0),\"FI\",\"cash_withdrawal\",155811,19576523.9,1201,113,33670.18,25872.5},{#datetime(2025,3,15,0,0,0),\"EE\",\"card\",84483,14367550.94,698,75,25573.93,12463.58},{#datetime(2025,3,15,0,0,0),\"EE\",\"credit_transfer\",101569,17563627.61,791,48,10223.93,5602.07},{#datetime(2025,3,15,0,0,0),\"EE\",\"direct_debit\",164554,26379843.36,1998,116,43737.61,29753.31},{#datetime(2025,3,15,0,0,0),\"EE\",\"e_money\",140657,19178204.94,1118,125,20574.95,15439.15},{#datetime(2025,3,15,0,0,0),\"EE\",\"cash_withdrawal\",67941,13219700.48,526,69,28256.99,17966.36},{#datetime(2025,4,15,0,0,0),\"SE\",\"card\",186120,16022260.68,2379,132,25474.73,18266.17},{#datetime(2025,4,15,0,0,0),\"SE\",\"credit_transfer\",186518,29295957.98,2536,205,64283.4,47422.48},{#datetime(2025,4,15,0,0,0),\"SE\",\"direct_debit\",172324,21106563.21,2284,120,20678.44,16431.05},{#datetime(2025,4,15,0,0,0),\"SE\",\"e_money\",157983,13923715.97,1260,138,26703.54,17584.81},{#datetime(2025,4,15,0,0,0),\"SE\",\"cash_withdrawal\",102716,9377198.03,679,57,8082.5,4670.75},{#datetime(2025,4,15,0,0,0),\"NO\",\"card\",181597,9355590.48,1308,117,8430.56,4515.25},{#datetime(2025,4,15,0,0,0),\"NO\",\"credit_transfer\",148755,17636076.07,1538,100,17414.78,10763.33},{#datetime(2025,4,15,0,0,0),\"NO\",\"direct_debit\",193112,44211585.94,1188,210,93675.0,60026.18},{#datetime(2025,4,15,0,0,0),\"NO\",\"e_money\",132211,12720759.86,1205,145,31898.82,21221.91},{#datetime(2025,4,15,0,0,0),\"NO\",\"cash_withdrawal\",183165,36444884.97,2414,135,41764.46,26907.04},{#datetime(2025,4,15,0,0,0),\"DK\",\"card\",141936,14748081.0,1622,94,13816.3,8800.38},{#datetime(2025,4,15,0,0,0),\"DK\",\"credit_transfer\",73456,17339142.28,754,81,37655.87,26931.47},{#datetime(2025,4,15,0,0,0),\"DK\",\"direct_debit\",62006,10340348.61,439,44,9284.78,5586.11},{#datetime(2025,4,15,0,0,0),\"DK\",\"e_money\",95485,12242452.84,830,104,20824.45,17294.32},{#datetime(2025,4,15,0,0,0),\"DK\",\"cash_withdrawal\",150510,13051574.59,1001,47,7748.78,6586.18},{#datetime(2025,4,15,0,0,0),\"FI\",\"card\",131740,10666400.76,862,153,15513.59,7173.67},{#datetime(2025,4,15,0,0,0),\"FI\",\"credit_transfer\",104823,7952809.89,646,45,4657.13,3342.81},{#datetime(2025,4,15,0,0,0),\"FI\",\"direct_debit\",187841,43070098.5,1825,99,38125.64,26396.56},{#datetime(2025,4,15,0,0,0),\"FI\",\"e_money\",70024,13615980.3,511,40,15184.7,12475.06},{#datetime(2025,4,15,0,0,0),\"FI\",\"cash_withdrawal\",190941,33196275.5,2609,125,46278.76,22232.25},{#datetime(2025,4,15,0,0,0),\"EE\",\"card\",103661,5793589.2,1262,110,12176.08,6068.83},{#datetime(2025,4,15,0,0,0),\"EE\",\"credit_transfer\",188355,36812147.54,1653,129,42399.73,27660.92},{#datetime(2025,4,15,0,0,0),\"EE\",\"direct_debit\",129451,4866540.87,1211,95,6298.45,3746.79},{#datetime(2025,4,15,0,0,0),\"EE\",\"e_money\",160517,28892782.62,1522,154,68055.16,37977.02},{#datetime(2025,4,15,0,0,0),\"EE\",\"cash_withdrawal\",181078,35093187.53,1759,188,71784.23,41557.46},{#datetime(2025,5,15,0,0,0),\"SE\",\"card\",104355,21424066.77,698,114,35504.67,22576.83},{#datetime(2025,5,15,0,0,0),\"SE\",\"credit_transfer\",199994,34394695.42,1738,148,41297.7,26637.84},{#datetime(2025,5,15,0,0,0),\"SE\",\"direct_debit\",133015,26410877.54,1160,145,60792.4,34074.59},{#datetime(2025,5,15,0,0,0),\"SE\",\"e_money\",42661,6011301.21,321,22,5357.89,3600.88},{#datetime(2025,5,15,0,0,0),\"SE\",\"cash_withdrawal\",102999,18187039.63,1150,76,29936.82,14585.86},{#datetime(2025,5,15,0,0,0),\"NO\",\"card\",98090,11565029.88,779,88,17427.83,11700.86},{#datetime(2025,5,15,0,0,0),\"NO\",\"credit_transfer\",130113,15903488.4,1557,77,19893.36,11107.79},{#datetime(2025,5,15,0,0,0),\"NO\",\"direct_debit\",105903,8711612.39,1246,61,10867.45,9023.8},{#datetime(2025,5,15,0,0,0),\"NO\",\"e_money\",88535,6575131.41,1054,48,7009.97,5286.1},{#datetime(2025,5,15,0,0,0),\"NO\",\"cash_withdrawal\",196445,18272279.45,1336,93,12938.6,6751.06},{#datetime(2025,5,15,0,0,0),\"DK\",\"card\",43708,7873724.75,306,14,3205.19,1816.88},{#datetime(2025,5,15,0,0,0),\"DK\",\"credit_transfer\",73103,12117793.01,878,28,5643.65,3181.53},{#datetime(2025,5,15,0,0,0),\"DK\",\"direct_debit\",165492,20735502.78,1237,57,17307.5,11095.69},{#datetime(2025,5,15,0,0,0),\"DK\",\"e_money\",57129,6692378.17,376,49,7288.17,3714.63},{#datetime(2025,5,15,0,0,0),\"DK\",\"cash_withdrawal\",187545,43054847.56,1253,98,43319.66,26705.25},{#datetime(2025,5,15,0,0,0),\"FI\",\"card\",196271,38685381.15,1531,151,53145.76,33327.09},{#datetime(2025,5,15,0,0,0),\"FI\",\"credit_transfer\",194278,46229695.11,1640,166,78706.07,58717.54},{#datetime(2025,5,15,0,0,0),\"FI\",\"direct_debit\",94470,15420393.01,766,35,8637.16,5793.78},{#datetime(2025,5,15,0,0,0),\"FI\",\"e_money\",81034,2880639.02,778,67,3759.92,2040.1},{#datetime(2025,5,15,0,0,0),\"FI\",\"cash_withdrawal\",114112,20438879.83,1099,104,44726.67,34221.77},{#datetime(2025,5,15,0,0,0),\"EE\",\"card\",194609,33189110.01,2621,132,42950.61,30454.3},{#datetime(2025,5,15,0,0,0),\"EE\",\"credit_transfer\",109633,22415496.05,720,49,16028.57,12014.75},{#datetime(2025,5,15,0,0,0),\"EE\",\"direct_debit\",189214,42354507.25,1800,136,48566.04,29674.02},{#datetime(2025,5,15,0,0,0),\"EE\",\"e_money\",111367,15323742.41,1108,41,7062.1,4398.36},{#datetime(2025,5,15,0,0,0),\"EE\",\"cash_withdrawal\",124494,19764828.83,772,62,20440.27,16233.8},{#datetime(2025,6,15,0,0,0),\"SE\",\"card\",193910,44582078.26,2714,175,62378.07,29073.96},{#datetime(2025,6,15,0,0,0),\"SE\",\"credit_transfer\",85925,11295070.56,963,96,18120.73,12396.97},{#datetime(2025,6,15,0,0,0),\"SE\",\"direct_debit\",168902,39465020.33,1648,112,42325.93,20817.58},{#datetime(2025,6,15,0,0,0),\"SE\",\"e_money\",82159,8430314.54,948,45,11214.61,8696.1},{#datetime(2025,6,15,0,0,0),\"SE\",\"cash_withdrawal\",184204,7832890.43,1234,97,5571.25,4228.69},{#datetime(2025,6,15,0,0,0),\"NO\",\"card\",174898,35698444.19,1050,189,69460.21,32763.11},{#datetime(2025,6,15,0,0,0),\"NO\",\"credit_transfer\",175905,19202628.63,2119,151,36066.53,19166.59},{#datetime(2025,6,15,0,0,0),\"NO\",\"direct_debit\",183974,11380210.7,1527,201,22754.68,10502.37},{#datetime(2025,6,15,0,0,0),\"NO\",\"e_money\",199612,39694705.65,2331,115,27849.12,17076.98},{#datetime(2025,6,15,0,0,0),\"NO\",\"cash_withdrawal\",98903,23579732.61,1315,70,22575.16,17673.13},{#datetime(2025,6,15,0,0,0),\"DK\",\"card\",170646,38599080.38,1422,159,62583.74,40241.33},{#datetime(2025,6,15,0,0,0),\"DK\",\"credit_transfer\",163789,13916305.48,1705,105,21397.12,13978.66},{#datetime(2025,6,15,0,0,0),\"DK\",\"direct_debit\",75784,16075720.53,622,76,28042.21,23098.35},{#datetime(2025,6,15,0,0,0),\"DK\",\"e_money\",173100,15539255.54,1042,165,33900.77,23119.29},{#datetime(2025,6,15,0,0,0),\"DK\",\"cash_withdrawal\",168356,35755181.6,1611,123,42636.49,32196.91},{#datetime(2025,6,15,0,0,0),\"FI\",\"card\",138883,17825028.42,1190,65,17575.48,11928.81},{#datetime(2025,6,15,0,0,0),\"FI\",\"credit_transfer\",101226,21306317.75,940,59,22537.91,18376.78},{#datetime(2025,6,15,0,0,0),\"FI\",\"direct_debit\",139937,15973268.99,1582,145,40965.25,26550.87},{#datetime(2025,6,15,0,0,0),\"FI\",\"e_money\",49704,3026003.64,682,29,2349.0,1851.05},{#datetime(2025,6,15,0,0,0),\"FI\",\"cash_withdrawal\",66138,9445827.36,638,62,15345.19,10924.43},{#datetime(2025,6,15,0,0,0),\"EE\",\"card\",80464,4050540.93,985,43,4351.38,2649.96},{#datetime(2025,6,15,0,0,0),\"EE\",\"credit_transfer\",61054,12797644.02,782,65,23080.53,13309.72},{#datetime(2025,6,15,0,0,0),\"EE\",\"direct_debit\",167912,35906053.33,1055,60,25923.76,21215.27},{#datetime(2025,6,15,0,0,0),\"EE\",\"e_money\",99634,18739870.64,943,38,14465.24,11558.19},{#datetime(2025,6,15,0,0,0),\"EE\",\"cash_withdrawal\",156307,10801561.05,1312,50,5603.32,2647.28}}), Typed = Table.TransformColumnTypes(Source,{{\"kpi_date\", type datetime},{\"issuer_country\", type text},{\"instrument_type\", type text},{\"tx_count\", Int64.Type},{\"tx_value_eur\", type number},{\"decline_count\", Int64.Type},{\"fraud_count\", Int64.Type},{\"fraud_value_eur\", type number},{\"loss_value_eur\", type number}}) in Typed",
+              "type": "m"
             }
           }
         ]
       },
       {
         "name": "Fact_Eba",
-        "lineageTag": "fact-eba",
         "columns": [
           {
             "name": "Quarter",
             "dataType": "string",
+            "lineageTag": "e1c01e7f-40b3-47a6-8afc-2f857d01996f",
             "sourceColumn": "quarter",
             "summarizeBy": "none"
           },
           {
             "name": "CountryCode",
             "dataType": "string",
+            "lineageTag": "86418a36-c69e-4157-a4f7-ca3e91e8c0d7",
             "sourceColumn": "reporting_country",
             "summarizeBy": "none"
           },
           {
             "name": "Instrument",
             "dataType": "string",
+            "lineageTag": "f4bbdd59-1d44-4cfb-8596-db6429dbc6d2",
             "sourceColumn": "instrument",
             "summarizeBy": "none"
           },
           {
             "name": "Channel",
             "dataType": "string",
+            "lineageTag": "0a69fe38-a150-4b70-9ec1-fc2e156e004f",
             "sourceColumn": "channel",
             "summarizeBy": "none"
           },
           {
             "name": "ExemptionCode",
             "dataType": "string",
+            "lineageTag": "75f3b647-f4e7-4c10-91cc-b5fc0cdb5f89",
             "sourceColumn": "sca_exemption",
             "summarizeBy": "none"
           },
           {
             "name": "FraudTypeCode",
             "dataType": "string",
+            "lineageTag": "9b7a65ee-c9ca-4484-aabb-9b586587c58b",
             "sourceColumn": "fraud_type",
             "summarizeBy": "none"
           },
           {
             "name": "CounterpartyGeo",
             "dataType": "string",
+            "lineageTag": "4f522960-dc7f-4926-9216-c596d8269e95",
             "sourceColumn": "counterparty_geo",
             "summarizeBy": "none"
           },
           {
             "name": "LossBearer",
             "dataType": "string",
+            "lineageTag": "2aaf3ce7-fba9-4002-948f-08d251c1da04",
             "sourceColumn": "loss_bearer",
             "summarizeBy": "none"
           },
           {
             "name": "TxCount",
             "dataType": "int64",
+            "lineageTag": "352e8560-dea1-4037-aac4-e9197dca69e1",
             "sourceColumn": "tx_count",
             "summarizeBy": "sum"
           },
           {
             "name": "TxValueEur",
-            "dataType": "decimal",
+            "dataType": "double",
+            "formatString": "\"€\"#,0.00",
+            "lineageTag": "ce4448cc-c651-49b5-82c5-1ff0778574cd",
             "sourceColumn": "tx_value_eur",
-            "summarizeBy": "sum",
-            "formatString": "\"€\"#,0.00"
+            "summarizeBy": "sum"
           },
           {
             "name": "FraudCount",
             "dataType": "int64",
+            "lineageTag": "fa650ba6-5cf6-4ee1-9b15-d9ac9a4a8dd0",
             "sourceColumn": "fraud_count",
             "summarizeBy": "sum"
           },
           {
             "name": "FraudValueEur",
-            "dataType": "decimal",
+            "dataType": "double",
+            "formatString": "\"€\"#,0.00",
+            "lineageTag": "14e3b6d7-e3ff-486d-a7ff-6e6965461262",
             "sourceColumn": "fraud_value_eur",
-            "summarizeBy": "sum",
-            "formatString": "\"€\"#,0.00"
+            "summarizeBy": "sum"
           },
           {
             "name": "LossValueEur",
-            "dataType": "decimal",
+            "dataType": "double",
+            "formatString": "\"€\"#,0.00",
+            "lineageTag": "f1ba1c4a-80b5-4d86-9d3f-9c6d0d890751",
             "sourceColumn": "loss_value_eur",
-            "summarizeBy": "sum",
-            "formatString": "\"€\"#,0.00"
+            "summarizeBy": "sum"
           }
         ],
+        "lineageTag": "fact-eba",
         "partitions": [
           {
             "name": "Fact_Eba",
             "mode": "import",
             "source": {
-              "type": "m",
-              "expression": "let Source = #table({\"quarter\",\"reporting_country\",\"instrument\",\"channel\",\"sca_exemption\",\"fraud_type\",\"counterparty_geo\",\"loss_bearer\",\"tx_count\",\"tx_value_eur\",\"fraud_count\",\"fraud_value_eur\",\"loss_value_eur\"},{{\"2024-Q3\",\"SE\",\"card\",\"pos\",\"tra\",\"unauthorised_modification\",\"domestic\",\"merchant\",575876,61890197.73,239,48399.06,33054.82},{\"2024-Q3\",\"SE\",\"credit_transfer\",\"moto\",\"recurring\",\"lost_stolen\",\"eea\",\"merchant\",601126,91099362.7,296,103358.24,48739.49},{\"2024-Q3\",\"SE\",\"direct_debit\",\"ecommerce\",\"mit\",\"manipulation_of_payer\",\"non_eea\",\"payer\",209853,42349077.38,141,45993.38,30967.3},{\"2024-Q3\",\"NO\",\"card\",\"moto\",\"mit\",\"unauthorised_issuance\",\"domestic\",\"payer\",869975,185448423.67,741,284717.74,156896.8},{\"2024-Q3\",\"NO\",\"credit_transfer\",\"moto\",\"recurring\",\"unauthorised_issuance\",\"non_eea\",\"merchant\",799704,83659153.35,429,92863.58,38164.13},{\"2024-Q3\",\"NO\",\"direct_debit\",\"pos\",\"unattended\",\"other\",\"eea\",\"psp\",251426,51268540.08,225,101675.68,86573.53},{\"2024-Q3\",\"DK\",\"card\",\"pos\",\"low_value\",\"counterfeit\",\"non_eea\",\"psp\",867542,64392227.52,434,68650.49,53803.82},{\"2024-Q3\",\"DK\",\"credit_transfer\",\"atm\",\"corporate\",\"counterfeit\",\"eea\",\"psp\",523939,95330641.91,171,52934.75,24652.03},{\"2024-Q3\",\"DK\",\"direct_debit\",\"atm\",\"tra\",\"manipulation_of_payer\",\"eea\",\"payer\",410548,26188349.32,300,45327.76,30162.28},{\"2024-Q3\",\"FI\",\"card\",\"pos\",\"secure_corp\",\"other\",\"non_eea\",\"payer\",555168,102573870.6,374,95554.8,74253.32},{\"2024-Q3\",\"FI\",\"credit_transfer\",\"atm\",\"unattended\",\"lost_stolen\",\"non_eea\",\"payer\",294689,53728510.16,91,31361.5,19675.99},{\"2024-Q3\",\"FI\",\"direct_debit\",\"atm\",\"unattended\",\"unauthorised_modification\",\"non_eea\",\"psp\",313609,50638627.11,212,67830.29,59119.83},{\"2024-Q3\",\"EE\",\"card\",\"pos\",\"sca_applied\",\"unauthorised_issuance\",\"eea\",\"payer\",866269,163113223.25,890,273561.79,165271.79},{\"2024-Q3\",\"EE\",\"credit_transfer\",\"moto\",\"unattended\",\"counterfeit\",\"non_eea\",\"psp\",321761,18499507.04,324,26996.61,16922.07},{\"2024-Q3\",\"EE\",\"direct_debit\",\"atm\",\"sca_applied\",\"counterfeit\",\"eea\",\"psp\",635037,100263414.66,614,191675.35,166666.8},{\"2024-Q4\",\"SE\",\"card\",\"atm\",\"contactless_lv\",\"counterfeit\",\"eea\",\"psp\",664920,79820490.8,325,66284.22,59023.7},{\"2024-Q4\",\"SE\",\"credit_transfer\",\"ecommerce\",\"trusted\",\"counterfeit\",\"non_eea\",\"merchant\",617479,55362339.32,663,139330.77,113149.9},{\"2024-Q4\",\"SE\",\"direct_debit\",\"pos\",\"low_value\",\"other\",\"non_eea\",\"psp\",222394,10920464.31,126,14773.01,11722.22},{\"2024-Q4\",\"NO\",\"card\",\"ecommerce\",\"recurring\",\"other\",\"domestic\",\"psp\",814867,64269573.45,811,106271.74,50349.12},{\"2024-Q4\",\"NO\",\"credit_transfer\",\"ecommerce\",\"corporate\",\"other\",\"domestic\",\"merchant\",766456,65239014.34,336,57975.99,23937.71},{\"2024-Q4\",\"NO\",\"direct_debit\",\"ecommerce\",\"low_value\",\"lost_stolen\",\"eea\",\"payer\",539498,23112415.34,276,17019.88,10390.3},{\"2024-Q4\",\"DK\",\"card\",\"atm\",\"mit\",\"counterfeit\",\"domestic\",\"psp\",738169,108407413.13,488,110633.65,78279.22},{\"2024-Q4\",\"DK\",\"credit_transfer\",\"moto\",\"low_value\",\"unauthorised_issuance\",\"eea\",\"merchant\",702248,135192387.32,450,122908.68,92943.62},{\"2024-Q4\",\"DK\",\"direct_debit\",\"atm\",\"secure_corp\",\"card_not_received\",\"non_eea\",\"payer\",355539,18425027.2,184,19036.31,12833.87},{\"2024-Q4\",\"FI\",\"card\",\"pos\",\"secure_corp\",\"lost_stolen\",\"domestic\",\"payer\",675755,88523359.94,435,123793.78,56599.39},{\"2024-Q4\",\"FI\",\"credit_transfer\",\"atm\",\"recurring\",\"manipulation_of_payer\",\"domestic\",\"merchant\",555395,104933810.06,343,136257.0,75796.25},{\"2024-Q4\",\"FI\",\"direct_debit\",\"atm\",\"tra\",\"card_not_received\",\"domestic\",\"merchant\",697305,36318430.46,673,49163.03,22038.91},{\"2024-Q4\",\"EE\",\"card\",\"moto\",\"sca_applied\",\"manipulation_of_payer\",\"non_eea\",\"payer\",788866,111311366.05,659,162902.74,136317.61},{\"2024-Q4\",\"EE\",\"credit_transfer\",\"ecommerce\",\"corporate\",\"other\",\"non_eea\",\"payer\",568727,33354759.03,401,34576.08,22166.54},{\"2024-Q4\",\"EE\",\"direct_debit\",\"ecommerce\",\"unattended\",\"counterfeit\",\"non_eea\",\"payer\",320465,56808514.49,243,94248.66,77526.83},{\"2025-Q1\",\"SE\",\"card\",\"ecommerce\",\"tra\",\"other\",\"domestic\",\"merchant\",230359,16695243.87,198,23532.37,13411.39},{\"2025-Q1\",\"SE\",\"credit_transfer\",\"pos\",\"secure_corp\",\"lost_stolen\",\"eea\",\"payer\",889275,99724349.55,367,82167.14,34126.36},{\"2025-Q1\",\"SE\",\"direct_debit\",\"ecommerce\",\"sca_applied\",\"unauthorised_modification\",\"domestic\",\"merchant\",365055,38918351.7,320,73501.55,50260.12},{\"2025-Q1\",\"NO\",\"card\",\"moto\",\"secure_corp\",\"manipulation_of_payer\",\"domestic\",\"merchant\",252179,40680095.99,130,42531.7,27340.69},{\"2025-Q1\",\"NO\",\"credit_transfer\",\"atm\",\"sca_applied\",\"unauthorised_modification\",\"eea\",\"merchant\",319346,32615162.73,124,25911.57,18049.15},{\"2025-Q1\",\"NO\",\"direct_debit\",\"atm\",\"recurring\",\"manipulation_of_payer\",\"domestic\",\"psp\",257443,10653937.56,139,8814.63,4130.69},{\"2025-Q1\",\"DK\",\"card\",\"atm\",\"low_value\",\"lost_stolen\",\"non_eea\",\"psp\",721546,125882749.49,317,95025.97,71443.91},{\"2025-Q1\",\"DK\",\"credit_transfer\",\"moto\",\"secure_corp\",\"manipulation_of_payer\",\"domestic\",\"payer\",657409,28514113.87,681,66409.42,45681.68},{\"2025-Q1\",\"DK\",\"direct_debit\",\"atm\",\"low_value\",\"lost_stolen\",\"domestic\",\"psp\",221869,47461316.66,97,48603.94,30622.84},{\"2025-Q1\",\"FI\",\"card\",\"atm\",\"trusted\",\"manipulation_of_payer\",\"domestic\",\"psp\",656839,95896413.06,472,119583.39,66385.2},{\"2025-Q1\",\"FI\",\"credit_transfer\",\"atm\",\"tra\",\"unauthorised_modification\",\"domestic\",\"psp\",735280,113218737.96,532,123965.41,97698.89},{\"2025-Q1\",\"FI\",\"direct_debit\",\"pos\",\"mit\",\"lost_stolen\",\"non_eea\",\"merchant\",468402,35368531.26,366,59037.61,42964.89},{\"2025-Q1\",\"EE\",\"card\",\"atm\",\"corporate\",\"unauthorised_modification\",\"eea\",\"psp\",670711,109060308.95,674,219989.29,196508.95},{\"2025-Q1\",\"EE\",\"credit_transfer\",\"ecommerce\",\"recurring\",\"lost_stolen\",\"eea\",\"psp\",691699,82725437.6,375,71854.49,30759.91},{\"2025-Q1\",\"EE\",\"direct_debit\",\"ecommerce\",\"unattended\",\"card_not_received\",\"non_eea\",\"payer\",259653,27620008.31,137,29279.24,26020.0},{\"2025-Q2\",\"SE\",\"card\",\"pos\",\"corporate\",\"card_not_received\",\"eea\",\"merchant\",685188,98981774.28,728,222196.88,93436.31},{\"2025-Q2\",\"SE\",\"credit_transfer\",\"ecommerce\",\"contactless_lv\",\"counterfeit\",\"domestic\",\"psp\",358189,76075770.52,236,109875.09,89953.48},{\"2025-Q2\",\"SE\",\"direct_debit\",\"atm\",\"corporate\",\"manipulation_of_payer\",\"eea\",\"payer\",459778,76953920.55,502,157662.77,111136.91},{\"2025-Q2\",\"NO\",\"card\",\"atm\",\"low_value\",\"card_not_received\",\"non_eea\",\"payer\",554803,89989928.57,189,61127.51,34679.14},{\"2025-Q2\",\"NO\",\"credit_transfer\",\"pos\",\"corporate\",\"unauthorised_issuance\",\"non_eea\",\"merchant\",497949,42504548.84,488,98341.98,68972.19},{\"2025-Q2\",\"NO\",\"direct_debit\",\"pos\",\"unattended\",\"counterfeit\",\"domestic\",\"payer\",348298,71406092.22,190,78749.18,57570.97},{\"2025-Q2\",\"DK\",\"card\",\"ecommerce\",\"secure_corp\",\"card_not_received\",\"eea\",\"psp\",786072,84740349.98,733,173407.6,127464.68},{\"2025-Q2\",\"DK\",\"credit_transfer\",\"pos\",\"trusted\",\"unauthorised_modification\",\"domestic\",\"psp\",580211,55465788.45,615,98528.96,77155.87},{\"2025-Q2\",\"DK\",\"direct_debit\",\"ecommerce\",\"corporate\",\"other\",\"non_eea\",\"psp\",510160,97949245.62,194,80006.09,65409.77},{\"2025-Q2\",\"FI\",\"card\",\"pos\",\"mit\",\"unauthorised_issuance\",\"eea\",\"payer\",826258,89078525.26,355,84753.45,66577.98},{\"2025-Q2\",\"FI\",\"credit_transfer\",\"pos\",\"contactless_lv\",\"unauthorised_modification\",\"eea\",\"payer\",449068,96336738.69,354,161576.89,127952.77},{\"2025-Q2\",\"FI\",\"direct_debit\",\"atm\",\"secure_corp\",\"card_not_received\",\"non_eea\",\"payer\",403440,42849916.11,426,107816.07,68014.69},{\"2025-Q2\",\"EE\",\"card\",\"moto\",\"corporate\",\"card_not_received\",\"domestic\",\"merchant\",369930,69191863.73,348,94526.29,49626.45},{\"2025-Q2\",\"EE\",\"credit_transfer\",\"pos\",\"secure_corp\",\"unauthorised_issuance\",\"domestic\",\"payer\",740970,143162731.2,391,161623.27,86694.02},{\"2025-Q2\",\"EE\",\"direct_debit\",\"moto\",\"low_value\",\"manipulation_of_payer\",\"domestic\",\"psp\",566566,117553916.42,358,128956.79,75695.15}}), Typed = Table.TransformColumnTypes(Source,{{\"quarter\", type text},{\"reporting_country\", type text},{\"instrument\", type text},{\"channel\", type text},{\"sca_exemption\", type text},{\"fraud_type\", type text},{\"counterparty_geo\", type text},{\"loss_bearer\", type text},{\"tx_count\", Int64.Type},{\"tx_value_eur\", type number},{\"fraud_count\", Int64.Type},{\"fraud_value_eur\", type number},{\"loss_value_eur\", type number}}) in Typed"
+              "expression": "let Source = #table({\"quarter\",\"reporting_country\",\"instrument\",\"channel\",\"sca_exemption\",\"fraud_type\",\"counterparty_geo\",\"loss_bearer\",\"tx_count\",\"tx_value_eur\",\"fraud_count\",\"fraud_value_eur\",\"loss_value_eur\"},{{\"2024-Q3\",\"SE\",\"card\",\"pos\",\"tra\",\"unauthorised_modification\",\"domestic\",\"merchant\",575876,61890197.73,239,48399.06,33054.82},{\"2024-Q3\",\"SE\",\"credit_transfer\",\"moto\",\"recurring\",\"lost_stolen\",\"eea\",\"merchant\",601126,91099362.7,296,103358.24,48739.49},{\"2024-Q3\",\"SE\",\"direct_debit\",\"ecommerce\",\"mit\",\"manipulation_of_payer\",\"non_eea\",\"payer\",209853,42349077.38,141,45993.38,30967.3},{\"2024-Q3\",\"NO\",\"card\",\"moto\",\"mit\",\"unauthorised_issuance\",\"domestic\",\"payer\",869975,185448423.67,741,284717.74,156896.8},{\"2024-Q3\",\"NO\",\"credit_transfer\",\"moto\",\"recurring\",\"unauthorised_issuance\",\"non_eea\",\"merchant\",799704,83659153.35,429,92863.58,38164.13},{\"2024-Q3\",\"NO\",\"direct_debit\",\"pos\",\"unattended\",\"other\",\"eea\",\"psp\",251426,51268540.08,225,101675.68,86573.53},{\"2024-Q3\",\"DK\",\"card\",\"pos\",\"low_value\",\"counterfeit\",\"non_eea\",\"psp\",867542,64392227.52,434,68650.49,53803.82},{\"2024-Q3\",\"DK\",\"credit_transfer\",\"atm\",\"corporate\",\"counterfeit\",\"eea\",\"psp\",523939,95330641.91,171,52934.75,24652.03},{\"2024-Q3\",\"DK\",\"direct_debit\",\"atm\",\"tra\",\"manipulation_of_payer\",\"eea\",\"payer\",410548,26188349.32,300,45327.76,30162.28},{\"2024-Q3\",\"FI\",\"card\",\"pos\",\"secure_corp\",\"other\",\"non_eea\",\"payer\",555168,102573870.6,374,95554.8,74253.32},{\"2024-Q3\",\"FI\",\"credit_transfer\",\"atm\",\"unattended\",\"lost_stolen\",\"non_eea\",\"payer\",294689,53728510.16,91,31361.5,19675.99},{\"2024-Q3\",\"FI\",\"direct_debit\",\"atm\",\"unattended\",\"unauthorised_modification\",\"non_eea\",\"psp\",313609,50638627.11,212,67830.29,59119.83},{\"2024-Q3\",\"EE\",\"card\",\"pos\",\"sca_applied\",\"unauthorised_issuance\",\"eea\",\"payer\",866269,163113223.25,890,273561.79,165271.79},{\"2024-Q3\",\"EE\",\"credit_transfer\",\"moto\",\"unattended\",\"counterfeit\",\"non_eea\",\"psp\",321761,18499507.04,324,26996.61,16922.07},{\"2024-Q3\",\"EE\",\"direct_debit\",\"atm\",\"sca_applied\",\"counterfeit\",\"eea\",\"psp\",635037,100263414.66,614,191675.35,166666.8},{\"2024-Q4\",\"SE\",\"card\",\"atm\",\"contactless_lv\",\"counterfeit\",\"eea\",\"psp\",664920,79820490.8,325,66284.22,59023.7},{\"2024-Q4\",\"SE\",\"credit_transfer\",\"ecommerce\",\"trusted\",\"counterfeit\",\"non_eea\",\"merchant\",617479,55362339.32,663,139330.77,113149.9},{\"2024-Q4\",\"SE\",\"direct_debit\",\"pos\",\"low_value\",\"other\",\"non_eea\",\"psp\",222394,10920464.31,126,14773.01,11722.22},{\"2024-Q4\",\"NO\",\"card\",\"ecommerce\",\"recurring\",\"other\",\"domestic\",\"psp\",814867,64269573.45,811,106271.74,50349.12},{\"2024-Q4\",\"NO\",\"credit_transfer\",\"ecommerce\",\"corporate\",\"other\",\"domestic\",\"merchant\",766456,65239014.34,336,57975.99,23937.71},{\"2024-Q4\",\"NO\",\"direct_debit\",\"ecommerce\",\"low_value\",\"lost_stolen\",\"eea\",\"payer\",539498,23112415.34,276,17019.88,10390.3},{\"2024-Q4\",\"DK\",\"card\",\"atm\",\"mit\",\"counterfeit\",\"domestic\",\"psp\",738169,108407413.13,488,110633.65,78279.22},{\"2024-Q4\",\"DK\",\"credit_transfer\",\"moto\",\"low_value\",\"unauthorised_issuance\",\"eea\",\"merchant\",702248,135192387.32,450,122908.68,92943.62},{\"2024-Q4\",\"DK\",\"direct_debit\",\"atm\",\"secure_corp\",\"card_not_received\",\"non_eea\",\"payer\",355539,18425027.2,184,19036.31,12833.87},{\"2024-Q4\",\"FI\",\"card\",\"pos\",\"secure_corp\",\"lost_stolen\",\"domestic\",\"payer\",675755,88523359.94,435,123793.78,56599.39},{\"2024-Q4\",\"FI\",\"credit_transfer\",\"atm\",\"recurring\",\"manipulation_of_payer\",\"domestic\",\"merchant\",555395,104933810.06,343,136257.0,75796.25},{\"2024-Q4\",\"FI\",\"direct_debit\",\"atm\",\"tra\",\"card_not_received\",\"domestic\",\"merchant\",697305,36318430.46,673,49163.03,22038.91},{\"2024-Q4\",\"EE\",\"card\",\"moto\",\"sca_applied\",\"manipulation_of_payer\",\"non_eea\",\"payer\",788866,111311366.05,659,162902.74,136317.61},{\"2024-Q4\",\"EE\",\"credit_transfer\",\"ecommerce\",\"corporate\",\"other\",\"non_eea\",\"payer\",568727,33354759.03,401,34576.08,22166.54},{\"2024-Q4\",\"EE\",\"direct_debit\",\"ecommerce\",\"unattended\",\"counterfeit\",\"non_eea\",\"payer\",320465,56808514.49,243,94248.66,77526.83},{\"2025-Q1\",\"SE\",\"card\",\"ecommerce\",\"tra\",\"other\",\"domestic\",\"merchant\",230359,16695243.87,198,23532.37,13411.39},{\"2025-Q1\",\"SE\",\"credit_transfer\",\"pos\",\"secure_corp\",\"lost_stolen\",\"eea\",\"payer\",889275,99724349.55,367,82167.14,34126.36},{\"2025-Q1\",\"SE\",\"direct_debit\",\"ecommerce\",\"sca_applied\",\"unauthorised_modification\",\"domestic\",\"merchant\",365055,38918351.7,320,73501.55,50260.12},{\"2025-Q1\",\"NO\",\"card\",\"moto\",\"secure_corp\",\"manipulation_of_payer\",\"domestic\",\"merchant\",252179,40680095.99,130,42531.7,27340.69},{\"2025-Q1\",\"NO\",\"credit_transfer\",\"atm\",\"sca_applied\",\"unauthorised_modification\",\"eea\",\"merchant\",319346,32615162.73,124,25911.57,18049.15},{\"2025-Q1\",\"NO\",\"direct_debit\",\"atm\",\"recurring\",\"manipulation_of_payer\",\"domestic\",\"psp\",257443,10653937.56,139,8814.63,4130.69},{\"2025-Q1\",\"DK\",\"card\",\"atm\",\"low_value\",\"lost_stolen\",\"non_eea\",\"psp\",721546,125882749.49,317,95025.97,71443.91},{\"2025-Q1\",\"DK\",\"credit_transfer\",\"moto\",\"secure_corp\",\"manipulation_of_payer\",\"domestic\",\"payer\",657409,28514113.87,681,66409.42,45681.68},{\"2025-Q1\",\"DK\",\"direct_debit\",\"atm\",\"low_value\",\"lost_stolen\",\"domestic\",\"psp\",221869,47461316.66,97,48603.94,30622.84},{\"2025-Q1\",\"FI\",\"card\",\"atm\",\"trusted\",\"manipulation_of_payer\",\"domestic\",\"psp\",656839,95896413.06,472,119583.39,66385.2},{\"2025-Q1\",\"FI\",\"credit_transfer\",\"atm\",\"tra\",\"unauthorised_modification\",\"domestic\",\"psp\",735280,113218737.96,532,123965.41,97698.89},{\"2025-Q1\",\"FI\",\"direct_debit\",\"pos\",\"mit\",\"lost_stolen\",\"non_eea\",\"merchant\",468402,35368531.26,366,59037.61,42964.89},{\"2025-Q1\",\"EE\",\"card\",\"atm\",\"corporate\",\"unauthorised_modification\",\"eea\",\"psp\",670711,109060308.95,674,219989.29,196508.95},{\"2025-Q1\",\"EE\",\"credit_transfer\",\"ecommerce\",\"recurring\",\"lost_stolen\",\"eea\",\"psp\",691699,82725437.6,375,71854.49,30759.91},{\"2025-Q1\",\"EE\",\"direct_debit\",\"ecommerce\",\"unattended\",\"card_not_received\",\"non_eea\",\"payer\",259653,27620008.31,137,29279.24,26020.0},{\"2025-Q2\",\"SE\",\"card\",\"pos\",\"corporate\",\"card_not_received\",\"eea\",\"merchant\",685188,98981774.28,728,222196.88,93436.31},{\"2025-Q2\",\"SE\",\"credit_transfer\",\"ecommerce\",\"contactless_lv\",\"counterfeit\",\"domestic\",\"psp\",358189,76075770.52,236,109875.09,89953.48},{\"2025-Q2\",\"SE\",\"direct_debit\",\"atm\",\"corporate\",\"manipulation_of_payer\",\"eea\",\"payer\",459778,76953920.55,502,157662.77,111136.91},{\"2025-Q2\",\"NO\",\"card\",\"atm\",\"low_value\",\"card_not_received\",\"non_eea\",\"payer\",554803,89989928.57,189,61127.51,34679.14},{\"2025-Q2\",\"NO\",\"credit_transfer\",\"pos\",\"corporate\",\"unauthorised_issuance\",\"non_eea\",\"merchant\",497949,42504548.84,488,98341.98,68972.19},{\"2025-Q2\",\"NO\",\"direct_debit\",\"pos\",\"unattended\",\"counterfeit\",\"domestic\",\"payer\",348298,71406092.22,190,78749.18,57570.97},{\"2025-Q2\",\"DK\",\"card\",\"ecommerce\",\"secure_corp\",\"card_not_received\",\"eea\",\"psp\",786072,84740349.98,733,173407.6,127464.68},{\"2025-Q2\",\"DK\",\"credit_transfer\",\"pos\",\"trusted\",\"unauthorised_modification\",\"domestic\",\"psp\",580211,55465788.45,615,98528.96,77155.87},{\"2025-Q2\",\"DK\",\"direct_debit\",\"ecommerce\",\"corporate\",\"other\",\"non_eea\",\"psp\",510160,97949245.62,194,80006.09,65409.77},{\"2025-Q2\",\"FI\",\"card\",\"pos\",\"mit\",\"unauthorised_issuance\",\"eea\",\"payer\",826258,89078525.26,355,84753.45,66577.98},{\"2025-Q2\",\"FI\",\"credit_transfer\",\"pos\",\"contactless_lv\",\"unauthorised_modification\",\"eea\",\"payer\",449068,96336738.69,354,161576.89,127952.77},{\"2025-Q2\",\"FI\",\"direct_debit\",\"atm\",\"secure_corp\",\"card_not_received\",\"non_eea\",\"payer\",403440,42849916.11,426,107816.07,68014.69},{\"2025-Q2\",\"EE\",\"card\",\"moto\",\"corporate\",\"card_not_received\",\"domestic\",\"merchant\",369930,69191863.73,348,94526.29,49626.45},{\"2025-Q2\",\"EE\",\"credit_transfer\",\"pos\",\"secure_corp\",\"unauthorised_issuance\",\"domestic\",\"payer\",740970,143162731.2,391,161623.27,86694.02},{\"2025-Q2\",\"EE\",\"direct_debit\",\"moto\",\"low_value\",\"manipulation_of_payer\",\"domestic\",\"psp\",566566,117553916.42,358,128956.79,75695.15}}), Typed = Table.TransformColumnTypes(Source,{{\"quarter\", type text},{\"reporting_country\", type text},{\"instrument\", type text},{\"channel\", type text},{\"sca_exemption\", type text},{\"fraud_type\", type text},{\"counterparty_geo\", type text},{\"loss_bearer\", type text},{\"tx_count\", Int64.Type},{\"tx_value_eur\", type number},{\"fraud_count\", Int64.Type},{\"fraud_value_eur\", type number},{\"loss_value_eur\", type number}}) in Typed",
+              "type": "m"
             }
           }
         ]
@@ -366,53 +504,67 @@
           {
             "name": "KpiDate",
             "dataType": "dateTime",
+            "lineageTag": "0072601a-ca92-4f55-bd4b-e8fbd1071433",
             "sourceColumn": "kpi_date",
             "summarizeBy": "none"
           },
           {
             "name": "CountryCode",
             "dataType": "string",
+            "lineageTag": "190d53ed-407a-431c-86c8-b8ed15aeaf37",
             "sourceColumn": "issuer_country",
             "summarizeBy": "none"
           },
           {
             "name": "ExemptionCode",
             "dataType": "string",
+            "lineageTag": "4848e6d6-c82a-4a43-9700-7a8b5ef25e34",
             "sourceColumn": "sca_exemption_code",
             "summarizeBy": "none"
           },
           {
             "name": "TxCount",
             "dataType": "int64",
+            "lineageTag": "a1fe9542-9db7-4bf0-ab3f-0db957e0b6ae",
             "sourceColumn": "tx_count",
             "summarizeBy": "sum"
           },
           {
             "name": "TxValueEur",
-            "dataType": "decimal",
+            "annotations": [
+              {
+                "name": "PBI_FormatHint",
+                "value": "{\"isGeneralNumber\":true}"
+              }
+            ],
+            "dataType": "double",
+            "lineageTag": "c898ba51-286e-4b58-a7ee-51f86448205f",
             "sourceColumn": "tx_value_eur",
             "summarizeBy": "sum"
           },
           {
             "name": "FraudCount",
             "dataType": "int64",
+            "lineageTag": "9cbc2674-f0dd-40bd-a2b3-3c95aae8b640",
             "sourceColumn": "fraud_count",
             "summarizeBy": "sum"
           },
           {
             "name": "FraudRateBps",
             "dataType": "double",
+            "lineageTag": "63e97238-9324-4de4-8aaf-2712702b7b3c",
             "sourceColumn": "fraud_rate_bps",
             "summarizeBy": "average"
           }
         ],
+        "lineageTag": "c6628d50-ca5c-4e18-a48c-53a0e5fb8b66",
         "partitions": [
           {
             "name": "Fact_Exemption",
             "mode": "import",
             "source": {
-              "type": "m",
-              "expression": "let Source = #table({\"kpi_date\",\"issuer_country\",\"sca_exemption_code\",\"tx_count\",\"tx_value_eur\",\"fraud_count\",\"fraud_rate_bps\"},{{#datetime(2025,1,15,0,0,0),\"SE\",\"sca_applied\",51770,7335762.85,58,7.97},{#datetime(2025,1,15,0,0,0),\"SE\",\"low_value\",113727,5404979.94,27,11.05},{#datetime(2025,1,15,0,0,0),\"SE\",\"tra\",71925,8165547.33,25,8.61},{#datetime(2025,1,15,0,0,0),\"SE\",\"trusted\",68799,7144211.37,82,0.72},{#datetime(2025,1,15,0,0,0),\"SE\",\"recurring\",38266,4982063.75,30,8.86},{#datetime(2025,1,15,0,0,0),\"SE\",\"corporate\",79176,6396674.26,83,3.23},{#datetime(2025,1,15,0,0,0),\"SE\",\"secure_corp\",25970,927906.38,17,9.63},{#datetime(2025,1,15,0,0,0),\"SE\",\"mit\",69914,2624351.9,78,6.25},{#datetime(2025,1,15,0,0,0),\"SE\",\"contactless_lv\",80261,2566124.14,61,3.28},{#datetime(2025,1,15,0,0,0),\"SE\",\"unattended\",28818,1871805.14,5,4.56},{#datetime(2025,1,15,0,0,0),\"NO\",\"sca_applied\",84798,6782831.87,78,1.48},{#datetime(2025,1,15,0,0,0),\"NO\",\"low_value\",57265,2183028.77,44,6.33},{#datetime(2025,1,15,0,0,0),\"NO\",\"tra\",76535,7385492.36,48,5.91},{#datetime(2025,1,15,0,0,0),\"NO\",\"trusted\",93318,7131898.94,56,9.09},{#datetime(2025,1,15,0,0,0),\"NO\",\"recurring\",56805,7079175.54,32,8.93},{#datetime(2025,1,15,0,0,0),\"NO\",\"corporate\",92346,3919133.22,77,9.2},{#datetime(2025,1,15,0,0,0),\"NO\",\"secure_corp\",27486,970813.29,22,9.86},{#datetime(2025,1,15,0,0,0),\"NO\",\"mit\",32949,4271707.33,31,11.78},{#datetime(2025,1,15,0,0,0),\"NO\",\"contactless_lv\",72722,7694591.32,79,1.23},{#datetime(2025,1,15,0,0,0),\"NO\",\"unattended\",111736,16004239.81,26,2.82},{#datetime(2025,1,15,0,0,0),\"DK\",\"sca_applied\",113692,6132134.92,27,11.23},{#datetime(2025,1,15,0,0,0),\"DK\",\"low_value\",77552,6032528.64,85,5.94},{#datetime(2025,1,15,0,0,0),\"DK\",\"tra\",14799,1781724.28,6,4.61},{#datetime(2025,1,15,0,0,0),\"DK\",\"trusted\",112346,4014851.04,103,3.64},{#datetime(2025,1,15,0,0,0),\"DK\",\"recurring\",114771,8511681.44,135,9.05},{#datetime(2025,1,15,0,0,0),\"DK\",\"corporate\",60678,4288987.74,24,8.46},{#datetime(2025,1,15,0,0,0),\"DK\",\"secure_corp\",58148,8194056.6,44,9.71},{#datetime(2025,1,15,0,0,0),\"DK\",\"mit\",105300,8522977.72,70,11.94},{#datetime(2025,1,15,0,0,0),\"DK\",\"contactless_lv\",33652,3212316.53,18,1.42},{#datetime(2025,1,15,0,0,0),\"DK\",\"unattended\",96628,6326891.64,66,8.75},{#datetime(2025,1,15,0,0,0),\"FI\",\"sca_applied\",31842,3590878.92,18,0.99},{#datetime(2025,1,15,0,0,0),\"FI\",\"low_value\",56210,5833596.22,38,7.85},{#datetime(2025,1,15,0,0,0),\"FI\",\"tra\",113740,16349957.28,32,7.83},{#datetime(2025,1,15,0,0,0),\"FI\",\"trusted\",57619,5276190.4,59,2.34},{#datetime(2025,1,15,0,0,0),\"FI\",\"recurring\",14081,663687.32,12,9.49},{#datetime(2025,1,15,0,0,0),\"FI\",\"corporate\",14561,657394.25,6,7.92},{#datetime(2025,1,15,0,0,0),\"FI\",\"secure_corp\",57467,4364189.27,47,7.46},{#datetime(2025,1,15,0,0,0),\"FI\",\"mit\",99006,8315584.06,60,5.61},{#datetime(2025,1,15,0,0,0),\"FI\",\"contactless_lv\",20077,1985025.31,15,5.08},{#datetime(2025,1,15,0,0,0),\"FI\",\"unattended\",95139,6035881.88,119,0.8},{#datetime(2025,1,15,0,0,0),\"EE\",\"sca_applied\",34385,3090705.19,21,6.96},{#datetime(2025,1,15,0,0,0),\"EE\",\"low_value\",44311,5450064.15,43,2.97},{#datetime(2025,1,15,0,0,0),\"EE\",\"tra\",90199,5797019.85,108,6.15},{#datetime(2025,1,15,0,0,0),\"EE\",\"trusted\",26074,1206897.93,7,2.49},{#datetime(2025,1,15,0,0,0),\"EE\",\"recurring\",103502,8633447.84,30,8.34},{#datetime(2025,1,15,0,0,0),\"EE\",\"corporate\",51889,5715094.67,50,6.82},{#datetime(2025,1,15,0,0,0),\"EE\",\"secure_corp\",48058,6582014.16,54,8.69},{#datetime(2025,1,15,0,0,0),\"EE\",\"mit\",101779,10841906.47,109,6.35},{#datetime(2025,1,15,0,0,0),\"EE\",\"contactless_lv\",25907,3839829.47,27,3.22},{#datetime(2025,1,15,0,0,0),\"EE\",\"unattended\",74752,2478334.03,60,4.74},{#datetime(2025,2,15,0,0,0),\"SE\",\"sca_applied\",115337,17065428.02,39,10.67},{#datetime(2025,2,15,0,0,0),\"SE\",\"low_value\",18617,1249477.83,24,8.77},{#datetime(2025,2,15,0,0,0),\"SE\",\"tra\",78903,6256646.09,51,7.11},{#datetime(2025,2,15,0,0,0),\"SE\",\"trusted\",26426,3876312.81,23,5.67},{#datetime(2025,2,15,0,0,0),\"SE\",\"recurring\",99143,9129404.84,33,10.03},{#datetime(2025,2,15,0,0,0),\"SE\",\"corporate\",82260,8783333.84,32,11.61},{#datetime(2025,2,15,0,0,0),\"SE\",\"secure_corp\",66704,6026283.12,77,10.06},{#datetime(2025,2,15,0,0,0),\"SE\",\"mit\",77908,3767775.48,29,4.21},{#datetime(2025,2,15,0,0,0),\"SE\",\"contactless_lv\",102973,5875272.2,127,6.47},{#datetime(2025,2,15,0,0,0),\"SE\",\"unattended\",47230,6211313.87,22,7.8},{#datetime(2025,2,15,0,0,0),\"NO\",\"sca_applied\",82199,5173122.06,72,7.57},{#datetime(2025,2,15,0,0,0),\"NO\",\"low_value\",22245,2008918.75,8,11.33},{#datetime(2025,2,15,0,0,0),\"NO\",\"tra\",30210,1526936.5,26,10.87},{#datetime(2025,2,15,0,0,0),\"NO\",\"trusted\",54252,7112632.53,44,9.99},{#datetime(2025,2,15,0,0,0),\"NO\",\"recurring\",13718,545245.81,17,9.37},{#datetime(2025,2,15,0,0,0),\"NO\",\"corporate\",44688,4832363.57,46,5.29},{#datetime(2025,2,15,0,0,0),\"NO\",\"secure_corp\",93753,3153317.26,110,6.77},{#datetime(2025,2,15,0,0,0),\"NO\",\"mit\",94136,13630706.45,68,9.75},{#datetime(2025,2,15,0,0,0),\"NO\",\"contactless_lv\",99783,7856025.67,69,8.42},{#datetime(2025,2,15,0,0,0),\"NO\",\"unattended\",30719,2542078.96,22,2.85},{#datetime(2025,2,15,0,0,0),\"DK\",\"sca_applied\",89516,4228757.59,102,4.17},{#datetime(2025,2,15,0,0,0),\"DK\",\"low_value\",55268,8126877.28,19,4.76},{#datetime(2025,2,15,0,0,0),\"DK\",\"tra\",83616,3573921.1,38,1.91},{#datetime(2025,2,15,0,0,0),\"DK\",\"trusted\",68929,4118526.08,21,3.84},{#datetime(2025,2,15,0,0,0),\"DK\",\"recurring\",60351,8068908.3,39,11.57},{#datetime(2025,2,15,0,0,0),\"DK\",\"corporate\",30932,3947459.61,37,8.79},{#datetime(2025,2,15,0,0,0),\"DK\",\"secure_corp\",34881,4240642.4,26,6.42},{#datetime(2025,2,15,0,0,0),\"DK\",\"mit\",75373,10212218.4,56,1.54},{#datetime(2025,2,15,0,0,0),\"DK\",\"contactless_lv\",61543,5579078.23,77,2.97},{#datetime(2025,2,15,0,0,0),\"DK\",\"unattended\",56254,2016085.75,28,7.37},{#datetime(2025,2,15,0,0,0),\"FI\",\"sca_applied\",95755,10600315.25,49,0.59},{#datetime(2025,2,15,0,0,0),\"FI\",\"low_value\",24089,1968344.28,28,8.87},{#datetime(2025,2,15,0,0,0),\"FI\",\"tra\",110120,8632360.61,27,1.09},{#datetime(2025,2,15,0,0,0),\"FI\",\"trusted\",83638,4462809.62,67,1.35},{#datetime(2025,2,15,0,0,0),\"FI\",\"recurring\",76093,6395047.91,61,9.99},{#datetime(2025,2,15,0,0,0),\"FI\",\"corporate\",91689,10236878.51,30,11.71},{#datetime(2025,2,15,0,0,0),\"FI\",\"secure_corp\",61629,4608850.83,79,6.92},{#datetime(2025,2,15,0,0,0),\"FI\",\"mit\",57920,6984909.93,24,6.35},{#datetime(2025,2,15,0,0,0),\"FI\",\"contactless_lv\",75546,2631311.66,18,8.71},{#datetime(2025,2,15,0,0,0),\"FI\",\"unattended\",115377,10020411.46,81,7.47},{#datetime(2025,2,15,0,0,0),\"EE\",\"sca_applied\",77568,3628143.78,94,4.16},{#datetime(2025,2,15,0,0,0),\"EE\",\"low_value\",61505,9156488.51,62,3.94},{#datetime(2025,2,15,0,0,0),\"EE\",\"tra\",54089,4915489.23,41,6.13},{#datetime(2025,2,15,0,0,0),\"EE\",\"trusted\",83783,5527572.35,91,4.74},{#datetime(2025,2,15,0,0,0),\"EE\",\"recurring\",98317,4242629.33,64,4.04},{#datetime(2025,2,15,0,0,0),\"EE\",\"corporate\",105069,14147739.82,93,7.36},{#datetime(2025,2,15,0,0,0),\"EE\",\"secure_corp\",44803,6543410.21,47,9.43},{#datetime(2025,2,15,0,0,0),\"EE\",\"mit\",85711,4911684.89,21,6.03},{#datetime(2025,2,15,0,0,0),\"EE\",\"contactless_lv\",78712,8302780.17,69,10.17},{#datetime(2025,2,15,0,0,0),\"EE\",\"unattended\",29369,3776834.46,13,7.08},{#datetime(2025,3,15,0,0,0),\"SE\",\"sca_applied\",101818,4397261.06,22,4.11},{#datetime(2025,3,15,0,0,0),\"SE\",\"low_value\",29848,2374564.0,12,6.27},{#datetime(2025,3,15,0,0,0),\"SE\",\"tra\",90147,12662274.25,104,8.96},{#datetime(2025,3,15,0,0,0),\"SE\",\"trusted\",18163,2083169.46,13,6.95},{#datetime(2025,3,15,0,0,0),\"SE\",\"recurring\",96799,8460669.94,59,11.5},{#datetime(2025,3,15,0,0,0),\"SE\",\"corporate\",70249,9796567.22,40,4.57},{#datetime(2025,3,15,0,0,0),\"SE\",\"secure_corp\",111186,14912102.7,105,9.74},{#datetime(2025,3,15,0,0,0),\"SE\",\"mit\",44650,4608290.32,18,3.33},{#datetime(2025,3,15,0,0,0),\"SE\",\"contactless_lv\",83149,5472858.81,102,11.8},{#datetime(2025,3,15,0,0,0),\"SE\",\"unattended\",111079,7184644.87,47,8.61},{#datetime(2025,3,15,0,0,0),\"NO\",\"sca_applied\",51555,4515001.86,42,11.25},{#datetime(2025,3,15,0,0,0),\"NO\",\"low_value\",104589,6569748.04,34,8.28},{#datetime(2025,3,15,0,0,0),\"NO\",\"tra\",59767,8217439.86,37,4.47},{#datetime(2025,3,15,0,0,0),\"NO\",\"trusted\",111327,14088866.03,57,3.81},{#datetime(2025,3,15,0,0,0),\"NO\",\"recurring\",103603,4090612.4,126,8.04},{#datetime(2025,3,15,0,0,0),\"NO\",\"corporate\",107955,9444930.22,45,6.69},{#datetime(2025,3,15,0,0,0),\"NO\",\"secure_corp\",83664,9499257.08,29,7.58},{#datetime(2025,3,15,0,0,0),\"NO\",\"mit\",86917,5103231.52,22,10.91},{#datetime(2025,3,15,0,0,0),\"NO\",\"contactless_lv\",39579,4217274.99,10,5.25},{#datetime(2025,3,15,0,0,0),\"NO\",\"unattended\",104025,9017767.97,98,2.08},{#datetime(2025,3,15,0,0,0),\"DK\",\"sca_applied\",82135,12102533.56,30,8.01},{#datetime(2025,3,15,0,0,0),\"DK\",\"low_value\",72350,6315708.05,30,11.59},{#datetime(2025,3,15,0,0,0),\"DK\",\"tra\",52096,3347159.71,13,9.34},{#datetime(2025,3,15,0,0,0),\"DK\",\"trusted\",95498,9444370.44,75,8.82},{#datetime(2025,3,15,0,0,0),\"DK\",\"recurring\",14888,2078179.7,5,10.65},{#datetime(2025,3,15,0,0,0),\"DK\",\"corporate\",33040,4694016.37,7,10.12},{#datetime(2025,3,15,0,0,0),\"DK\",\"secure_corp\",113279,10132361.1,139,11.56},{#datetime(2025,3,15,0,0,0),\"DK\",\"mit\",47941,6482063.31,10,7.03},{#datetime(2025,3,15,0,0,0),\"DK\",\"contactless_lv\",24064,3403000.49,13,5.73},{#datetime(2025,3,15,0,0,0),\"DK\",\"unattended\",94058,8953950.83,69,11.29},{#datetime(2025,3,15,0,0,0),\"FI\",\"sca_applied\",76088,6555931.71,31,1.8},{#datetime(2025,3,15,0,0,0),\"FI\",\"low_value\",31298,3684848.37,28,8.76},{#datetime(2025,3,15,0,0,0),\"FI\",\"tra\",11846,1402497.07,12,7.03},{#datetime(2025,3,15,0,0,0),\"FI\",\"trusted\",109258,5810269.92,95,7.85},{#datetime(2025,3,15,0,0,0),\"FI\",\"recurring\",63148,8161170.42,48,1.5},{#datetime(2025,3,15,0,0,0),\"FI\",\"corporate\",97720,4050123.9,125,5.99},{#datetime(2025,3,15,0,0,0),\"FI\",\"secure_corp\",42512,1310203.45,26,5.64},{#datetime(2025,3,15,0,0,0),\"FI\",\"mit\",44995,6501065.62,23,8.81},{#datetime(2025,3,15,0,0,0),\"FI\",\"contactless_lv\",11498,705820.58,6,3.22},{#datetime(2025,3,15,0,0,0),\"FI\",\"unattended\",97528,4309467.95,52,5.16},{#datetime(2025,3,15,0,0,0),\"EE\",\"sca_applied\",75866,10679863.3,89,9.35},{#datetime(2025,3,15,0,0,0),\"EE\",\"low_value\",100477,4430019.83,121,3.89},{#datetime(2025,3,15,0,0,0),\"EE\",\"tra\",90560,5116812.86,113,6.0},{#datetime(2025,3,15,0,0,0),\"EE\",\"trusted\",69634,8337152.12,60,5.28},{#datetime(2025,3,15,0,0,0),\"EE\",\"recurring\",81989,11440386.49,84,9.72},{#datetime(2025,3,15,0,0,0),\"EE\",\"corporate\",118213,6644681.18,55,9.18},{#datetime(2025,3,15,0,0,0),\"EE\",\"secure_corp\",113202,4508205.89,78,8.59},{#datetime(2025,3,15,0,0,0),\"EE\",\"mit\",20237,2834583.74,6,10.03},{#datetime(2025,3,15,0,0,0),\"EE\",\"contactless_lv\",76255,4137505.82,60,2.39},{#datetime(2025,3,15,0,0,0),\"EE\",\"unattended\",78202,6492397.79,74,8.74},{#datetime(2025,4,15,0,0,0),\"SE\",\"sca_applied\",74071,3030466.63,56,9.8},{#datetime(2025,4,15,0,0,0),\"SE\",\"low_value\",69432,3182299.13,45,6.98},{#datetime(2025,4,15,0,0,0),\"SE\",\"tra\",83242,7115975.39,90,8.82},{#datetime(2025,4,15,0,0,0),\"SE\",\"trusted\",61897,3746926.62,12,3.01},{#datetime(2025,4,15,0,0,0),\"SE\",\"recurring\",19572,693529.44,11,1.23},{#datetime(2025,4,15,0,0,0),\"SE\",\"corporate\",17897,2544057.4,4,11.24},{#datetime(2025,4,15,0,0,0),\"SE\",\"secure_corp\",14159,912560.08,5,2.06},{#datetime(2025,4,15,0,0,0),\"SE\",\"mit\",94085,13868128.45,85,5.33},{#datetime(2025,4,15,0,0,0),\"SE\",\"contactless_lv\",60132,5040532.18,72,4.84},{#datetime(2025,4,15,0,0,0),\"SE\",\"unattended\",20518,2296531.37,19,6.7},{#datetime(2025,4,15,0,0,0),\"NO\",\"sca_applied\",95660,12745201.72,31,11.92},{#datetime(2025,4,15,0,0,0),\"NO\",\"low_value\",61518,5749540.24,61,3.06},{#datetime(2025,4,15,0,0,0),\"NO\",\"tra\",10455,1262352.69,13,5.82},{#datetime(2025,4,15,0,0,0),\"NO\",\"trusted\",104253,9938797.19,81,9.97},{#datetime(2025,4,15,0,0,0),\"NO\",\"recurring\",42441,3619157.69,15,2.67},{#datetime(2025,4,15,0,0,0),\"NO\",\"corporate\",105030,12798828.87,24,8.09},{#datetime(2025,4,15,0,0,0),\"NO\",\"secure_corp\",90599,11046411.37,106,0.68},{#datetime(2025,4,15,0,0,0),\"NO\",\"mit\",37011,1409190.43,31,5.63},{#datetime(2025,4,15,0,0,0),\"NO\",\"contactless_lv\",98083,11220141.23,24,9.02},{#datetime(2025,4,15,0,0,0),\"NO\",\"unattended\",62725,5185823.08,49,9.18},{#datetime(2025,4,15,0,0,0),\"DK\",\"sca_applied\",111720,4108311.31,84,3.83},{#datetime(2025,4,15,0,0,0),\"DK\",\"low_value\",116926,16365856.74,97,7.14},{#datetime(2025,4,15,0,0,0),\"DK\",\"tra\",111258,12316686.51,61,3.97},{#datetime(2025,4,15,0,0,0),\"DK\",\"trusted\",28777,4267153.34,22,5.26},{#datetime(2025,4,15,0,0,0),\"DK\",\"recurring\",46064,1718874.31,57,10.62},{#datetime(2025,4,15,0,0,0),\"DK\",\"corporate\",32955,3464202.46,22,6.2},{#datetime(2025,4,15,0,0,0),\"DK\",\"secure_corp\",55143,7884917.93,51,9.54},{#datetime(2025,4,15,0,0,0),\"DK\",\"mit\",51777,5879641.25,33,3.95},{#datetime(2025,4,15,0,0,0),\"DK\",\"contactless_lv\",34101,4110191.2,24,10.27},{#datetime(2025,4,15,0,0,0),\"DK\",\"unattended\",49418,6567896.75,17,5.82},{#datetime(2025,4,15,0,0,0),\"FI\",\"sca_applied\",17552,1711079.78,22,6.91},{#datetime(2025,4,15,0,0,0),\"FI\",\"low_value\",27575,2112528.63,13,4.3},{#datetime(2025,4,15,0,0,0),\"FI\",\"tra\",20363,2864404.82,23,1.56},{#datetime(2025,4,15,0,0,0),\"FI\",\"trusted\",104972,13596892.39,26,4.84},{#datetime(2025,4,15,0,0,0),\"FI\",\"recurring\",89294,9139298.53,103,2.66},{#datetime(2025,4,15,0,0,0),\"FI\",\"corporate\",109837,11039721.56,103,3.0},{#datetime(2025,4,15,0,0,0),\"FI\",\"secure_corp\",37379,5021377.57,21,11.51},{#datetime(2025,4,15,0,0,0),\"FI\",\"mit\",12009,665501.94,4,9.03},{#datetime(2025,4,15,0,0,0),\"FI\",\"contactless_lv\",107894,16178558.66,78,3.29},{#datetime(2025,4,15,0,0,0),\"FI\",\"unattended\",89220,10211427.95,56,3.25},{#datetime(2025,4,15,0,0,0),\"EE\",\"sca_applied\",52154,6418158.12,32,6.64},{#datetime(2025,4,15,0,0,0),\"EE\",\"low_value\",57088,3825505.36,34,10.65},{#datetime(2025,4,15,0,0,0),\"EE\",\"tra\",71080,2973488.77,90,5.9},{#datetime(2025,4,15,0,0,0),\"EE\",\"trusted\",51973,7261649.88,31,5.26},{#datetime(2025,4,15,0,0,0),\"EE\",\"recurring\",83731,11194012.54,85,0.69},{#datetime(2025,4,15,0,0,0),\"EE\",\"corporate\",82523,11732376.61,69,5.3},{#datetime(2025,4,15,0,0,0),\"EE\",\"secure_corp\",29976,1605005.39,13,7.05},{#datetime(2025,4,15,0,0,0),\"EE\",\"mit\",42208,3795182.04,38,8.38},{#datetime(2025,4,15,0,0,0),\"EE\",\"contactless_lv\",43728,5317468.01,32,8.82},{#datetime(2025,4,15,0,0,0),\"EE\",\"unattended\",106940,9503914.99,41,9.64},{#datetime(2025,5,15,0,0,0),\"SE\",\"sca_applied\",32185,1506097.83,25,2.62},{#datetime(2025,5,15,0,0,0),\"SE\",\"low_value\",81058,12064577.47,101,6.53},{#datetime(2025,5,15,0,0,0),\"SE\",\"tra\",119978,15789547.04,148,8.18},{#datetime(2025,5,15,0,0,0),\"SE\",\"trusted\",110183,3389896.67,38,7.75},{#datetime(2025,5,15,0,0,0),\"SE\",\"recurring\",18908,2171779.45,3,6.32},{#datetime(2025,5,15,0,0,0),\"SE\",\"corporate\",58916,2194857.5,53,11.24},{#datetime(2025,5,15,0,0,0),\"SE\",\"secure_corp\",73334,8001774.95,15,6.62},{#datetime(2025,5,15,0,0,0),\"SE\",\"mit\",63914,2008313.13,50,3.66},{#datetime(2025,5,15,0,0,0),\"SE\",\"contactless_lv\",47576,1525149.15,52,8.25},{#datetime(2025,5,15,0,0,0),\"SE\",\"unattended\",115666,16513106.17,45,11.06},{#datetime(2025,5,15,0,0,0),\"NO\",\"sca_applied\",78732,3768719.62,32,6.55},{#datetime(2025,5,15,0,0,0),\"NO\",\"low_value\",116851,8475545.65,125,1.41},{#datetime(2025,5,15,0,0,0),\"NO\",\"tra\",63218,5378570.34,29,8.52},{#datetime(2025,5,15,0,0,0),\"NO\",\"trusted\",49318,5527807.79,55,8.02},{#datetime(2025,5,15,0,0,0),\"NO\",\"recurring\",95182,11531328.05,28,4.86},{#datetime(2025,5,15,0,0,0),\"NO\",\"corporate\",82443,7182484.62,74,8.58},{#datetime(2025,5,15,0,0,0),\"NO\",\"secure_corp\",20837,1874975.92,14,9.52},{#datetime(2025,5,15,0,0,0),\"NO\",\"mit\",84167,12396074.25,106,10.79},{#datetime(2025,5,15,0,0,0),\"NO\",\"contactless_lv\",15577,896798.73,18,8.46},{#datetime(2025,5,15,0,0,0),\"NO\",\"unattended\",84289,7338203.25,21,1.36},{#datetime(2025,5,15,0,0,0),\"DK\",\"sca_applied\",46749,6447500.44,38,0.88},{#datetime(2025,5,15,0,0,0),\"DK\",\"low_value\",51220,1632840.92,21,2.16},{#datetime(2025,5,15,0,0,0),\"DK\",\"tra\",117569,13582201.99,75,1.38},{#datetime(2025,5,15,0,0,0),\"DK\",\"trusted\",31292,3056445.6,25,10.27},{#datetime(2025,5,15,0,0,0),\"DK\",\"recurring\",98740,13584954.51,55,9.19},{#datetime(2025,5,15,0,0,0),\"DK\",\"corporate\",28343,3538900.47,27,1.4},{#datetime(2025,5,15,0,0,0),\"DK\",\"secure_corp\",107708,15824330.03,27,5.53},{#datetime(2025,5,15,0,0,0),\"DK\",\"mit\",119926,4691767.71,103,7.56},{#datetime(2025,5,15,0,0,0),\"DK\",\"contactless_lv\",88067,6834383.69,92,0.84},{#datetime(2025,5,15,0,0,0),\"DK\",\"unattended\",45825,5683481.22,31,3.12},{#datetime(2025,5,15,0,0,0),\"FI\",\"sca_applied\",82487,11790455.98,55,8.32},{#datetime(2025,5,15,0,0,0),\"FI\",\"low_value\",96595,7303424.85,101,3.9},{#datetime(2025,5,15,0,0,0),\"FI\",\"tra\",42302,4888970.06,12,2.27},{#datetime(2025,5,15,0,0,0),\"FI\",\"trusted\",103280,12813622.6,38,4.98},{#datetime(2025,5,15,0,0,0),\"FI\",\"recurring\",57277,2450660.03,11,4.05},{#datetime(2025,5,15,0,0,0),\"FI\",\"corporate\",57175,6938848.28,17,1.5},{#datetime(2025,5,15,0,0,0),\"FI\",\"secure_corp\",66489,5575850.07,53,5.19},{#datetime(2025,5,15,0,0,0),\"FI\",\"mit\",13442,547818.78,10,7.36},{#datetime(2025,5,15,0,0,0),\"FI\",\"contactless_lv\",112817,7776660.79,70,3.86},{#datetime(2025,5,15,0,0,0),\"FI\",\"unattended\",60829,7512399.3,60,6.93},{#datetime(2025,5,15,0,0,0),\"EE\",\"sca_applied\",41816,4124531.68,16,4.88},{#datetime(2025,5,15,0,0,0),\"EE\",\"low_value\",28198,1755897.23,13,2.18},{#datetime(2025,5,15,0,0,0),\"EE\",\"tra\",31916,2622255.34,21,6.07},{#datetime(2025,5,15,0,0,0),\"EE\",\"trusted\",20082,1472713.26,24,8.79},{#datetime(2025,5,15,0,0,0),\"EE\",\"recurring\",74985,7592738.73,31,1.73},{#datetime(2025,5,15,0,0,0),\"EE\",\"corporate\",49932,1538508.99,31,10.18},{#datetime(2025,5,15,0,0,0),\"EE\",\"secure_corp\",59792,7563040.78,33,4.35},{#datetime(2025,5,15,0,0,0),\"EE\",\"mit\",116886,15057748.81,107,7.34},{#datetime(2025,5,15,0,0,0),\"EE\",\"contactless_lv\",49378,3381396.49,61,2.81},{#datetime(2025,5,15,0,0,0),\"EE\",\"unattended\",51180,2626377.07,32,4.17},{#datetime(2025,6,15,0,0,0),\"SE\",\"sca_applied\",106321,12056262.58,78,7.12},{#datetime(2025,6,15,0,0,0),\"SE\",\"low_value\",41775,2886917.71,21,9.54},{#datetime(2025,6,15,0,0,0),\"SE\",\"tra\",57843,2525803.61,47,7.31},{#datetime(2025,6,15,0,0,0),\"SE\",\"trusted\",81516,4205513.6,85,0.81},{#datetime(2025,6,15,0,0,0),\"SE\",\"recurring\",105317,8993510.12,103,5.54},{#datetime(2025,6,15,0,0,0),\"SE\",\"corporate\",48185,6252187.67,13,10.25},{#datetime(2025,6,15,0,0,0),\"SE\",\"secure_corp\",114208,9033509.13,85,7.78},{#datetime(2025,6,15,0,0,0),\"SE\",\"mit\",41722,2516746.23,15,5.37},{#datetime(2025,6,15,0,0,0),\"SE\",\"contactless_lv\",59412,2309690.0,76,6.01},{#datetime(2025,6,15,0,0,0),\"SE\",\"unattended\",62534,5885955.73,76,10.5},{#datetime(2025,6,15,0,0,0),\"NO\",\"sca_applied\",64827,6173956.51,69,4.63},{#datetime(2025,6,15,0,0,0),\"NO\",\"low_value\",116469,10998018.39,105,1.48},{#datetime(2025,6,15,0,0,0),\"NO\",\"tra\",110788,6623761.51,103,2.41},{#datetime(2025,6,15,0,0,0),\"NO\",\"trusted\",90304,3189140.23,115,8.29},{#datetime(2025,6,15,0,0,0),\"NO\",\"recurring\",62378,9108269.39,35,9.66},{#datetime(2025,6,15,0,0,0),\"NO\",\"corporate\",23886,746813.29,11,6.37},{#datetime(2025,6,15,0,0,0),\"NO\",\"secure_corp\",77999,7562721.42,74,3.04},{#datetime(2025,6,15,0,0,0),\"NO\",\"mit\",59036,4541999.61,61,7.27},{#datetime(2025,6,15,0,0,0),\"NO\",\"contactless_lv\",75597,3635413.76,98,6.05},{#datetime(2025,6,15,0,0,0),\"NO\",\"unattended\",48722,3893718.58,61,1.83},{#datetime(2025,6,15,0,0,0),\"DK\",\"sca_applied\",105702,4968101.94,57,5.74},{#datetime(2025,6,15,0,0,0),\"DK\",\"low_value\",37114,3434298.7,21,1.62},{#datetime(2025,6,15,0,0,0),\"DK\",\"tra\",104633,11887521.69,57,3.95},{#datetime(2025,6,15,0,0,0),\"DK\",\"trusted\",116192,13396179.89,26,4.45},{#datetime(2025,6,15,0,0,0),\"DK\",\"recurring\",24334,2707321.02,9,11.81},{#datetime(2025,6,15,0,0,0),\"DK\",\"corporate\",41970,3857851.69,33,4.31},{#datetime(2025,6,15,0,0,0),\"DK\",\"secure_corp\",65885,9554347.18,29,5.16},{#datetime(2025,6,15,0,0,0),\"DK\",\"mit\",34176,1789675.15,31,5.05},{#datetime(2025,6,15,0,0,0),\"DK\",\"contactless_lv\",106650,11058840.58,44,7.31},{#datetime(2025,6,15,0,0,0),\"DK\",\"unattended\",60965,1861505.63,26,3.7},{#datetime(2025,6,15,0,0,0),\"FI\",\"sca_applied\",102243,12989725.17,27,1.67},{#datetime(2025,6,15,0,0,0),\"FI\",\"low_value\",80371,4214267.87,44,5.76},{#datetime(2025,6,15,0,0,0),\"FI\",\"tra\",44387,4904060.92,32,11.61},{#datetime(2025,6,15,0,0,0),\"FI\",\"trusted\",51078,5191389.12,44,7.25},{#datetime(2025,6,15,0,0,0),\"FI\",\"recurring\",55603,4016660.13,39,2.48},{#datetime(2025,6,15,0,0,0),\"FI\",\"corporate\",98288,11275462.08,51,7.57},{#datetime(2025,6,15,0,0,0),\"FI\",\"secure_corp\",21108,2335667.95,11,3.24},{#datetime(2025,6,15,0,0,0),\"FI\",\"mit\",25328,1316178.19,24,6.37},{#datetime(2025,6,15,0,0,0),\"FI\",\"contactless_lv\",64819,6583737.01,53,5.36},{#datetime(2025,6,15,0,0,0),\"FI\",\"unattended\",73788,7840727.42,71,7.92},{#datetime(2025,6,15,0,0,0),\"EE\",\"sca_applied\",32706,3159056.48,24,2.11},{#datetime(2025,6,15,0,0,0),\"EE\",\"low_value\",51232,6713350.38,45,10.45},{#datetime(2025,6,15,0,0,0),\"EE\",\"tra\",11256,992250.96,4,4.92},{#datetime(2025,6,15,0,0,0),\"EE\",\"trusted\",83607,7579188.78,62,8.37},{#datetime(2025,6,15,0,0,0),\"EE\",\"recurring\",64477,7428851.97,44,2.42},{#datetime(2025,6,15,0,0,0),\"EE\",\"corporate\",84107,2834682.16,87,3.86},{#datetime(2025,6,15,0,0,0),\"EE\",\"secure_corp\",46025,2622560.19,23,9.48},{#datetime(2025,6,15,0,0,0),\"EE\",\"mit\",84140,10021258.29,87,6.82},{#datetime(2025,6,15,0,0,0),\"EE\",\"contactless_lv\",24838,2452148.6,12,6.75},{#datetime(2025,6,15,0,0,0),\"EE\",\"unattended\",58085,5520700.76,59,9.24}}), Typed = Table.TransformColumnTypes(Source,{{\"kpi_date\", type datetime},{\"issuer_country\", type text},{\"sca_exemption_code\", type text},{\"tx_count\", Int64.Type},{\"tx_value_eur\", type number},{\"fraud_count\", Int64.Type},{\"fraud_rate_bps\", type number}}) in Typed"
+              "expression": "let Source = #table({\"kpi_date\",\"issuer_country\",\"sca_exemption_code\",\"tx_count\",\"tx_value_eur\",\"fraud_count\",\"fraud_rate_bps\"},{{#datetime(2025,1,15,0,0,0),\"SE\",\"sca_applied\",51770,7335762.85,58,7.97},{#datetime(2025,1,15,0,0,0),\"SE\",\"low_value\",113727,5404979.94,27,11.05},{#datetime(2025,1,15,0,0,0),\"SE\",\"tra\",71925,8165547.33,25,8.61},{#datetime(2025,1,15,0,0,0),\"SE\",\"trusted\",68799,7144211.37,82,0.72},{#datetime(2025,1,15,0,0,0),\"SE\",\"recurring\",38266,4982063.75,30,8.86},{#datetime(2025,1,15,0,0,0),\"SE\",\"corporate\",79176,6396674.26,83,3.23},{#datetime(2025,1,15,0,0,0),\"SE\",\"secure_corp\",25970,927906.38,17,9.63},{#datetime(2025,1,15,0,0,0),\"SE\",\"mit\",69914,2624351.9,78,6.25},{#datetime(2025,1,15,0,0,0),\"SE\",\"contactless_lv\",80261,2566124.14,61,3.28},{#datetime(2025,1,15,0,0,0),\"SE\",\"unattended\",28818,1871805.14,5,4.56},{#datetime(2025,1,15,0,0,0),\"NO\",\"sca_applied\",84798,6782831.87,78,1.48},{#datetime(2025,1,15,0,0,0),\"NO\",\"low_value\",57265,2183028.77,44,6.33},{#datetime(2025,1,15,0,0,0),\"NO\",\"tra\",76535,7385492.36,48,5.91},{#datetime(2025,1,15,0,0,0),\"NO\",\"trusted\",93318,7131898.94,56,9.09},{#datetime(2025,1,15,0,0,0),\"NO\",\"recurring\",56805,7079175.54,32,8.93},{#datetime(2025,1,15,0,0,0),\"NO\",\"corporate\",92346,3919133.22,77,9.2},{#datetime(2025,1,15,0,0,0),\"NO\",\"secure_corp\",27486,970813.29,22,9.86},{#datetime(2025,1,15,0,0,0),\"NO\",\"mit\",32949,4271707.33,31,11.78},{#datetime(2025,1,15,0,0,0),\"NO\",\"contactless_lv\",72722,7694591.32,79,1.23},{#datetime(2025,1,15,0,0,0),\"NO\",\"unattended\",111736,16004239.81,26,2.82},{#datetime(2025,1,15,0,0,0),\"DK\",\"sca_applied\",113692,6132134.92,27,11.23},{#datetime(2025,1,15,0,0,0),\"DK\",\"low_value\",77552,6032528.64,85,5.94},{#datetime(2025,1,15,0,0,0),\"DK\",\"tra\",14799,1781724.28,6,4.61},{#datetime(2025,1,15,0,0,0),\"DK\",\"trusted\",112346,4014851.04,103,3.64},{#datetime(2025,1,15,0,0,0),\"DK\",\"recurring\",114771,8511681.44,135,9.05},{#datetime(2025,1,15,0,0,0),\"DK\",\"corporate\",60678,4288987.74,24,8.46},{#datetime(2025,1,15,0,0,0),\"DK\",\"secure_corp\",58148,8194056.6,44,9.71},{#datetime(2025,1,15,0,0,0),\"DK\",\"mit\",105300,8522977.72,70,11.94},{#datetime(2025,1,15,0,0,0),\"DK\",\"contactless_lv\",33652,3212316.53,18,1.42},{#datetime(2025,1,15,0,0,0),\"DK\",\"unattended\",96628,6326891.64,66,8.75},{#datetime(2025,1,15,0,0,0),\"FI\",\"sca_applied\",31842,3590878.92,18,0.99},{#datetime(2025,1,15,0,0,0),\"FI\",\"low_value\",56210,5833596.22,38,7.85},{#datetime(2025,1,15,0,0,0),\"FI\",\"tra\",113740,16349957.28,32,7.83},{#datetime(2025,1,15,0,0,0),\"FI\",\"trusted\",57619,5276190.4,59,2.34},{#datetime(2025,1,15,0,0,0),\"FI\",\"recurring\",14081,663687.32,12,9.49},{#datetime(2025,1,15,0,0,0),\"FI\",\"corporate\",14561,657394.25,6,7.92},{#datetime(2025,1,15,0,0,0),\"FI\",\"secure_corp\",57467,4364189.27,47,7.46},{#datetime(2025,1,15,0,0,0),\"FI\",\"mit\",99006,8315584.06,60,5.61},{#datetime(2025,1,15,0,0,0),\"FI\",\"contactless_lv\",20077,1985025.31,15,5.08},{#datetime(2025,1,15,0,0,0),\"FI\",\"unattended\",95139,6035881.88,119,0.8},{#datetime(2025,1,15,0,0,0),\"EE\",\"sca_applied\",34385,3090705.19,21,6.96},{#datetime(2025,1,15,0,0,0),\"EE\",\"low_value\",44311,5450064.15,43,2.97},{#datetime(2025,1,15,0,0,0),\"EE\",\"tra\",90199,5797019.85,108,6.15},{#datetime(2025,1,15,0,0,0),\"EE\",\"trusted\",26074,1206897.93,7,2.49},{#datetime(2025,1,15,0,0,0),\"EE\",\"recurring\",103502,8633447.84,30,8.34},{#datetime(2025,1,15,0,0,0),\"EE\",\"corporate\",51889,5715094.67,50,6.82},{#datetime(2025,1,15,0,0,0),\"EE\",\"secure_corp\",48058,6582014.16,54,8.69},{#datetime(2025,1,15,0,0,0),\"EE\",\"mit\",101779,10841906.47,109,6.35},{#datetime(2025,1,15,0,0,0),\"EE\",\"contactless_lv\",25907,3839829.47,27,3.22},{#datetime(2025,1,15,0,0,0),\"EE\",\"unattended\",74752,2478334.03,60,4.74},{#datetime(2025,2,15,0,0,0),\"SE\",\"sca_applied\",115337,17065428.02,39,10.67},{#datetime(2025,2,15,0,0,0),\"SE\",\"low_value\",18617,1249477.83,24,8.77},{#datetime(2025,2,15,0,0,0),\"SE\",\"tra\",78903,6256646.09,51,7.11},{#datetime(2025,2,15,0,0,0),\"SE\",\"trusted\",26426,3876312.81,23,5.67},{#datetime(2025,2,15,0,0,0),\"SE\",\"recurring\",99143,9129404.84,33,10.03},{#datetime(2025,2,15,0,0,0),\"SE\",\"corporate\",82260,8783333.84,32,11.61},{#datetime(2025,2,15,0,0,0),\"SE\",\"secure_corp\",66704,6026283.12,77,10.06},{#datetime(2025,2,15,0,0,0),\"SE\",\"mit\",77908,3767775.48,29,4.21},{#datetime(2025,2,15,0,0,0),\"SE\",\"contactless_lv\",102973,5875272.2,127,6.47},{#datetime(2025,2,15,0,0,0),\"SE\",\"unattended\",47230,6211313.87,22,7.8},{#datetime(2025,2,15,0,0,0),\"NO\",\"sca_applied\",82199,5173122.06,72,7.57},{#datetime(2025,2,15,0,0,0),\"NO\",\"low_value\",22245,2008918.75,8,11.33},{#datetime(2025,2,15,0,0,0),\"NO\",\"tra\",30210,1526936.5,26,10.87},{#datetime(2025,2,15,0,0,0),\"NO\",\"trusted\",54252,7112632.53,44,9.99},{#datetime(2025,2,15,0,0,0),\"NO\",\"recurring\",13718,545245.81,17,9.37},{#datetime(2025,2,15,0,0,0),\"NO\",\"corporate\",44688,4832363.57,46,5.29},{#datetime(2025,2,15,0,0,0),\"NO\",\"secure_corp\",93753,3153317.26,110,6.77},{#datetime(2025,2,15,0,0,0),\"NO\",\"mit\",94136,13630706.45,68,9.75},{#datetime(2025,2,15,0,0,0),\"NO\",\"contactless_lv\",99783,7856025.67,69,8.42},{#datetime(2025,2,15,0,0,0),\"NO\",\"unattended\",30719,2542078.96,22,2.85},{#datetime(2025,2,15,0,0,0),\"DK\",\"sca_applied\",89516,4228757.59,102,4.17},{#datetime(2025,2,15,0,0,0),\"DK\",\"low_value\",55268,8126877.28,19,4.76},{#datetime(2025,2,15,0,0,0),\"DK\",\"tra\",83616,3573921.1,38,1.91},{#datetime(2025,2,15,0,0,0),\"DK\",\"trusted\",68929,4118526.08,21,3.84},{#datetime(2025,2,15,0,0,0),\"DK\",\"recurring\",60351,8068908.3,39,11.57},{#datetime(2025,2,15,0,0,0),\"DK\",\"corporate\",30932,3947459.61,37,8.79},{#datetime(2025,2,15,0,0,0),\"DK\",\"secure_corp\",34881,4240642.4,26,6.42},{#datetime(2025,2,15,0,0,0),\"DK\",\"mit\",75373,10212218.4,56,1.54},{#datetime(2025,2,15,0,0,0),\"DK\",\"contactless_lv\",61543,5579078.23,77,2.97},{#datetime(2025,2,15,0,0,0),\"DK\",\"unattended\",56254,2016085.75,28,7.37},{#datetime(2025,2,15,0,0,0),\"FI\",\"sca_applied\",95755,10600315.25,49,0.59},{#datetime(2025,2,15,0,0,0),\"FI\",\"low_value\",24089,1968344.28,28,8.87},{#datetime(2025,2,15,0,0,0),\"FI\",\"tra\",110120,8632360.61,27,1.09},{#datetime(2025,2,15,0,0,0),\"FI\",\"trusted\",83638,4462809.62,67,1.35},{#datetime(2025,2,15,0,0,0),\"FI\",\"recurring\",76093,6395047.91,61,9.99},{#datetime(2025,2,15,0,0,0),\"FI\",\"corporate\",91689,10236878.51,30,11.71},{#datetime(2025,2,15,0,0,0),\"FI\",\"secure_corp\",61629,4608850.83,79,6.92},{#datetime(2025,2,15,0,0,0),\"FI\",\"mit\",57920,6984909.93,24,6.35},{#datetime(2025,2,15,0,0,0),\"FI\",\"contactless_lv\",75546,2631311.66,18,8.71},{#datetime(2025,2,15,0,0,0),\"FI\",\"unattended\",115377,10020411.46,81,7.47},{#datetime(2025,2,15,0,0,0),\"EE\",\"sca_applied\",77568,3628143.78,94,4.16},{#datetime(2025,2,15,0,0,0),\"EE\",\"low_value\",61505,9156488.51,62,3.94},{#datetime(2025,2,15,0,0,0),\"EE\",\"tra\",54089,4915489.23,41,6.13},{#datetime(2025,2,15,0,0,0),\"EE\",\"trusted\",83783,5527572.35,91,4.74},{#datetime(2025,2,15,0,0,0),\"EE\",\"recurring\",98317,4242629.33,64,4.04},{#datetime(2025,2,15,0,0,0),\"EE\",\"corporate\",105069,14147739.82,93,7.36},{#datetime(2025,2,15,0,0,0),\"EE\",\"secure_corp\",44803,6543410.21,47,9.43},{#datetime(2025,2,15,0,0,0),\"EE\",\"mit\",85711,4911684.89,21,6.03},{#datetime(2025,2,15,0,0,0),\"EE\",\"contactless_lv\",78712,8302780.17,69,10.17},{#datetime(2025,2,15,0,0,0),\"EE\",\"unattended\",29369,3776834.46,13,7.08},{#datetime(2025,3,15,0,0,0),\"SE\",\"sca_applied\",101818,4397261.06,22,4.11},{#datetime(2025,3,15,0,0,0),\"SE\",\"low_value\",29848,2374564.0,12,6.27},{#datetime(2025,3,15,0,0,0),\"SE\",\"tra\",90147,12662274.25,104,8.96},{#datetime(2025,3,15,0,0,0),\"SE\",\"trusted\",18163,2083169.46,13,6.95},{#datetime(2025,3,15,0,0,0),\"SE\",\"recurring\",96799,8460669.94,59,11.5},{#datetime(2025,3,15,0,0,0),\"SE\",\"corporate\",70249,9796567.22,40,4.57},{#datetime(2025,3,15,0,0,0),\"SE\",\"secure_corp\",111186,14912102.7,105,9.74},{#datetime(2025,3,15,0,0,0),\"SE\",\"mit\",44650,4608290.32,18,3.33},{#datetime(2025,3,15,0,0,0),\"SE\",\"contactless_lv\",83149,5472858.81,102,11.8},{#datetime(2025,3,15,0,0,0),\"SE\",\"unattended\",111079,7184644.87,47,8.61},{#datetime(2025,3,15,0,0,0),\"NO\",\"sca_applied\",51555,4515001.86,42,11.25},{#datetime(2025,3,15,0,0,0),\"NO\",\"low_value\",104589,6569748.04,34,8.28},{#datetime(2025,3,15,0,0,0),\"NO\",\"tra\",59767,8217439.86,37,4.47},{#datetime(2025,3,15,0,0,0),\"NO\",\"trusted\",111327,14088866.03,57,3.81},{#datetime(2025,3,15,0,0,0),\"NO\",\"recurring\",103603,4090612.4,126,8.04},{#datetime(2025,3,15,0,0,0),\"NO\",\"corporate\",107955,9444930.22,45,6.69},{#datetime(2025,3,15,0,0,0),\"NO\",\"secure_corp\",83664,9499257.08,29,7.58},{#datetime(2025,3,15,0,0,0),\"NO\",\"mit\",86917,5103231.52,22,10.91},{#datetime(2025,3,15,0,0,0),\"NO\",\"contactless_lv\",39579,4217274.99,10,5.25},{#datetime(2025,3,15,0,0,0),\"NO\",\"unattended\",104025,9017767.97,98,2.08},{#datetime(2025,3,15,0,0,0),\"DK\",\"sca_applied\",82135,12102533.56,30,8.01},{#datetime(2025,3,15,0,0,0),\"DK\",\"low_value\",72350,6315708.05,30,11.59},{#datetime(2025,3,15,0,0,0),\"DK\",\"tra\",52096,3347159.71,13,9.34},{#datetime(2025,3,15,0,0,0),\"DK\",\"trusted\",95498,9444370.44,75,8.82},{#datetime(2025,3,15,0,0,0),\"DK\",\"recurring\",14888,2078179.7,5,10.65},{#datetime(2025,3,15,0,0,0),\"DK\",\"corporate\",33040,4694016.37,7,10.12},{#datetime(2025,3,15,0,0,0),\"DK\",\"secure_corp\",113279,10132361.1,139,11.56},{#datetime(2025,3,15,0,0,0),\"DK\",\"mit\",47941,6482063.31,10,7.03},{#datetime(2025,3,15,0,0,0),\"DK\",\"contactless_lv\",24064,3403000.49,13,5.73},{#datetime(2025,3,15,0,0,0),\"DK\",\"unattended\",94058,8953950.83,69,11.29},{#datetime(2025,3,15,0,0,0),\"FI\",\"sca_applied\",76088,6555931.71,31,1.8},{#datetime(2025,3,15,0,0,0),\"FI\",\"low_value\",31298,3684848.37,28,8.76},{#datetime(2025,3,15,0,0,0),\"FI\",\"tra\",11846,1402497.07,12,7.03},{#datetime(2025,3,15,0,0,0),\"FI\",\"trusted\",109258,5810269.92,95,7.85},{#datetime(2025,3,15,0,0,0),\"FI\",\"recurring\",63148,8161170.42,48,1.5},{#datetime(2025,3,15,0,0,0),\"FI\",\"corporate\",97720,4050123.9,125,5.99},{#datetime(2025,3,15,0,0,0),\"FI\",\"secure_corp\",42512,1310203.45,26,5.64},{#datetime(2025,3,15,0,0,0),\"FI\",\"mit\",44995,6501065.62,23,8.81},{#datetime(2025,3,15,0,0,0),\"FI\",\"contactless_lv\",11498,705820.58,6,3.22},{#datetime(2025,3,15,0,0,0),\"FI\",\"unattended\",97528,4309467.95,52,5.16},{#datetime(2025,3,15,0,0,0),\"EE\",\"sca_applied\",75866,10679863.3,89,9.35},{#datetime(2025,3,15,0,0,0),\"EE\",\"low_value\",100477,4430019.83,121,3.89},{#datetime(2025,3,15,0,0,0),\"EE\",\"tra\",90560,5116812.86,113,6.0},{#datetime(2025,3,15,0,0,0),\"EE\",\"trusted\",69634,8337152.12,60,5.28},{#datetime(2025,3,15,0,0,0),\"EE\",\"recurring\",81989,11440386.49,84,9.72},{#datetime(2025,3,15,0,0,0),\"EE\",\"corporate\",118213,6644681.18,55,9.18},{#datetime(2025,3,15,0,0,0),\"EE\",\"secure_corp\",113202,4508205.89,78,8.59},{#datetime(2025,3,15,0,0,0),\"EE\",\"mit\",20237,2834583.74,6,10.03},{#datetime(2025,3,15,0,0,0),\"EE\",\"contactless_lv\",76255,4137505.82,60,2.39},{#datetime(2025,3,15,0,0,0),\"EE\",\"unattended\",78202,6492397.79,74,8.74},{#datetime(2025,4,15,0,0,0),\"SE\",\"sca_applied\",74071,3030466.63,56,9.8},{#datetime(2025,4,15,0,0,0),\"SE\",\"low_value\",69432,3182299.13,45,6.98},{#datetime(2025,4,15,0,0,0),\"SE\",\"tra\",83242,7115975.39,90,8.82},{#datetime(2025,4,15,0,0,0),\"SE\",\"trusted\",61897,3746926.62,12,3.01},{#datetime(2025,4,15,0,0,0),\"SE\",\"recurring\",19572,693529.44,11,1.23},{#datetime(2025,4,15,0,0,0),\"SE\",\"corporate\",17897,2544057.4,4,11.24},{#datetime(2025,4,15,0,0,0),\"SE\",\"secure_corp\",14159,912560.08,5,2.06},{#datetime(2025,4,15,0,0,0),\"SE\",\"mit\",94085,13868128.45,85,5.33},{#datetime(2025,4,15,0,0,0),\"SE\",\"contactless_lv\",60132,5040532.18,72,4.84},{#datetime(2025,4,15,0,0,0),\"SE\",\"unattended\",20518,2296531.37,19,6.7},{#datetime(2025,4,15,0,0,0),\"NO\",\"sca_applied\",95660,12745201.72,31,11.92},{#datetime(2025,4,15,0,0,0),\"NO\",\"low_value\",61518,5749540.24,61,3.06},{#datetime(2025,4,15,0,0,0),\"NO\",\"tra\",10455,1262352.69,13,5.82},{#datetime(2025,4,15,0,0,0),\"NO\",\"trusted\",104253,9938797.19,81,9.97},{#datetime(2025,4,15,0,0,0),\"NO\",\"recurring\",42441,3619157.69,15,2.67},{#datetime(2025,4,15,0,0,0),\"NO\",\"corporate\",105030,12798828.87,24,8.09},{#datetime(2025,4,15,0,0,0),\"NO\",\"secure_corp\",90599,11046411.37,106,0.68},{#datetime(2025,4,15,0,0,0),\"NO\",\"mit\",37011,1409190.43,31,5.63},{#datetime(2025,4,15,0,0,0),\"NO\",\"contactless_lv\",98083,11220141.23,24,9.02},{#datetime(2025,4,15,0,0,0),\"NO\",\"unattended\",62725,5185823.08,49,9.18},{#datetime(2025,4,15,0,0,0),\"DK\",\"sca_applied\",111720,4108311.31,84,3.83},{#datetime(2025,4,15,0,0,0),\"DK\",\"low_value\",116926,16365856.74,97,7.14},{#datetime(2025,4,15,0,0,0),\"DK\",\"tra\",111258,12316686.51,61,3.97},{#datetime(2025,4,15,0,0,0),\"DK\",\"trusted\",28777,4267153.34,22,5.26},{#datetime(2025,4,15,0,0,0),\"DK\",\"recurring\",46064,1718874.31,57,10.62},{#datetime(2025,4,15,0,0,0),\"DK\",\"corporate\",32955,3464202.46,22,6.2},{#datetime(2025,4,15,0,0,0),\"DK\",\"secure_corp\",55143,7884917.93,51,9.54},{#datetime(2025,4,15,0,0,0),\"DK\",\"mit\",51777,5879641.25,33,3.95},{#datetime(2025,4,15,0,0,0),\"DK\",\"contactless_lv\",34101,4110191.2,24,10.27},{#datetime(2025,4,15,0,0,0),\"DK\",\"unattended\",49418,6567896.75,17,5.82},{#datetime(2025,4,15,0,0,0),\"FI\",\"sca_applied\",17552,1711079.78,22,6.91},{#datetime(2025,4,15,0,0,0),\"FI\",\"low_value\",27575,2112528.63,13,4.3},{#datetime(2025,4,15,0,0,0),\"FI\",\"tra\",20363,2864404.82,23,1.56},{#datetime(2025,4,15,0,0,0),\"FI\",\"trusted\",104972,13596892.39,26,4.84},{#datetime(2025,4,15,0,0,0),\"FI\",\"recurring\",89294,9139298.53,103,2.66},{#datetime(2025,4,15,0,0,0),\"FI\",\"corporate\",109837,11039721.56,103,3.0},{#datetime(2025,4,15,0,0,0),\"FI\",\"secure_corp\",37379,5021377.57,21,11.51},{#datetime(2025,4,15,0,0,0),\"FI\",\"mit\",12009,665501.94,4,9.03},{#datetime(2025,4,15,0,0,0),\"FI\",\"contactless_lv\",107894,16178558.66,78,3.29},{#datetime(2025,4,15,0,0,0),\"FI\",\"unattended\",89220,10211427.95,56,3.25},{#datetime(2025,4,15,0,0,0),\"EE\",\"sca_applied\",52154,6418158.12,32,6.64},{#datetime(2025,4,15,0,0,0),\"EE\",\"low_value\",57088,3825505.36,34,10.65},{#datetime(2025,4,15,0,0,0),\"EE\",\"tra\",71080,2973488.77,90,5.9},{#datetime(2025,4,15,0,0,0),\"EE\",\"trusted\",51973,7261649.88,31,5.26},{#datetime(2025,4,15,0,0,0),\"EE\",\"recurring\",83731,11194012.54,85,0.69},{#datetime(2025,4,15,0,0,0),\"EE\",\"corporate\",82523,11732376.61,69,5.3},{#datetime(2025,4,15,0,0,0),\"EE\",\"secure_corp\",29976,1605005.39,13,7.05},{#datetime(2025,4,15,0,0,0),\"EE\",\"mit\",42208,3795182.04,38,8.38},{#datetime(2025,4,15,0,0,0),\"EE\",\"contactless_lv\",43728,5317468.01,32,8.82},{#datetime(2025,4,15,0,0,0),\"EE\",\"unattended\",106940,9503914.99,41,9.64},{#datetime(2025,5,15,0,0,0),\"SE\",\"sca_applied\",32185,1506097.83,25,2.62},{#datetime(2025,5,15,0,0,0),\"SE\",\"low_value\",81058,12064577.47,101,6.53},{#datetime(2025,5,15,0,0,0),\"SE\",\"tra\",119978,15789547.04,148,8.18},{#datetime(2025,5,15,0,0,0),\"SE\",\"trusted\",110183,3389896.67,38,7.75},{#datetime(2025,5,15,0,0,0),\"SE\",\"recurring\",18908,2171779.45,3,6.32},{#datetime(2025,5,15,0,0,0),\"SE\",\"corporate\",58916,2194857.5,53,11.24},{#datetime(2025,5,15,0,0,0),\"SE\",\"secure_corp\",73334,8001774.95,15,6.62},{#datetime(2025,5,15,0,0,0),\"SE\",\"mit\",63914,2008313.13,50,3.66},{#datetime(2025,5,15,0,0,0),\"SE\",\"contactless_lv\",47576,1525149.15,52,8.25},{#datetime(2025,5,15,0,0,0),\"SE\",\"unattended\",115666,16513106.17,45,11.06},{#datetime(2025,5,15,0,0,0),\"NO\",\"sca_applied\",78732,3768719.62,32,6.55},{#datetime(2025,5,15,0,0,0),\"NO\",\"low_value\",116851,8475545.65,125,1.41},{#datetime(2025,5,15,0,0,0),\"NO\",\"tra\",63218,5378570.34,29,8.52},{#datetime(2025,5,15,0,0,0),\"NO\",\"trusted\",49318,5527807.79,55,8.02},{#datetime(2025,5,15,0,0,0),\"NO\",\"recurring\",95182,11531328.05,28,4.86},{#datetime(2025,5,15,0,0,0),\"NO\",\"corporate\",82443,7182484.62,74,8.58},{#datetime(2025,5,15,0,0,0),\"NO\",\"secure_corp\",20837,1874975.92,14,9.52},{#datetime(2025,5,15,0,0,0),\"NO\",\"mit\",84167,12396074.25,106,10.79},{#datetime(2025,5,15,0,0,0),\"NO\",\"contactless_lv\",15577,896798.73,18,8.46},{#datetime(2025,5,15,0,0,0),\"NO\",\"unattended\",84289,7338203.25,21,1.36},{#datetime(2025,5,15,0,0,0),\"DK\",\"sca_applied\",46749,6447500.44,38,0.88},{#datetime(2025,5,15,0,0,0),\"DK\",\"low_value\",51220,1632840.92,21,2.16},{#datetime(2025,5,15,0,0,0),\"DK\",\"tra\",117569,13582201.99,75,1.38},{#datetime(2025,5,15,0,0,0),\"DK\",\"trusted\",31292,3056445.6,25,10.27},{#datetime(2025,5,15,0,0,0),\"DK\",\"recurring\",98740,13584954.51,55,9.19},{#datetime(2025,5,15,0,0,0),\"DK\",\"corporate\",28343,3538900.47,27,1.4},{#datetime(2025,5,15,0,0,0),\"DK\",\"secure_corp\",107708,15824330.03,27,5.53},{#datetime(2025,5,15,0,0,0),\"DK\",\"mit\",119926,4691767.71,103,7.56},{#datetime(2025,5,15,0,0,0),\"DK\",\"contactless_lv\",88067,6834383.69,92,0.84},{#datetime(2025,5,15,0,0,0),\"DK\",\"unattended\",45825,5683481.22,31,3.12},{#datetime(2025,5,15,0,0,0),\"FI\",\"sca_applied\",82487,11790455.98,55,8.32},{#datetime(2025,5,15,0,0,0),\"FI\",\"low_value\",96595,7303424.85,101,3.9},{#datetime(2025,5,15,0,0,0),\"FI\",\"tra\",42302,4888970.06,12,2.27},{#datetime(2025,5,15,0,0,0),\"FI\",\"trusted\",103280,12813622.6,38,4.98},{#datetime(2025,5,15,0,0,0),\"FI\",\"recurring\",57277,2450660.03,11,4.05},{#datetime(2025,5,15,0,0,0),\"FI\",\"corporate\",57175,6938848.28,17,1.5},{#datetime(2025,5,15,0,0,0),\"FI\",\"secure_corp\",66489,5575850.07,53,5.19},{#datetime(2025,5,15,0,0,0),\"FI\",\"mit\",13442,547818.78,10,7.36},{#datetime(2025,5,15,0,0,0),\"FI\",\"contactless_lv\",112817,7776660.79,70,3.86},{#datetime(2025,5,15,0,0,0),\"FI\",\"unattended\",60829,7512399.3,60,6.93},{#datetime(2025,5,15,0,0,0),\"EE\",\"sca_applied\",41816,4124531.68,16,4.88},{#datetime(2025,5,15,0,0,0),\"EE\",\"low_value\",28198,1755897.23,13,2.18},{#datetime(2025,5,15,0,0,0),\"EE\",\"tra\",31916,2622255.34,21,6.07},{#datetime(2025,5,15,0,0,0),\"EE\",\"trusted\",20082,1472713.26,24,8.79},{#datetime(2025,5,15,0,0,0),\"EE\",\"recurring\",74985,7592738.73,31,1.73},{#datetime(2025,5,15,0,0,0),\"EE\",\"corporate\",49932,1538508.99,31,10.18},{#datetime(2025,5,15,0,0,0),\"EE\",\"secure_corp\",59792,7563040.78,33,4.35},{#datetime(2025,5,15,0,0,0),\"EE\",\"mit\",116886,15057748.81,107,7.34},{#datetime(2025,5,15,0,0,0),\"EE\",\"contactless_lv\",49378,3381396.49,61,2.81},{#datetime(2025,5,15,0,0,0),\"EE\",\"unattended\",51180,2626377.07,32,4.17},{#datetime(2025,6,15,0,0,0),\"SE\",\"sca_applied\",106321,12056262.58,78,7.12},{#datetime(2025,6,15,0,0,0),\"SE\",\"low_value\",41775,2886917.71,21,9.54},{#datetime(2025,6,15,0,0,0),\"SE\",\"tra\",57843,2525803.61,47,7.31},{#datetime(2025,6,15,0,0,0),\"SE\",\"trusted\",81516,4205513.6,85,0.81},{#datetime(2025,6,15,0,0,0),\"SE\",\"recurring\",105317,8993510.12,103,5.54},{#datetime(2025,6,15,0,0,0),\"SE\",\"corporate\",48185,6252187.67,13,10.25},{#datetime(2025,6,15,0,0,0),\"SE\",\"secure_corp\",114208,9033509.13,85,7.78},{#datetime(2025,6,15,0,0,0),\"SE\",\"mit\",41722,2516746.23,15,5.37},{#datetime(2025,6,15,0,0,0),\"SE\",\"contactless_lv\",59412,2309690.0,76,6.01},{#datetime(2025,6,15,0,0,0),\"SE\",\"unattended\",62534,5885955.73,76,10.5},{#datetime(2025,6,15,0,0,0),\"NO\",\"sca_applied\",64827,6173956.51,69,4.63},{#datetime(2025,6,15,0,0,0),\"NO\",\"low_value\",116469,10998018.39,105,1.48},{#datetime(2025,6,15,0,0,0),\"NO\",\"tra\",110788,6623761.51,103,2.41},{#datetime(2025,6,15,0,0,0),\"NO\",\"trusted\",90304,3189140.23,115,8.29},{#datetime(2025,6,15,0,0,0),\"NO\",\"recurring\",62378,9108269.39,35,9.66},{#datetime(2025,6,15,0,0,0),\"NO\",\"corporate\",23886,746813.29,11,6.37},{#datetime(2025,6,15,0,0,0),\"NO\",\"secure_corp\",77999,7562721.42,74,3.04},{#datetime(2025,6,15,0,0,0),\"NO\",\"mit\",59036,4541999.61,61,7.27},{#datetime(2025,6,15,0,0,0),\"NO\",\"contactless_lv\",75597,3635413.76,98,6.05},{#datetime(2025,6,15,0,0,0),\"NO\",\"unattended\",48722,3893718.58,61,1.83},{#datetime(2025,6,15,0,0,0),\"DK\",\"sca_applied\",105702,4968101.94,57,5.74},{#datetime(2025,6,15,0,0,0),\"DK\",\"low_value\",37114,3434298.7,21,1.62},{#datetime(2025,6,15,0,0,0),\"DK\",\"tra\",104633,11887521.69,57,3.95},{#datetime(2025,6,15,0,0,0),\"DK\",\"trusted\",116192,13396179.89,26,4.45},{#datetime(2025,6,15,0,0,0),\"DK\",\"recurring\",24334,2707321.02,9,11.81},{#datetime(2025,6,15,0,0,0),\"DK\",\"corporate\",41970,3857851.69,33,4.31},{#datetime(2025,6,15,0,0,0),\"DK\",\"secure_corp\",65885,9554347.18,29,5.16},{#datetime(2025,6,15,0,0,0),\"DK\",\"mit\",34176,1789675.15,31,5.05},{#datetime(2025,6,15,0,0,0),\"DK\",\"contactless_lv\",106650,11058840.58,44,7.31},{#datetime(2025,6,15,0,0,0),\"DK\",\"unattended\",60965,1861505.63,26,3.7},{#datetime(2025,6,15,0,0,0),\"FI\",\"sca_applied\",102243,12989725.17,27,1.67},{#datetime(2025,6,15,0,0,0),\"FI\",\"low_value\",80371,4214267.87,44,5.76},{#datetime(2025,6,15,0,0,0),\"FI\",\"tra\",44387,4904060.92,32,11.61},{#datetime(2025,6,15,0,0,0),\"FI\",\"trusted\",51078,5191389.12,44,7.25},{#datetime(2025,6,15,0,0,0),\"FI\",\"recurring\",55603,4016660.13,39,2.48},{#datetime(2025,6,15,0,0,0),\"FI\",\"corporate\",98288,11275462.08,51,7.57},{#datetime(2025,6,15,0,0,0),\"FI\",\"secure_corp\",21108,2335667.95,11,3.24},{#datetime(2025,6,15,0,0,0),\"FI\",\"mit\",25328,1316178.19,24,6.37},{#datetime(2025,6,15,0,0,0),\"FI\",\"contactless_lv\",64819,6583737.01,53,5.36},{#datetime(2025,6,15,0,0,0),\"FI\",\"unattended\",73788,7840727.42,71,7.92},{#datetime(2025,6,15,0,0,0),\"EE\",\"sca_applied\",32706,3159056.48,24,2.11},{#datetime(2025,6,15,0,0,0),\"EE\",\"low_value\",51232,6713350.38,45,10.45},{#datetime(2025,6,15,0,0,0),\"EE\",\"tra\",11256,992250.96,4,4.92},{#datetime(2025,6,15,0,0,0),\"EE\",\"trusted\",83607,7579188.78,62,8.37},{#datetime(2025,6,15,0,0,0),\"EE\",\"recurring\",64477,7428851.97,44,2.42},{#datetime(2025,6,15,0,0,0),\"EE\",\"corporate\",84107,2834682.16,87,3.86},{#datetime(2025,6,15,0,0,0),\"EE\",\"secure_corp\",46025,2622560.19,23,9.48},{#datetime(2025,6,15,0,0,0),\"EE\",\"mit\",84140,10021258.29,87,6.82},{#datetime(2025,6,15,0,0,0),\"EE\",\"contactless_lv\",24838,2452148.6,12,6.75},{#datetime(2025,6,15,0,0,0),\"EE\",\"unattended\",58085,5520700.76,59,9.24}}), Typed = Table.TransformColumnTypes(Source,{{\"kpi_date\", type datetime},{\"issuer_country\", type text},{\"sca_exemption_code\", type text},{\"tx_count\", Int64.Type},{\"tx_value_eur\", type number},{\"fraud_count\", Int64.Type},{\"fraud_rate_bps\", type number}}) in Typed",
+              "type": "m"
             }
           }
         ]
@@ -423,47 +575,54 @@
           {
             "name": "KpiDate",
             "dataType": "dateTime",
+            "lineageTag": "471ea732-4c96-41f8-9559-ba09f43fae20",
             "sourceColumn": "kpi_date",
             "summarizeBy": "none"
           },
           {
             "name": "ModelVersion",
             "dataType": "string",
+            "lineageTag": "1a43f287-ea1f-4092-8c80-f3a2c579aafa",
             "sourceColumn": "model_version",
             "summarizeBy": "none"
           },
           {
             "name": "P50Ms",
             "dataType": "double",
+            "lineageTag": "f70449a7-bc51-4969-b2cf-a0bae1710e59",
             "sourceColumn": "p50_ms",
             "summarizeBy": "average"
           },
           {
             "name": "P95Ms",
             "dataType": "double",
+            "lineageTag": "56c41fa6-2a2b-4f54-b8ef-7d916419a67a",
             "sourceColumn": "p95_ms",
             "summarizeBy": "average"
           },
           {
             "name": "P99Ms",
             "dataType": "double",
+            "lineageTag": "a4d45cd1-a1f9-4eeb-8b6c-6da9b9919e8d",
             "sourceColumn": "p99_ms",
             "summarizeBy": "average"
           },
           {
             "name": "SampleCount",
             "dataType": "int64",
+            "lineageTag": "f73674fc-816e-4337-b97d-354eb401441c",
             "sourceColumn": "sample_count",
             "summarizeBy": "sum"
           }
         ],
+        "lineageTag": "ca1bad04-60a9-4459-97b2-4fdb72a034f5",
         "partitions": [
           {
             "name": "Fact_Latency",
             "mode": "import",
             "source": {
-              "type": "m",
-              "expression": "let Source = #table({\"kpi_date\",\"model_version\",\"p50_ms\",\"p95_ms\",\"p99_ms\",\"sample_count\"},{{#datetime(2025,1,1,0,0,0),\"v2.3.1\",5.8,9.5,13.2,392712},{#datetime(2025,1,1,0,0,0),\"v2.4.0\",7.0,10.9,16.9,285789},{#datetime(2025,1,8,0,0,0),\"v2.3.1\",5.1,10.7,13.0,111544},{#datetime(2025,1,8,0,0,0),\"v2.4.0\",7.1,10.8,16.0,358241},{#datetime(2025,1,15,0,0,0),\"v2.3.1\",6.8,12.4,16.8,274482},{#datetime(2025,1,15,0,0,0),\"v2.4.0\",4.7,8.1,10.9,158497},{#datetime(2025,1,22,0,0,0),\"v2.3.1\",7.2,11.9,16.0,362925},{#datetime(2025,1,22,0,0,0),\"v2.4.0\",6.2,10.2,15.0,201693},{#datetime(2025,2,1,0,0,0),\"v2.3.1\",6.3,12.2,16.3,99925},{#datetime(2025,2,1,0,0,0),\"v2.4.0\",4.5,9.8,13.4,81082},{#datetime(2025,2,8,0,0,0),\"v2.3.1\",8.0,13.6,16.1,119568},{#datetime(2025,2,8,0,0,0),\"v2.4.0\",5.0,10.1,15.4,255888},{#datetime(2025,2,15,0,0,0),\"v2.3.1\",6.0,10.7,13.8,267173},{#datetime(2025,2,15,0,0,0),\"v2.4.0\",5.5,8.7,13.9,98808},{#datetime(2025,2,22,0,0,0),\"v2.3.1\",5.6,10.8,15.6,243499},{#datetime(2025,2,22,0,0,0),\"v2.4.0\",5.8,10.3,14.6,98833},{#datetime(2025,3,1,0,0,0),\"v2.3.1\",6.9,11.3,16.0,237811},{#datetime(2025,3,1,0,0,0),\"v2.4.0\",7.4,12.8,16.4,275256},{#datetime(2025,3,8,0,0,0),\"v2.3.1\",7.3,11.8,15.1,198684},{#datetime(2025,3,8,0,0,0),\"v2.4.0\",5.4,10.1,14.4,304456},{#datetime(2025,3,15,0,0,0),\"v2.3.1\",7.2,12.9,17.9,74087},{#datetime(2025,3,15,0,0,0),\"v2.4.0\",4.4,9.8,13.6,115136},{#datetime(2025,3,22,0,0,0),\"v2.3.1\",7.7,11.2,15.0,274290},{#datetime(2025,3,22,0,0,0),\"v2.4.0\",4.8,9.9,12.4,390785},{#datetime(2025,4,1,0,0,0),\"v2.3.1\",5.2,10.8,16.3,98937},{#datetime(2025,4,1,0,0,0),\"v2.4.0\",6.6,10.4,13.9,390216},{#datetime(2025,4,8,0,0,0),\"v2.3.1\",4.7,8.9,12.1,172758},{#datetime(2025,4,8,0,0,0),\"v2.4.0\",5.7,9.0,11.4,161894},{#datetime(2025,4,15,0,0,0),\"v2.3.1\",5.9,9.3,12.2,283343},{#datetime(2025,4,15,0,0,0),\"v2.4.0\",4.0,9.1,14.4,271414},{#datetime(2025,4,22,0,0,0),\"v2.3.1\",6.8,11.2,14.1,96835},{#datetime(2025,4,22,0,0,0),\"v2.4.0\",6.9,10.2,13.5,206895},{#datetime(2025,5,1,0,0,0),\"v2.3.1\",4.5,9.8,14.8,119806},{#datetime(2025,5,1,0,0,0),\"v2.4.0\",6.6,11.6,13.9,345326},{#datetime(2025,5,8,0,0,0),\"v2.3.1\",4.0,9.0,12.8,161702},{#datetime(2025,5,8,0,0,0),\"v2.4.0\",6.5,10.0,13.6,281936},{#datetime(2025,5,15,0,0,0),\"v2.3.1\",7.4,10.7,13.1,114569},{#datetime(2025,5,15,0,0,0),\"v2.4.0\",6.4,10.6,16.5,214890},{#datetime(2025,5,22,0,0,0),\"v2.3.1\",7.2,10.9,15.5,180110},{#datetime(2025,5,22,0,0,0),\"v2.4.0\",6.2,11.0,15.4,64063},{#datetime(2025,6,1,0,0,0),\"v2.3.1\",7.4,12.4,15.6,321449},{#datetime(2025,6,1,0,0,0),\"v2.4.0\",6.4,10.0,13.6,388779},{#datetime(2025,6,8,0,0,0),\"v2.3.1\",4.2,9.9,15.7,309463},{#datetime(2025,6,8,0,0,0),\"v2.4.0\",5.5,9.2,13.8,87230},{#datetime(2025,6,15,0,0,0),\"v2.3.1\",6.1,12.0,17.9,215922},{#datetime(2025,6,15,0,0,0),\"v2.4.0\",4.5,10.1,14.4,241581},{#datetime(2025,6,22,0,0,0),\"v2.3.1\",6.2,9.7,13.6,88268},{#datetime(2025,6,22,0,0,0),\"v2.4.0\",4.1,7.3,10.3,70880}}), Typed = Table.TransformColumnTypes(Source,{{\"kpi_date\", type datetime},{\"model_version\", type text},{\"p50_ms\", type number},{\"p95_ms\", type number},{\"p99_ms\", type number},{\"sample_count\", Int64.Type}}) in Typed"
+              "expression": "let Source = #table({\"kpi_date\",\"model_version\",\"p50_ms\",\"p95_ms\",\"p99_ms\",\"sample_count\"},{{#datetime(2025,1,1,0,0,0),\"v2.3.1\",5.8,9.5,13.2,392712},{#datetime(2025,1,1,0,0,0),\"v2.4.0\",7.0,10.9,16.9,285789},{#datetime(2025,1,8,0,0,0),\"v2.3.1\",5.1,10.7,13.0,111544},{#datetime(2025,1,8,0,0,0),\"v2.4.0\",7.1,10.8,16.0,358241},{#datetime(2025,1,15,0,0,0),\"v2.3.1\",6.8,12.4,16.8,274482},{#datetime(2025,1,15,0,0,0),\"v2.4.0\",4.7,8.1,10.9,158497},{#datetime(2025,1,22,0,0,0),\"v2.3.1\",7.2,11.9,16.0,362925},{#datetime(2025,1,22,0,0,0),\"v2.4.0\",6.2,10.2,15.0,201693},{#datetime(2025,2,1,0,0,0),\"v2.3.1\",6.3,12.2,16.3,99925},{#datetime(2025,2,1,0,0,0),\"v2.4.0\",4.5,9.8,13.4,81082},{#datetime(2025,2,8,0,0,0),\"v2.3.1\",8.0,13.6,16.1,119568},{#datetime(2025,2,8,0,0,0),\"v2.4.0\",5.0,10.1,15.4,255888},{#datetime(2025,2,15,0,0,0),\"v2.3.1\",6.0,10.7,13.8,267173},{#datetime(2025,2,15,0,0,0),\"v2.4.0\",5.5,8.7,13.9,98808},{#datetime(2025,2,22,0,0,0),\"v2.3.1\",5.6,10.8,15.6,243499},{#datetime(2025,2,22,0,0,0),\"v2.4.0\",5.8,10.3,14.6,98833},{#datetime(2025,3,1,0,0,0),\"v2.3.1\",6.9,11.3,16.0,237811},{#datetime(2025,3,1,0,0,0),\"v2.4.0\",7.4,12.8,16.4,275256},{#datetime(2025,3,8,0,0,0),\"v2.3.1\",7.3,11.8,15.1,198684},{#datetime(2025,3,8,0,0,0),\"v2.4.0\",5.4,10.1,14.4,304456},{#datetime(2025,3,15,0,0,0),\"v2.3.1\",7.2,12.9,17.9,74087},{#datetime(2025,3,15,0,0,0),\"v2.4.0\",4.4,9.8,13.6,115136},{#datetime(2025,3,22,0,0,0),\"v2.3.1\",7.7,11.2,15.0,274290},{#datetime(2025,3,22,0,0,0),\"v2.4.0\",4.8,9.9,12.4,390785},{#datetime(2025,4,1,0,0,0),\"v2.3.1\",5.2,10.8,16.3,98937},{#datetime(2025,4,1,0,0,0),\"v2.4.0\",6.6,10.4,13.9,390216},{#datetime(2025,4,8,0,0,0),\"v2.3.1\",4.7,8.9,12.1,172758},{#datetime(2025,4,8,0,0,0),\"v2.4.0\",5.7,9.0,11.4,161894},{#datetime(2025,4,15,0,0,0),\"v2.3.1\",5.9,9.3,12.2,283343},{#datetime(2025,4,15,0,0,0),\"v2.4.0\",4.0,9.1,14.4,271414},{#datetime(2025,4,22,0,0,0),\"v2.3.1\",6.8,11.2,14.1,96835},{#datetime(2025,4,22,0,0,0),\"v2.4.0\",6.9,10.2,13.5,206895},{#datetime(2025,5,1,0,0,0),\"v2.3.1\",4.5,9.8,14.8,119806},{#datetime(2025,5,1,0,0,0),\"v2.4.0\",6.6,11.6,13.9,345326},{#datetime(2025,5,8,0,0,0),\"v2.3.1\",4.0,9.0,12.8,161702},{#datetime(2025,5,8,0,0,0),\"v2.4.0\",6.5,10.0,13.6,281936},{#datetime(2025,5,15,0,0,0),\"v2.3.1\",7.4,10.7,13.1,114569},{#datetime(2025,5,15,0,0,0),\"v2.4.0\",6.4,10.6,16.5,214890},{#datetime(2025,5,22,0,0,0),\"v2.3.1\",7.2,10.9,15.5,180110},{#datetime(2025,5,22,0,0,0),\"v2.4.0\",6.2,11.0,15.4,64063},{#datetime(2025,6,1,0,0,0),\"v2.3.1\",7.4,12.4,15.6,321449},{#datetime(2025,6,1,0,0,0),\"v2.4.0\",6.4,10.0,13.6,388779},{#datetime(2025,6,8,0,0,0),\"v2.3.1\",4.2,9.9,15.7,309463},{#datetime(2025,6,8,0,0,0),\"v2.4.0\",5.5,9.2,13.8,87230},{#datetime(2025,6,15,0,0,0),\"v2.3.1\",6.1,12.0,17.9,215922},{#datetime(2025,6,15,0,0,0),\"v2.4.0\",4.5,10.1,14.4,241581},{#datetime(2025,6,22,0,0,0),\"v2.3.1\",6.2,9.7,13.6,88268},{#datetime(2025,6,22,0,0,0),\"v2.4.0\",4.1,7.3,10.3,70880}}), Typed = Table.TransformColumnTypes(Source,{{\"kpi_date\", type datetime},{\"model_version\", type text},{\"p50_ms\", type number},{\"p95_ms\", type number},{\"p99_ms\", type number},{\"sample_count\", Int64.Type}}) in Typed",
+              "type": "m"
             }
           }
         ]
@@ -473,10 +632,111 @@
         "columns": [
           {
             "name": "_dummy",
-            "dataType": "int64",
-            "sourceColumn": "_dummy",
+            "annotations": [
+              {
+                "name": "SummarizationSetBy",
+                "value": "Automatic"
+              }
+            ],
+            "dataType": "string",
             "isHidden": true,
+            "lineageTag": "1082eaed-820e-45b0-9d02-ab103c3d049f",
+            "sourceColumn": "_dummy",
             "summarizeBy": "none"
+          }
+        ],
+        "lineageTag": "93d1786c-ed90-4489-acd3-9098c87089f0",
+        "measures": [
+          {
+            "name": "Total Tx Value (€)",
+            "description": "Sum of EUR-converted booked transaction value across the selected period and country filter.",
+            "expression": "SUM(Fact_Tx[TxValueEur])",
+            "formatString": "\"€\"#,0",
+            "lineageTag": "9759159f-1680-4ac9-a4fd-e1aa068eaf4f"
+          },
+          {
+            "name": "Total Tx Count",
+            "description": "Sum of authorised payment transactions (excludes pre-auth and reversals) per Fact_Tx grain.",
+            "expression": "SUM(Fact_Tx[TxCount])",
+            "formatString": "#,0",
+            "lineageTag": "7b6c686a-11c3-4983-b1b9-2810caec65b6"
+          },
+          {
+            "name": "Decline Rate %",
+            "description": "Declines divided by total decisions — KPI tracked vs the 1.1% target.",
+            "expression": "DIVIDE(SUM(Fact_Tx[DeclineCount]), SUM(Fact_Tx[TxCount]))",
+            "formatString": "0.00%",
+            "lineageTag": "e662ca5f-98b7-454c-826c-1362a5312527"
+          },
+          {
+            "name": "Fraud Loss (€)",
+            "description": "Confirmed fraud loss amount borne by the PSP (sourced from Cases mart).",
+            "expression": "SUM(Fact_Tx[LossValueEur])",
+            "formatString": "\"€\"#,0",
+            "lineageTag": "d6ac554a-f592-4983-828f-7df721c24152"
+          },
+          {
+            "name": "Fraud Rate (bps)",
+            "description": "Fraud rate in basis points (€ fraud / € authorised × 10 000) — EBA Annex C convention.",
+            "expression": "DIVIDE(SUM(Fact_Tx[FraudValueEur]), SUM(Fact_Tx[TxValueEur])) * 10000",
+            "formatString": "0.00",
+            "lineageTag": "2374e880-ed58-4b7e-9524-92c39ac815a7"
+          },
+          {
+            "name": "Scoring p99 (ms)",
+            "description": "Average daily p99 scoring latency across model versions — target < 18 ms.",
+            "expression": "AVERAGE(Fact_Latency[P99Ms])",
+            "formatString": "0.0",
+            "lineageTag": "45dd8c08-dc7b-4014-8a76-38a2dc193b3b"
+          },
+          {
+            "name": "PSD2 Exemption Coverage %",
+            "description": "Share of in-scope transactions that successfully used an SCA exemption (target > 70%).",
+            "expression": "DIVIDE(CALCULATE(SUM(Fact_Exemption[TxCount]), Fact_Exemption[ExemptionCode] <> \"sca_applied\"), SUM(Fact_Exemption[TxCount]))",
+            "formatString": "0.00%",
+            "lineageTag": "931ce879-809b-4e2a-a163-82627f92070c"
+          },
+          {
+            "name": "Total Fraud Count",
+            "description": "Confirmed fraudulent transactions for EBA Annex B.",
+            "expression": "SUM(Fact_Eba[FraudCount])",
+            "formatString": "#,0",
+            "lineageTag": "e4801e58-56b4-4197-92c1-b506d965f6b8"
+          },
+          {
+            "name": "EBA Annex C Fraud Rate (bps)",
+            "description": "Annex C basis-points fraud rate computed on the EBA aggregates (matches submitted XLSX).",
+            "expression": "DIVIDE(SUM(Fact_Eba[FraudValueEur]), SUM(Fact_Eba[TxValueEur])) * 10000",
+            "formatString": "0.00",
+            "lineageTag": "9182dd2e-72fa-4e25-b22c-abfe7beeffaf"
+          },
+          {
+            "name": "Loss Borne by PSP (€)",
+            "description": "Loss amount allocated to the PSP per EBA Annex D.",
+            "expression": "CALCULATE(SUM(Fact_Eba[LossValueEur]), Fact_Eba[LossBearer] = \"psp\")",
+            "formatString": "\"€\"#,0",
+            "lineageTag": "786c375c-9609-408a-8d3a-05bb0cf69ef3"
+          },
+          {
+            "name": "Loss Borne by Payer (€)",
+            "description": "Loss amount allocated to the payer per EBA Annex D.",
+            "expression": "CALCULATE(SUM(Fact_Eba[LossValueEur]), Fact_Eba[LossBearer] = \"payer\")",
+            "formatString": "\"€\"#,0",
+            "lineageTag": "1f809f04-1078-4c02-9cc3-bc8519759abc"
+          },
+          {
+            "name": "Open Cases",
+            "description": "Distinct EBA aggregate rows that contributed at least one fraud — proxy for case workload.",
+            "expression": "COUNTROWS(FILTER(Fact_Eba, Fact_Eba[FraudCount] > 0))",
+            "formatString": "#,0",
+            "lineageTag": "7afd8567-6dfb-4b6f-ad1f-9ea9d0a5448b"
+          },
+          {
+            "name": "Model Drift Index",
+            "description": "Relative drift in p99 latency vs the 30-day-prior baseline — alert at > 25%.",
+            "expression": "VAR p99_today = AVERAGE(Fact_Latency[P99Ms]) VAR p99_baseline = CALCULATE(AVERAGE(Fact_Latency[P99Ms]), DATEADD(Dim_Date[Date], -30, DAY)) RETURN DIVIDE(p99_today - p99_baseline, p99_baseline)",
+            "formatString": "0.00%",
+            "lineageTag": "51f4efa1-924f-4a0a-8644-8db928c3d900"
           }
         ],
         "partitions": [
@@ -484,170 +744,11 @@
             "name": "_Measures",
             "mode": "import",
             "source": {
-              "type": "m",
-              "expression": "let Source = #table({\"_dummy\"},{{0}}) in Source"
+              "expression": "let Source = #table({\"_dummy\"},{{0}}) in Source",
+              "type": "m"
             }
           }
-        ],
-        "measures": [
-          {
-            "name": "Total Tx Value (€)",
-            "expression": "SUM(Fact_Tx[TxValueEur])",
-            "formatString": "\"€\"#,0",
-            "description": "Sum of EUR-converted booked transaction value across the selected period and country filter."
-          },
-          {
-            "name": "Total Tx Count",
-            "expression": "SUM(Fact_Tx[TxCount])",
-            "formatString": "#,0",
-            "description": "Sum of authorised payment transactions (excludes pre-auth and reversals) per Fact_Tx grain."
-          },
-          {
-            "name": "Decline Rate %",
-            "expression": "DIVIDE(SUM(Fact_Tx[DeclineCount]), SUM(Fact_Tx[TxCount]))",
-            "formatString": "0.00%",
-            "description": "Declines divided by total decisions — KPI tracked vs the 1.1% target."
-          },
-          {
-            "name": "Fraud Loss (€)",
-            "expression": "SUM(Fact_Tx[LossValueEur])",
-            "formatString": "\"€\"#,0",
-            "description": "Confirmed fraud loss amount borne by the PSP (sourced from Cases mart)."
-          },
-          {
-            "name": "Fraud Rate (bps)",
-            "expression": "DIVIDE(SUM(Fact_Tx[FraudValueEur]), SUM(Fact_Tx[TxValueEur])) * 10000",
-            "formatString": "0.00",
-            "description": "Fraud rate in basis points (€ fraud / € authorised × 10 000) — EBA Annex C convention."
-          },
-          {
-            "name": "Scoring p99 (ms)",
-            "expression": "AVERAGE(Fact_Latency[P99Ms])",
-            "formatString": "0.0",
-            "description": "Average daily p99 scoring latency across model versions — target < 18 ms."
-          },
-          {
-            "name": "PSD2 Exemption Coverage %",
-            "expression": "DIVIDE(CALCULATE(SUM(Fact_Exemption[TxCount]), Fact_Exemption[ExemptionCode] <> \"sca_applied\"), SUM(Fact_Exemption[TxCount]))",
-            "formatString": "0.00%",
-            "description": "Share of in-scope transactions that successfully used an SCA exemption (target > 70%)."
-          },
-          {
-            "name": "Total Fraud Count",
-            "expression": "SUM(Fact_Eba[FraudCount])",
-            "formatString": "#,0",
-            "description": "Confirmed fraudulent transactions for EBA Annex B."
-          },
-          {
-            "name": "EBA Annex C Fraud Rate (bps)",
-            "expression": "DIVIDE(SUM(Fact_Eba[FraudValueEur]), SUM(Fact_Eba[TxValueEur])) * 10000",
-            "formatString": "0.00",
-            "description": "Annex C basis-points fraud rate computed on the EBA aggregates (matches submitted XLSX)."
-          },
-          {
-            "name": "Loss Borne by PSP (€)",
-            "expression": "CALCULATE(SUM(Fact_Eba[LossValueEur]), Fact_Eba[LossBearer] = \"psp\")",
-            "formatString": "\"€\"#,0",
-            "description": "Loss amount allocated to the PSP per EBA Annex D."
-          },
-          {
-            "name": "Loss Borne by Payer (€)",
-            "expression": "CALCULATE(SUM(Fact_Eba[LossValueEur]), Fact_Eba[LossBearer] = \"payer\")",
-            "formatString": "\"€\"#,0",
-            "description": "Loss amount allocated to the payer per EBA Annex D."
-          },
-          {
-            "name": "Open Cases",
-            "expression": "COUNTROWS(FILTER(Fact_Eba, Fact_Eba[FraudCount] > 0))",
-            "formatString": "#,0",
-            "description": "Distinct EBA aggregate rows that contributed at least one fraud — proxy for case workload."
-          },
-          {
-            "name": "Model Drift Index",
-            "expression": "VAR p99_today = AVERAGE(Fact_Latency[P99Ms]) VAR p99_baseline = CALCULATE(AVERAGE(Fact_Latency[P99Ms]), DATEADD(Dim_Date[Date], -30, DAY)) RETURN DIVIDE(p99_today - p99_baseline, p99_baseline)",
-            "formatString": "0.00%",
-            "description": "Relative drift in p99 latency vs the 30-day-prior baseline — alert at > 25%."
-          }
         ]
-      }
-    ],
-    "relationships": [
-      {
-        "name": "rel_tx_country",
-        "fromTable": "Fact_Tx",
-        "fromColumn": "CountryCode",
-        "toTable": "Dim_Country",
-        "toColumn": "CountryCode"
-      },
-      {
-        "name": "rel_tx_date",
-        "fromTable": "Fact_Tx",
-        "fromColumn": "BookingDate",
-        "toTable": "Dim_Date",
-        "toColumn": "Date"
-      },
-      {
-        "name": "rel_tx_instr",
-        "fromTable": "Fact_Tx",
-        "fromColumn": "Instrument",
-        "toTable": "Dim_Instrument",
-        "toColumn": "Instrument"
-      },
-      {
-        "name": "rel_eba_country",
-        "fromTable": "Fact_Eba",
-        "fromColumn": "CountryCode",
-        "toTable": "Dim_Country",
-        "toColumn": "CountryCode"
-      },
-      {
-        "name": "rel_eba_instr",
-        "fromTable": "Fact_Eba",
-        "fromColumn": "Instrument",
-        "toTable": "Dim_Instrument",
-        "toColumn": "Instrument"
-      },
-      {
-        "name": "rel_eba_exempt",
-        "fromTable": "Fact_Eba",
-        "fromColumn": "ExemptionCode",
-        "toTable": "Dim_Exemption",
-        "toColumn": "ExemptionCode"
-      },
-      {
-        "name": "rel_eba_fraud",
-        "fromTable": "Fact_Eba",
-        "fromColumn": "FraudTypeCode",
-        "toTable": "Dim_FraudType",
-        "toColumn": "FraudTypeCode"
-      },
-      {
-        "name": "rel_exempt_date",
-        "fromTable": "Fact_Exemption",
-        "fromColumn": "KpiDate",
-        "toTable": "Dim_Date",
-        "toColumn": "Date"
-      },
-      {
-        "name": "rel_exempt_country",
-        "fromTable": "Fact_Exemption",
-        "fromColumn": "CountryCode",
-        "toTable": "Dim_Country",
-        "toColumn": "CountryCode"
-      },
-      {
-        "name": "rel_exempt_code",
-        "fromTable": "Fact_Exemption",
-        "fromColumn": "ExemptionCode",
-        "toTable": "Dim_Exemption",
-        "toColumn": "ExemptionCode"
-      },
-      {
-        "name": "rel_lat_date",
-        "fromTable": "Fact_Latency",
-        "fromColumn": "KpiDate",
-        "toTable": "Dim_Date",
-        "toColumn": "Date"
       }
     ]
   }

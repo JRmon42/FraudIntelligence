@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "kpi_drift",
   "position": {
     "x": 274,
@@ -11,16 +11,6 @@
   },
   "visual": {
     "visualType": "card",
-    "objects": {
-      "categoryLabels": [
-        {
-          "properties": {
-            "show": true,
-            "text": "Model drift (vs 30d)"
-          }
-        }
-      ]
-    },
     "query": {
       "queryState": {
         "Values": {
@@ -42,6 +32,13 @@
           ]
         }
       }
+    },
+    "objects": {
+      "categoryLabels": [
+        {
+          "properties": {}
+        }
+      ]
     }
   }
 }

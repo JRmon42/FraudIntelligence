@@ -1,0 +1,5 @@
+# Power BI Desktop local cache & per-machine settings (PBIP)
+# Generated when the .pbip is opened in Power BI Desktop; not source.
+.pbi/
+**/.pbi/
+*.abf

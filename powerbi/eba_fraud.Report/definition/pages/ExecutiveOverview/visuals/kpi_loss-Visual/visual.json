@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "kpi_loss",
   "position": {
     "x": 16,
@@ -11,28 +11,6 @@
   },
   "visual": {
     "visualType": "card",
-    "objects": {
-      "labels": [
-        {
-          "properties": {
-            "fontSize": 28,
-            "color": {
-              "solid": {
-                "color": "#C00000"
-              }
-            }
-          }
-        }
-      ],
-      "categoryLabels": [
-        {
-          "properties": {
-            "show": true,
-            "text": "Fraud loss €"
-          }
-        }
-      ]
-    },
     "query": {
       "queryState": {
         "Values": {
@@ -54,6 +32,22 @@
           ]
         }
       }
+    },
+    "objects": {
+      "labels": [
+        {
+          "properties": {
+            "color": {
+              "solid": {}
+            }
+          }
+        }
+      ],
+      "categoryLabels": [
+        {
+          "properties": {}
+        }
+      ]
     }
   }
 }

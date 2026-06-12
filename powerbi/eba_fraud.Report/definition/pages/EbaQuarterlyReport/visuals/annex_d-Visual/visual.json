@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "annex_d",
   "position": {
     "x": 656,
@@ -11,15 +11,6 @@
   },
   "visual": {
     "visualType": "clusteredBarChart",
-    "objects": {
-      "title": [
-        {
-          "properties": {
-            "text": "Annex D — Loss allocation by bearer & geo"
-          }
-        }
-      ]
-    },
     "query": {
       "queryState": {
         "Category": {
@@ -36,7 +27,8 @@
                 }
               },
               "queryRef": "Fact_Eba.LossBearer",
-              "nativeQueryRef": "LossBearer"
+              "nativeQueryRef": "LossBearer",
+              "active": true
             },
             {
               "field": {
@@ -50,7 +42,8 @@
                 }
               },
               "queryRef": "Fact_Eba.CounterpartyGeo",
-              "nativeQueryRef": "CounterpartyGeo"
+              "nativeQueryRef": "CounterpartyGeo",
+              "active": false
             }
           ]
         },

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "p99_trend",
   "position": {
     "x": 16,
@@ -11,15 +11,6 @@
   },
   "visual": {
     "visualType": "lineChart",
-    "objects": {
-      "title": [
-        {
-          "properties": {
-            "text": "Scoring p99 latency trend (target ≤ 18 ms)"
-          }
-        }
-      ]
-    },
     "query": {
       "queryState": {
         "Category": {
@@ -36,25 +27,8 @@
                 }
               },
               "queryRef": "Dim_Date.Date",
-              "nativeQueryRef": "Date"
-            }
-          ]
-        },
-        "Y": {
-          "projections": [
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Scoring p99 (ms)"
-                }
-              },
-              "queryRef": "_Measures.Scoring p99 (ms)",
-              "nativeQueryRef": "Scoring p99 (ms)"
+              "nativeQueryRef": "Date",
+              "active": true
             }
           ]
         },
@@ -73,6 +47,24 @@
               },
               "queryRef": "Fact_Latency.ModelVersion",
               "nativeQueryRef": "ModelVersion"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Scoring p99 (ms)"
+                }
+              },
+              "queryRef": "_Measures.Scoring p99 (ms)",
+              "nativeQueryRef": "Scoring p99 (ms)"
             }
           ]
         }

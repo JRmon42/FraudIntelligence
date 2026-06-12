@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "loss_by_country",
   "position": {
     "x": 16,
@@ -11,15 +11,6 @@
   },
   "visual": {
     "visualType": "barChart",
-    "objects": {
-      "title": [
-        {
-          "properties": {
-            "text": "Fraud loss € by country"
-          }
-        }
-      ]
-    },
     "query": {
       "queryState": {
         "Category": {
@@ -36,7 +27,8 @@
                 }
               },
               "queryRef": "Dim_Country.CountryName",
-              "nativeQueryRef": "CountryName"
+              "nativeQueryRef": "CountryName",
+              "active": true
             }
           ]
         },

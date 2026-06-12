@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "drift_chart",
   "position": {
     "x": 16,
@@ -11,15 +11,6 @@
   },
   "visual": {
     "visualType": "lineChart",
-    "objects": {
-      "title": [
-        {
-          "properties": {
-            "text": "Model drift & decline-rate trend (alert > 25%)"
-          }
-        }
-      ]
-    },
     "query": {
       "queryState": {
         "Category": {
@@ -36,7 +27,26 @@
                 }
               },
               "queryRef": "Dim_Date.Date",
-              "nativeQueryRef": "Date"
+              "nativeQueryRef": "Date",
+              "active": true
+            }
+          ]
+        },
+        "Series": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_Latency"
+                    }
+                  },
+                  "Property": "ModelVersion"
+                }
+              },
+              "queryRef": "Fact_Latency.ModelVersion",
+              "nativeQueryRef": "ModelVersion"
             }
           ]
         },
@@ -69,24 +79,6 @@
               },
               "queryRef": "_Measures.Decline Rate %",
               "nativeQueryRef": "Decline Rate %"
-            }
-          ]
-        },
-        "Series": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Fact_Latency"
-                    }
-                  },
-                  "Property": "ModelVersion"
-                }
-              },
-              "queryRef": "Fact_Latency.ModelVersion",
-              "nativeQueryRef": "ModelVersion"
             }
           ]
         }

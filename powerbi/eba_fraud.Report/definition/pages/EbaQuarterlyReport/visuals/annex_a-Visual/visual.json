@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.4.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "annex_a",
   "position": {
     "x": 16,
@@ -11,15 +11,6 @@
   },
   "visual": {
     "visualType": "tableEx",
-    "objects": {
-      "title": [
-        {
-          "properties": {
-            "text": "Annex A — Volumes & values"
-          }
-        }
-      ]
-    },
     "query": {
       "queryState": {
         "Values": {
