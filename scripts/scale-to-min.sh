@@ -42,11 +42,22 @@ for cluster in $(az ml compute list -w "$AML_WS" -g "$PRIMARY_RG" --query "[?typ
   az ml compute update -n "$cluster" -w "$AML_WS" -g "$PRIMARY_RG" --min-instances 0 --max-instances 0 || true
 done
 
-echo "==> Scaling Cosmos containers to manual 400 RU"
+echo "==> Scaling Cosmos containers to minimum RU"
 COSMOS="cosmos-heimdall-${ENV}-${PRIMARY_RC}"
 for c in transactions cards merchants decisions features; do
-  az cosmosdb sql container throughput update \
-    -a "$COSMOS" -g "$PRIMARY_RG" -d fraud -n "$c" --throughput 400 || true
+  # Autoscale containers reject --throughput ("migrate-offer-to-manual" error);
+  # lower the autoscale ceiling to the 1000 RU minimum instead (idle floor 100 RU).
+  # Manual-throughput containers get set to the 400 RU minimum.
+  autoMax=$(az cosmosdb sql container throughput show \
+    -a "$COSMOS" -g "$PRIMARY_RG" -d fraud -n "$c" \
+    --query "resource.autoscaleSettings.maxThroughput" -o tsv 2>/dev/null || true)
+  if [ -n "$autoMax" ] && [ "$autoMax" != "None" ]; then
+    az cosmosdb sql container throughput update \
+      -a "$COSMOS" -g "$PRIMARY_RG" -d fraud -n "$c" --max-throughput 1000 || true
+  else
+    az cosmosdb sql container throughput update \
+      -a "$COSMOS" -g "$PRIMARY_RG" -d fraud -n "$c" --throughput 400 || true
+  fi
 done
 # Gremlin graph only exists if the account has the EnableGremlin capability.
 if az cosmosdb show -a "$COSMOS" -g "$PRIMARY_RG" \
