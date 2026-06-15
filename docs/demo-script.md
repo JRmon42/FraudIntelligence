@@ -31,6 +31,36 @@ They drive the scoring API over Azure Front Door using `scripts/demo.sh`
 > On the WSL host used for development, invoke with `/bin/bash scripts/demo.sh …`
 > and `export PATH="$HOME/snap/copilot-cli/common/local/bin:$PATH"` for `az`.
 
+---
+
+## 🖥️ Web demo console (launch steps + live transaction dashboard)
+
+For a presenter-friendly alternative to the terminal, `scripts/demo-web.sh` serves a
+single-page **web console** (also pure `python3` + stdlib — no pip installs, no
+`curl`/`jq`). It exposes a button for every demo step and streams the **status of each
+transaction and the live analysis metrics** (decision mix, approve/SCA/decline counts,
+client RTT p50/p99, achieved TPS, average risk score) into the browser in real time via
+Server-Sent Events. It reuses the exact same scoring code path as `demo.sh`.
+
+```bash
+# Start the console, then open the printed URL (default http://127.0.0.1:8800)
+./scripts/demo-web.sh
+./scripts/demo-web.sh --port 9000            # custom port
+./scripts/demo-web.sh --host 0.0.0.0         # expose on the LAN (e.g. for a 2nd screen)
+./scripts/demo-web.sh --scoring-host my.host.azurefd.net   # override target
+```
+
+From the dashboard you can:
+- **1 · Health & readiness** — live `/healthz` + `/readyz` indicators.
+- **2 · Score normal** / **3 · Score high-risk** — single transactions with per-stage timings.
+- **4 · Load burst** — adjustable TPS / duration / max / workers; watch the feed + metrics fill live.
+- **5 · Inject fraud ring** — adjustable cards × merchants circular value-flow.
+- **🚀 Run full demo** — the whole `health → baseline → load → ring` sequence end-to-end.
+
+> WSL host: `/bin/bash scripts/demo-web.sh`. The console binds to `127.0.0.1` by default;
+> use `--host 0.0.0.0` only on a trusted network. Stop with `Ctrl+C`.
+
+
 The dashboard-driven narrative below is the **full 45-minute stage version**; the
 Power BI / Grafana / Fabric / agentic-console pieces require their own provisioning
 and are **not** reproduced by the CLI demo above (which exercises the live scoring path).
