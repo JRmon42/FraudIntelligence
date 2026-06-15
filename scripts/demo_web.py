@@ -37,6 +37,7 @@ if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
 import demo_client as dc  # noqa: E402  (path set above)
+import demo_scenarios as ds  # noqa: E402  curated decision-spectrum scenarios
 
 # Resolved once at startup; overridable via --scoring-host / SCORING_FRONTDOOR_HOST.
 SCORING_HOST = ""
@@ -197,11 +198,82 @@ def run_inject(params):
                      "Fabric Spark flags as a ring; the in-line scorer sees per-tx features only.")
 
 
+def run_scenario(params):
+    """Walk the curated decision spectrum (APPROVE / SCA / DECLINE) using the
+    production decision rules (ported in demo_scenarios.py), with feature-enriched
+    transactions, so the demo can show declines and false-positive handling that
+    the stubbed live endpoint cannot currently produce on its own."""
+    yield _emit("phase", name="scenario",
+                label="Decision scenarios — approve · step-up (false positive) · decline")
+    yield _emit("log", level="info",
+                text="Decision engine = production rules (psd2_optimizer + scoring) over "
+                     "enriched demo features. Watch the full outcome spectrum + handling.")
+    pause = float(params.get("pause", ["0.9"])[0] or 0.9)
+    for sc in ds.SCENARIOS:
+        r = ds.evaluate(sc)
+        yield _emit("log", level="info", text=f"▸ {sc.title}: {sc.narrative}")
+        yield _emit(
+            "tx",
+            phase="scenario",
+            scenario=sc.title,
+            narrative=sc.narrative,
+            handling=sc.handling,
+            transaction_id=sc.key,
+            card_id=sc.card.card_id,
+            merchant_id=sc.merchant.merchant_id,
+            amount=sc.amount,
+            currency=sc.currency,
+            country=sc.country,
+            channel=sc.channel,
+            decision=r["decision"],
+            score=r["score"],
+            reason_codes=r["reason_codes"],
+            psd2_exemption=r["psd2_exemption"],
+            ok=True,
+        )
+        level = "error" if r["decision"] == "DECLINE" else "info"
+        yield _emit("log", level=level,
+                    text=f"   → {r['decision']} (score {r['score']:.2f}, "
+                         f"exemption {r['psd2_exemption']}). {sc.handling}")
+        # Show that a genuine customer flagged as a potential false positive clears
+        # the SCA challenge and the payment is ultimately approved.
+        if sc.recovers_after_sca and r["decision"] == "SCA":
+            time.sleep(pause)
+            yield _emit(
+                "tx",
+                phase="scenario",
+                scenario=sc.title + " — after 3-D Secure",
+                handling="Customer completed Strong Customer Authentication; the payment was "
+                         "re-authorised and approved. False positive avoided.",
+                transaction_id=sc.key + "-reauth",
+                card_id=sc.card.card_id,
+                merchant_id=sc.merchant.merchant_id,
+                amount=sc.amount,
+                currency=sc.currency,
+                country=sc.country,
+                channel=sc.channel,
+                decision="APPROVE",
+                score=r["score"],
+                reason_codes=["SCA_AUTHENTICATED", "FALSE_POSITIVE_RECOVERED"],
+                psd2_exemption="NONE",
+                ok=True,
+            )
+            yield _emit("log", level="info",
+                        text="   ✓ 3-D Secure passed → APPROVED (genuine customer not lost).")
+        time.sleep(pause)
+    tally = ds.scenario_summary()
+    yield _emit("log", level="info",
+                text=f"Scenario tally — APPROVE={tally.get('APPROVE',0)} "
+                     f"SCA={tally.get('SCA',0)} DECLINE={tally.get('DECLINE',0)} "
+                     f"(plus false-positive recoveries).")
+
+
 def run_all(params):
     yield _emit("log", level="info", text="### HEIMDALL LIVE DEMO — full sequence ###")
     yield from run_health(params)
     yield from run_score({"profile": ["normal"]})
     yield from run_score({"profile": ["high"]})
+    yield from run_scenario(params)
     yield from run_load({
         "tps": params.get("tps", ["200"]),
         "duration": params.get("duration", ["5"]),
@@ -219,6 +291,7 @@ def run_all(params):
 RUNNERS = {
     "health": run_health,
     "score": run_score,
+    "scenario": run_scenario,
     "load": run_load,
     "inject": run_inject,
     "all": run_all,
@@ -384,6 +457,9 @@ INDEX_HTML = r"""<!DOCTYPE html>
   .tag.ERROR{background:rgba(154,167,180,.2);color:var(--error)}
   .mono{font-family:ui-monospace,Menlo,monospace}
   .score{font-weight:700}
+  .handling{color:#9fc2e6;font-size:11px;margin-top:3px;line-height:1.35;white-space:normal}
+  .scn{display:inline-block;background:#143a5c;color:#aee0ff;border-radius:5px;
+    padding:1px 7px;font-size:10.5px;font-weight:700;margin-bottom:3px}
   /* log */
   #log{height:150px;overflow:auto;background:#06121f;border:1px solid var(--line);
     border-radius:8px;padding:8px 10px;font-family:ui-monospace,Menlo,monospace;font-size:11.5px}
@@ -427,6 +503,8 @@ INDEX_HTML = r"""<!DOCTYPE html>
       <label>Merchants <input id="merchants" type="number" value="3" min="1"></label>
     </div>
     <button class="btn" data-action="inject"><span class="ic">🕸️</span>5 · Inject fraud ring</button>
+
+    <button class="btn" data-action="scenario"><span class="ic">⚖️</span>6 · Decision scenarios (approve / step-up / decline)</button>
 
     <button class="btn primary" data-action="all"><span class="ic">🚀</span>Run full demo (all steps)</button>
 
@@ -473,7 +551,7 @@ INDEX_HTML = r"""<!DOCTYPE html>
         <table>
           <thead><tr>
             <th>Time</th><th>Transaction</th><th>Card → Merchant</th><th>Amount</th>
-            <th>Country</th><th>Decision</th><th>Score</th><th>RTT</th><th>Reasons</th>
+            <th>Country</th><th>Decision</th><th>Score</th><th>RTT</th><th>Reasons / handling</th>
           </tr></thead>
           <tbody id="feed"></tbody>
         </table>
@@ -495,6 +573,8 @@ let rtts = [];
 let loadStart = 0, loadActive = false;
 
 function newMetrics(){return {total:0,approve:0,sca:0,decline:0,error:0,scoreSum:0,scoreN:0};}
+
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
 fetch('/api/config').then(r=>r.json()).then(c=>{ $('host').textContent = c.scoring_host || 'unknown'; });
 
@@ -538,17 +618,20 @@ function addRow(d){
   const t=new Date().toLocaleTimeString();
   const dec=d.decision||'ERROR';
   const score=(typeof d.score==='number')? d.score.toFixed(3): (d.ok?'':'—');
-  const reasons=(d.reason_codes&&d.reason_codes.length)? d.reason_codes.join(', '):
-                (d.error? d.error : '');
+  const reasonsArr=(d.reason_codes&&d.reason_codes.length)? d.reason_codes.slice(): [];
+  if(d.psd2_exemption && d.psd2_exemption!=='NONE') reasonsArr.push('exempt:'+d.psd2_exemption);
+  const reasons=reasonsArr.length? reasonsArr.join(', '): (d.error? d.error : '');
+  const handling = d.handling? `<div class="handling">↳ ${esc(d.handling)}</div>`: '';
+  const scenarioTag = d.scenario? `<span class="scn">${esc(d.scenario)}</span> `: '';
   tr.innerHTML=`<td class="mono">${t}</td>
-    <td class="mono">${d.transaction_id||''}</td>
-    <td class="mono">${d.card_id||''} → ${d.merchant_id||''}</td>
-    <td class="mono">${d.currency||''} ${typeof d.amount==='number'? d.amount.toLocaleString():''}</td>
-    <td>${d.country||''}</td>
+    <td class="mono">${esc(d.transaction_id||'')}</td>
+    <td class="mono">${esc(d.card_id||'')} → ${esc(d.merchant_id||'')}</td>
+    <td class="mono">${esc(d.currency||'')} ${typeof d.amount==='number'? d.amount.toLocaleString():''}</td>
+    <td>${esc(d.country||'')}</td>
     <td><span class="tag ${dec}">${dec}</span></td>
     <td class="score">${score}</td>
     <td class="mono">${typeof d.client_rtt_ms==='number'? d.client_rtt_ms.toFixed(0)+'ms':''}</td>
-    <td class="mono" style="max-width:260px;overflow:hidden;text-overflow:ellipsis">${reasons}</td>`;
+    <td style="max-width:340px;white-space:normal">${scenarioTag}<span class="mono">${esc(reasons)}</span>${handling}</td>`;
   feed.insertBefore(tr,feed.firstChild);
   while(feed.children.length>250) feed.removeChild(feed.lastChild);
   $('feedcount').textContent='('+feed.children.length+' shown)';

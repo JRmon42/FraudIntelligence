@@ -241,6 +241,33 @@ def cmd_inject(host: str, args) -> int:
     return 0 if errors == 0 else 1
 
 
+def cmd_scenario(host: str, _args) -> int:
+    """Walk the curated decision spectrum (APPROVE / SCA / DECLINE) using the
+    production decision rules over feature-enriched demo transactions. This shows
+    declines and false-positive (SCA step-up) handling that the stubbed live
+    endpoint cannot produce on its own. See scripts/demo_scenarios.py."""
+    try:
+        import demo_scenarios as ds
+    except ImportError:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import demo_scenarios as ds
+    print("==> Decision scenarios (production rules + enriched demo features)")
+    for sc in ds.SCENARIOS:
+        r = ds.evaluate(sc)
+        print(f"\n  [{r['decision']}] {sc.title}  "
+              f"(score={r['score']:.2f}, exemption={r['psd2_exemption']})")
+        print(f"     {sc.card.card_id} → {sc.merchant.merchant_id}  "
+              f"{sc.currency} {sc.amount:.2f}  {sc.country}/{sc.channel}")
+        print(f"     reasons: {', '.join(r['reason_codes'])}")
+        print(f"     handling: {sc.handling}")
+        if sc.recovers_after_sca and r["decision"] == "SCA":
+            print("     → 3-D Secure passed → APPROVED (false positive avoided).")
+    tally = ds.scenario_summary()
+    print(f"\n==> Tally: APPROVE={tally.get('APPROVE', 0)} "
+          f"SCA={tally.get('SCA', 0)} DECLINE={tally.get('DECLINE', 0)}")
+    return 0
+
+
 def cmd_all(host: str, args) -> int:
     print("############ HEIMDALL LIVE DEMO ############\n")
     rc = cmd_health(host, args)
@@ -248,6 +275,8 @@ def cmd_all(host: str, args) -> int:
     rc |= cmd_score(host, argparse.Namespace(profile="normal"))
     print()
     rc |= cmd_score(host, argparse.Namespace(profile="high"))
+    print()
+    rc |= cmd_scenario(host, args)
     print()
     rc |= cmd_load(host, argparse.Namespace(
         tps=args.tps, duration=args.duration, max=args.max,
@@ -284,6 +313,9 @@ def build_parser() -> argparse.ArgumentParser:
     ip.add_argument("--cards", type=int, default=10)
     ip.add_argument("--merchants", type=int, default=3)
 
+    sub.add_parser("scenario",
+                   help="Walk the decision spectrum (approve / SCA step-up / decline)")
+
     ap = sub.add_parser("all", help="Run the full scripted demo")
     ap.add_argument("--tps", type=int, default=200)
     ap.add_argument("--duration", type=int, default=5)
@@ -299,7 +331,7 @@ def main(argv=None) -> int:
     host = load_host(args.host)
     dispatch = {
         "health": cmd_health, "score": cmd_score, "load": cmd_load,
-        "inject": cmd_inject, "all": cmd_all,
+        "inject": cmd_inject, "scenario": cmd_scenario, "all": cmd_all,
     }
     return dispatch[args.cmd](host, args)
 

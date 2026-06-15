@@ -24,9 +24,23 @@ They drive the scoring API over Azure Front Door using `scripts/demo.sh`
 # Inject a circular fraud-ring (10 cards / 3 merchants)
 ./scripts/demo.sh inject --pattern ring --cards 10 --merchants 3
 
-# One-shot scripted sequence (health → baseline → load → ring)
+# Decision spectrum — APPROVE (frictionless) / SCA step-up (false-positive handling) / DECLINE (fraud)
+./scripts/demo.sh scenario
+
+# One-shot scripted sequence (health → baseline → scenarios → load → ring)
 ./scripts/demo.sh all
 ```
+
+> **Why a dedicated `scenario` step?** The deployed scoring API currently runs as a
+> *stub* (no feature store / model wired into the Container App), so it APPROVEs every
+> live request at score ~0.2 — perfect for the latency/throughput story, but it cannot
+> show declines or step-ups. The `scenario` step runs the **real production decision
+> rules** (a faithful, dependency-free port of `psd2_optimizer.py` + `scoring.py`, in
+> `scripts/demo_scenarios.py`) over feature-enriched demo transactions, so you can show
+> the full outcome spectrum honestly: frictionless approvals (PSD2 low-value/TRA
+> exemptions), **SCA step-up for borderline / potential false positives** (challenged,
+> not blocked — genuine customers clear 3-D Secure and the payment proceeds), and hard
+> **DECLINE** for confirmed fraud (blocked card, fraud-ring cash-out → an agentic case is opened).
 
 > On the WSL host used for development, invoke with `/bin/bash scripts/demo.sh …`
 > and `export PATH="$HOME/snap/copilot-cli/common/local/bin:$PATH"` for `az`.
@@ -55,7 +69,8 @@ From the dashboard you can:
 - **2 · Score normal** / **3 · Score high-risk** — single transactions with per-stage timings.
 - **4 · Load burst** — adjustable TPS / duration / max / workers; watch the feed + metrics fill live.
 - **5 · Inject fraud ring** — adjustable cards × merchants circular value-flow.
-- **🚀 Run full demo** — the whole `health → baseline → load → ring` sequence end-to-end.
+- **6 · Decision scenarios** — the full **APPROVE / SCA step-up (false-positive handling) / DECLINE** spectrum, with the handling explained per transaction (uses the production decision rules — see the note above).
+- **🚀 Run full demo** — the whole `health → baseline → scenarios → load → ring` sequence end-to-end.
 
 > WSL host: `/bin/bash scripts/demo-web.sh`. The console binds to `127.0.0.1` by default;
 > use `--host 0.0.0.0` only on a trusted network. Stop with `Ctrl+C`.
