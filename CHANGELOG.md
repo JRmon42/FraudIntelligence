@@ -2,6 +2,13 @@
 
 ### Bug Fixes
 
+* **scripts:** handle autoscale Cosmos containers in scale-to-min ([66e257f](https://github.com/JRmon42/FraudIntelligence/commit/66e257f1d02b9cf86699b5e434924262da1a4160))
+* **smoke-test:** hit /healthz (not /health) — matches scoring-api route ([9bd8763](https://github.com/JRmon42/FraudIntelligence/commit/9bd8763d88ee714469d141da1c8a3b4ae553f2a6))
+
+## [1.0.15](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.14...v1.0.15) (2026-06-12)
+
+### Bug Fixes
+
 * **smoke-test:** hit /healthz (not /health) — matches scoring-api route ([9bd8763](https://github.com/JRmon42/FraudIntelligence/commit/9bd8763d88ee714469d141da1c8a3b4ae553f2a6))
 
 ## [1.0.15](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.14...v1.0.15) (2026-06-12)
