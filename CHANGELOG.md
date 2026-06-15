@@ -1,3 +1,9 @@
+## [1.2.0](https://github.com/JRmon42/FraudIntelligence/compare/v1.1.0...v1.2.0) (2026-06-15)
+
+### Features
+
+* **demo:** add decision-spectrum scenarios (approve / SCA step-up / decline) ([744385b](https://github.com/JRmon42/FraudIntelligence/commit/744385ba075ee7417b152fe134e5dad4b096111a))
+
 ## [1.1.0](https://github.com/JRmon42/FraudIntelligence/compare/v1.0.14...v1.1.0) (2026-06-15)
 
 ### Features
