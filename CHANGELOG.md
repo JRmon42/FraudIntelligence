@@ -1,3 +1,9 @@
+## [1.3.0](https://github.com/JRmon42/FraudIntelligence/compare/v1.2.0...v1.3.0) (2026-06-16)
+
+### Features
+
+* extend exec briefing + harden scale/resilience/security + ops dashboard ([09576c6](https://github.com/JRmon42/FraudIntelligence/commit/09576c69a3ed875875f6bde6e51a7bff7942df23))
+
 ## [1.2.0](https://github.com/JRmon42/FraudIntelligence/compare/v1.1.0...v1.2.0) (2026-06-15)
 
 ### Features
