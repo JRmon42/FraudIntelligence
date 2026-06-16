@@ -33,3 +33,28 @@ python3 slides/build_deck.py
 22. Closing
 
 Speaker notes are populated for every slide.
+
+## Executive briefing (Nordic) — personalised + extended
+
+`build_executive_briefing.py` post-processes the hand-built executive deck
+`Documents/Heimdall_Executive_Briefing_Nordic.pptx`. It is **idempotent**: it
+always reads the pristine backup `…_Nordic.ORIGINAL.pptx` and rewrites the
+working file, so it can be re-run safely.
+
+```bash
+python3 slides/build_executive_briefing.py
+```
+
+It applies a personal template treatment (author "JRP" monogram + name/brand
+footer and page numbers on every content slide) and inserts eight new slides in
+the house style at the right points in the narrative:
+
+- Inputs & outputs — what goes in, what comes out, how information flows
+- Where Heimdall fits — in front of the core banking / mainframe
+- Threat coverage — detection, false positives/negatives, accuracy, throughput
+- Elastic scale — absorbing a transaction spike
+- Resilience — what happens when each component fails
+- Security, enforced — how every control is guaranteed
+- Operations dashboard — the live management view (mirrors `demo_web.py /ops`)
+- Roadmap & milestones — a 12-month path with exit criteria
+

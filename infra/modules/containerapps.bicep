@@ -103,11 +103,26 @@ resource orchestrator 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', secretRef: 'appinsights-connection' }
             { name: 'OTEL_SERVICE_NAME', value: 'orchestrator' }
           ]
+          // Liveness/readiness/startup probes let ACA evict and reschedule an
+          // unhealthy replica automatically (resilience: pod-level failure).
+          probes: [
+            { type: 'Liveness', httpGet: { path: '/healthz', port: 8080 }, periodSeconds: 10, failureThreshold: 3 }
+            { type: 'Readiness', httpGet: { path: '/readyz', port: 8080 }, periodSeconds: 5, failureThreshold: 3, timeoutSeconds: 3 }
+            { type: 'Startup', httpGet: { path: '/healthz', port: 8080 }, periodSeconds: 5, failureThreshold: 30 }
+          ]
         }
       ]
       scale: {
+        // Case-work is bursty: autoscale on HTTP concurrency so a surge of
+        // alerts after a fraud spike is absorbed without a backlog.
         minReplicas: 1
-        maxReplicas: 10
+        maxReplicas: 30
+        rules: [
+          {
+            name: 'orchestrator-http'
+            http: { metadata: { concurrentRequests: '50' } }
+          }
+        ]
       }
     }
   }
@@ -155,11 +170,21 @@ resource scoring 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', secretRef: 'appinsights-connection' }
             { name: 'OTEL_SERVICE_NAME', value: 'scoring' }
           ]
+          // Health probes drive zero-downtime rolling updates and automatic
+          // eviction of a degraded replica. /readyz reports Cosmos+Redis+model.
+          probes: [
+            { type: 'Liveness', httpGet: { path: '/healthz', port: 8080 }, periodSeconds: 10, failureThreshold: 3 }
+            { type: 'Readiness', httpGet: { path: '/readyz', port: 8080 }, periodSeconds: 5, failureThreshold: 3, timeoutSeconds: 2 }
+            { type: 'Startup', httpGet: { path: '/healthz', port: 8080 }, periodSeconds: 3, failureThreshold: 40 }
+          ]
         }
       ]
       scale: {
-        minReplicas: 2
-        maxReplicas: 30
+        // Elastic hot path: 3 replicas baseline (one per zone) up to 60 to
+        // absorb a transaction spike. KEDA adds replicas on HTTP concurrency
+        // within seconds; falls back to 3 off-peak to keep cost near-zero.
+        minReplicas: 3
+        maxReplicas: 60
         rules: [
           {
             name: 'http-rule'

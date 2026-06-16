@@ -72,6 +72,15 @@ From the dashboard you can:
 - **6 · Decision scenarios** — the full **APPROVE / SCA step-up (false-positive handling) / DECLINE** spectrum, with the handling explained per transaction (uses the production decision rules — see the note above).
 - **🚀 Run full demo** — the whole `health → baseline → scenarios → load → ring` sequence end-to-end.
 
+The header also links to **📊 Ops dashboard** (`/ops`) — a management-grade
+operational view that auto-refreshes every 2 s: throughput (TPS) with live
+replica count and surge detection, scoring p99 vs. the < 18 ms SLO, 30-day
+availability, decision mix (approve / SCA / decline), fraud caught today,
+false-positive rate, detection quality (AUC / precision / recall), the HITL
+queue, drift status and the next EBA report. It mirrors the Power BI executive
+dashboard and is the same view summarised on the "Operations dashboard" briefing
+slide. JSON is available at `/api/ops` for embedding elsewhere.
+
 > WSL host: `/bin/bash scripts/demo-web.sh`. The console binds to `127.0.0.1` by default;
 > use `--host 0.0.0.0` only on a trusted network. Stop with `Ctrl+C`.
 

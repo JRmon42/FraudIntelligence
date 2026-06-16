@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.43.8.12551",
-      "templateHash": "15971589212023717198"
+      "templateHash": "15498300077330413808"
     }
   },
   "parameters": {
@@ -408,7 +408,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "5920263006702598766"
+              "templateHash": "13818696044336617679"
             }
           },
           "parameters": {
@@ -2978,7 +2978,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.43.8.12551",
-                      "templateHash": "12057641051987421558"
+                      "templateHash": "6754703764142187137"
                     }
                   },
                   "parameters": {
@@ -3118,12 +3118,52 @@
                                   "name": "OTEL_SERVICE_NAME",
                                   "value": "orchestrator"
                                 }
+                              ],
+                              "probes": [
+                                {
+                                  "type": "Liveness",
+                                  "httpGet": {
+                                    "path": "/healthz",
+                                    "port": 8080
+                                  },
+                                  "periodSeconds": 10,
+                                  "failureThreshold": 3
+                                },
+                                {
+                                  "type": "Readiness",
+                                  "httpGet": {
+                                    "path": "/readyz",
+                                    "port": 8080
+                                  },
+                                  "periodSeconds": 5,
+                                  "failureThreshold": 3,
+                                  "timeoutSeconds": 3
+                                },
+                                {
+                                  "type": "Startup",
+                                  "httpGet": {
+                                    "path": "/healthz",
+                                    "port": 8080
+                                  },
+                                  "periodSeconds": 5,
+                                  "failureThreshold": 30
+                                }
                               ]
                             }
                           ],
                           "scale": {
                             "minReplicas": 1,
-                            "maxReplicas": 10
+                            "maxReplicas": 30,
+                            "rules": [
+                              {
+                                "name": "orchestrator-http",
+                                "http": {
+                                  "metadata": {
+                                    "concurrentRequests": "50"
+                                  }
+                                }
+                              }
+                            ]
                           }
                         }
                       },
@@ -3174,12 +3214,42 @@
                                   "name": "OTEL_SERVICE_NAME",
                                   "value": "scoring"
                                 }
+                              ],
+                              "probes": [
+                                {
+                                  "type": "Liveness",
+                                  "httpGet": {
+                                    "path": "/healthz",
+                                    "port": 8080
+                                  },
+                                  "periodSeconds": 10,
+                                  "failureThreshold": 3
+                                },
+                                {
+                                  "type": "Readiness",
+                                  "httpGet": {
+                                    "path": "/readyz",
+                                    "port": 8080
+                                  },
+                                  "periodSeconds": 5,
+                                  "failureThreshold": 3,
+                                  "timeoutSeconds": 2
+                                },
+                                {
+                                  "type": "Startup",
+                                  "httpGet": {
+                                    "path": "/healthz",
+                                    "port": 8080
+                                  },
+                                  "periodSeconds": 3,
+                                  "failureThreshold": 40
+                                }
                               ]
                             }
                           ],
                           "scale": {
-                            "minReplicas": 2,
-                            "maxReplicas": 30,
+                            "minReplicas": 3,
+                            "maxReplicas": 60,
                             "rules": [
                               {
                                 "name": "http-rule",
@@ -4572,7 +4642,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.43.8.12551",
-              "templateHash": "5920263006702598766"
+              "templateHash": "13818696044336617679"
             }
           },
           "parameters": {
@@ -7142,7 +7212,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.43.8.12551",
-                      "templateHash": "12057641051987421558"
+                      "templateHash": "6754703764142187137"
                     }
                   },
                   "parameters": {
@@ -7282,12 +7352,52 @@
                                   "name": "OTEL_SERVICE_NAME",
                                   "value": "orchestrator"
                                 }
+                              ],
+                              "probes": [
+                                {
+                                  "type": "Liveness",
+                                  "httpGet": {
+                                    "path": "/healthz",
+                                    "port": 8080
+                                  },
+                                  "periodSeconds": 10,
+                                  "failureThreshold": 3
+                                },
+                                {
+                                  "type": "Readiness",
+                                  "httpGet": {
+                                    "path": "/readyz",
+                                    "port": 8080
+                                  },
+                                  "periodSeconds": 5,
+                                  "failureThreshold": 3,
+                                  "timeoutSeconds": 3
+                                },
+                                {
+                                  "type": "Startup",
+                                  "httpGet": {
+                                    "path": "/healthz",
+                                    "port": 8080
+                                  },
+                                  "periodSeconds": 5,
+                                  "failureThreshold": 30
+                                }
                               ]
                             }
                           ],
                           "scale": {
                             "minReplicas": 1,
-                            "maxReplicas": 10
+                            "maxReplicas": 30,
+                            "rules": [
+                              {
+                                "name": "orchestrator-http",
+                                "http": {
+                                  "metadata": {
+                                    "concurrentRequests": "50"
+                                  }
+                                }
+                              }
+                            ]
                           }
                         }
                       },
@@ -7338,12 +7448,42 @@
                                   "name": "OTEL_SERVICE_NAME",
                                   "value": "scoring"
                                 }
+                              ],
+                              "probes": [
+                                {
+                                  "type": "Liveness",
+                                  "httpGet": {
+                                    "path": "/healthz",
+                                    "port": 8080
+                                  },
+                                  "periodSeconds": 10,
+                                  "failureThreshold": 3
+                                },
+                                {
+                                  "type": "Readiness",
+                                  "httpGet": {
+                                    "path": "/readyz",
+                                    "port": 8080
+                                  },
+                                  "periodSeconds": 5,
+                                  "failureThreshold": 3,
+                                  "timeoutSeconds": 2
+                                },
+                                {
+                                  "type": "Startup",
+                                  "httpGet": {
+                                    "path": "/healthz",
+                                    "port": 8080
+                                  },
+                                  "periodSeconds": 3,
+                                  "failureThreshold": 40
+                                }
                               ]
                             }
                           ],
                           "scale": {
-                            "minReplicas": 2,
-                            "maxReplicas": 30,
+                            "minReplicas": 3,
+                            "maxReplicas": 60,
                             "rules": [
                               {
                                 "name": "http-rule",

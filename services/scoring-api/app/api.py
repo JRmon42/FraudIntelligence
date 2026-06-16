@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 
 from .eh_producer import DecisionEmitter
 from .features import AggregatesStore, FeatureLookup
-from .models import ScoreRequest, ScoreResponse, StageTimings
+from .models import Aggregates, ScoreRequest, ScoreResponse, StageTimings
 from .psd2_optimizer import (
     ExemptionContext,
     build_reason_codes,
@@ -67,17 +67,32 @@ async def score(
     hot = _hot(request)
     tracer = get_tracer()
     t0 = time.perf_counter()
+    # Fail-safe degradation: if a feature/aggregate backend is unreachable we do
+    # NOT 500 and we never blind-approve. We score on safe defaults and force a
+    # step-up (SCA) so the customer is challenged rather than waved through.
+    degraded = False
 
     try:
         with tracer.start_as_current_span("score.features"):
             ts = time.perf_counter()
-            card = await hot.features.get_card(payload.card_id)
-            merchant = await hot.features.get_merchant(payload.merchant_id)
+            try:
+                card = await hot.features.get_card(payload.card_id)
+                merchant = await hot.features.get_merchant(payload.merchant_id)
+            except Exception as exc:  # noqa: BLE001  backend (Cosmos) unavailable
+                degraded = True
+                card = None
+                merchant = None
+                log.warning("features_degraded", err=str(exc), txn_id=payload.transaction_id)
             features_ms = (time.perf_counter() - ts) * 1000.0
 
         with tracer.start_as_current_span("score.aggregates"):
             ts = time.perf_counter()
-            aggregates = await hot.aggregates.get_for_card(payload.card_id)
+            try:
+                aggregates = await hot.aggregates.get_for_card(payload.card_id)
+            except Exception as exc:  # noqa: BLE001  backend (Redis) unavailable
+                degraded = True
+                aggregates = Aggregates()
+                log.warning("aggregates_degraded", err=str(exc), txn_id=payload.transaction_id)
             aggregates_ms = (time.perf_counter() - ts) * 1000.0
 
         with tracer.start_as_current_span("score.inference"):
@@ -101,22 +116,30 @@ async def score(
             exemption = select_exemption(ex_ctx)
             decision = decide(score_value, exemption, card)
             reason_codes = build_reason_codes(score_value, exemption, ex_ctx)
+            if degraded and decision == "APPROVE":
+                # Fail-safe: degraded read path must not auto-approve — challenge.
+                decision = "SCA"
+                reason_codes = ["DEGRADED_FAILSAFE_SCA", *reason_codes]
             psd2_ms = (time.perf_counter() - ts) * 1000.0
 
         with tracer.start_as_current_span("score.emit"):
             ts = time.perf_counter()
-            await hot.emitter.emit(
-                {
-                    "transaction_id": payload.transaction_id,
-                    "card_id": payload.card_id,
-                    "merchant_id": payload.merchant_id,
-                    "decision": decision,
-                    "score": score_value,
-                    "psd2_exemption": exemption,
-                    "model_version": hot.scorer.model_version,
-                    "ts": payload.timestamp.isoformat(),
-                }
-            )
+            try:
+                await hot.emitter.emit(
+                    {
+                        "transaction_id": payload.transaction_id,
+                        "card_id": payload.card_id,
+                        "merchant_id": payload.merchant_id,
+                        "decision": decision,
+                        "score": score_value,
+                        "psd2_exemption": exemption,
+                        "model_version": hot.scorer.model_version,
+                        "ts": payload.timestamp.isoformat(),
+                    }
+                )
+            except Exception as exc:  # noqa: BLE001  emit is fire-and-forget
+                degraded = True
+                log.warning("emit_degraded", err=str(exc), txn_id=payload.transaction_id)
             emit_ms = (time.perf_counter() - ts) * 1000.0
     except HTTPException:
         raise

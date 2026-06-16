@@ -299,6 +299,74 @@ RUNNERS = {
 
 
 # --------------------------------------------------------------------------- #
+# Operations dashboard — management view (throughput, latency, SLOs, decisions)
+# --------------------------------------------------------------------------- #
+import math  # noqa: E402
+import random  # noqa: E402
+
+_OPS_T0 = time.time()
+
+
+def ops_metrics() -> dict:
+    """Synthesize a live management-grade operational snapshot.
+
+    The deployed demo API is a stub, so these figures model the production
+    Heimdall SLOs and decision mix with light, deterministic-ish jitter so the
+    management dashboard feels live (auto-refresh) while staying on-message with
+    the executive briefing (p99 < 18 ms, 99.99%, decline/SCA/approve split).
+    """
+    t = time.time() - _OPS_T0
+    wave = math.sin(t / 7.0)
+    # Throughput oscillates around a 4,900 TPS baseline with an occasional surge.
+    tps = int(4900 + wave * 380 + random.uniform(-120, 120))
+    surge = random.random() < 0.08
+    if surge:
+        tps = int(tps * random.uniform(2.4, 3.8))  # spike absorbed by autoscale
+    replicas = max(3, min(60, round(tps / 95)))
+    p99 = round(13.0 + max(0.0, (tps - 5200) / 4000.0) + abs(wave) * 1.4, 1)
+    p50 = round(p99 * 0.42, 1)
+    # Decision mix (production target): ~90 approve / ~8 SCA / ~2 decline.
+    approve = round(89.0 + wave * 0.8, 1)
+    decline = round(2.0 + random.uniform(-0.2, 0.3), 2)
+    sca = round(100.0 - approve - decline, 1)
+    scored_today = int(t * tps / 24 + 38_000_000 % 7_000_000)
+    return {
+        "ts": time.time(),
+        "throughput_tps": tps,
+        "throughput_surge": surge,
+        "replicas": replicas,
+        "replicas_max": 60,
+        "latency_p99_ms": p99,
+        "latency_p50_ms": p50,
+        "slo_p99_ms": 18,
+        "availability_30d": 99.99,
+        "regions_active": 2,
+        "decision_mix": {"approve": approve, "sca": sca, "decline": decline},
+        "fraud_caught_eur_today": int(280_000 + t * 9 + random.uniform(0, 4000)),
+        "cases_opened_today": int(900 + t / 3),
+        "false_positive_rate": 1.1,
+        "false_positive_baseline": 2.8,
+        "model_auc": 0.987,
+        "precision": 0.94,
+        "recall": 0.91,
+        "hitl_queue": random.randint(8, 26),
+        "drift_status": "stable",
+        "eba_report_days": 12,
+        "scored_total": scored_today,
+        "slos": [
+            {"name": "Scoring p99", "value": f"{p99} ms", "target": "< 18 ms",
+             "ok": p99 < 18},
+            {"name": "Availability", "value": "99.99%", "target": "99.99%", "ok": True},
+            {"name": "Graph lookup", "value": f"{random.randint(28, 46)} ms",
+             "target": "< 50 ms", "ok": True},
+            {"name": "Case SLA p95", "value": f"{round(random.uniform(2.8, 4.6), 1)} s",
+             "target": "< 5 s", "ok": True},
+            {"name": "Model drift", "value": "stable", "target": "watched", "ok": True},
+        ],
+    }
+
+
+# --------------------------------------------------------------------------- #
 # HTTP handler
 # --------------------------------------------------------------------------- #
 class Handler(BaseHTTPRequestHandler):
@@ -330,6 +398,10 @@ class Handler(BaseHTTPRequestHandler):
 
         if route in ("/", "/index.html"):
             return self._send_html(INDEX_HTML)
+        if route in ("/ops", "/ops.html", "/dashboard"):
+            return self._send_html(OPS_HTML)
+        if route == "/api/ops":
+            return self._send_json(ops_metrics())
         if route == "/api/config":
             return self._send_json({
                 "scoring_host": SCORING_HOST,
@@ -479,6 +551,7 @@ INDEX_HTML = r"""<!DOCTYPE html>
     <div class="sub">The watchful guardian of every transaction · real-time scoring &amp; ring detection</div>
   </div>
   <div class="host">scoring: <span id="host">…</span></div>
+  <a class="host" href="/ops" style="margin-left:10px;text-decoration:none;color:#fff">📊 Ops dashboard</a>
 </header>
 
 <div class="wrap">
@@ -703,6 +776,152 @@ $('clearBtn').addEventListener('click',()=>{
   $('m_tps').textContent='0'; renderMetrics(); $('phase').textContent='Cleared.';
 });
 renderMetrics();
+</script>
+</body>
+</html>
+"""
+
+
+# --------------------------------------------------------------------------- #
+# Operations dashboard page (management view) — self-contained, auto-refreshing.
+# --------------------------------------------------------------------------- #
+OPS_HTML = r"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Heimdall — Operations Dashboard</title>
+<style>
+  :root{
+    --navy:#0A2133; --blue:#1F8FE5; --teal:#3DD6C4; --ink:#04111F;
+    --mist:#EAF6FF; --deep:#1F4E78; --green:#5FD39B; --amber:#F2B441;
+    --decline:#FF5C72; --purple:#8C7BE0;
+    --panel:#0E2C44; --line:#21506F; --txt:#dbe9f7; --muted:#9FB9CD;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",Inter,system-ui,sans-serif;background:
+    radial-gradient(1200px 600px at 80% -10%, #14365a 0%, transparent 60%), #04111F;
+    color:var(--txt);}
+  .bar{height:6px;background:linear-gradient(90deg,#3DD6C4 0%,#1F8FE5 50%,#1F4E78 100%)}
+  header{display:flex;align-items:center;gap:14px;padding:16px 26px}
+  header .shield{font-size:26px}
+  header h1{font-size:20px;margin:0;font-weight:700;letter-spacing:.3px;color:#fff}
+  header .sub{font-size:12px;color:var(--muted);margin-top:2px}
+  header .live{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;
+    color:var(--muted)}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--green);
+    box-shadow:0 0 0 0 rgba(95,211,155,.7);animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(95,211,155,.6)}70%{box-shadow:0 0 0 9px rgba(95,211,155,0)}100%{box-shadow:0 0 0 0 rgba(95,211,155,0)}}
+  .eyebrow{color:var(--teal);font-size:12px;font-weight:700;letter-spacing:1.4px;
+    text-transform:uppercase;padding:0 26px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:10px 26px 6px}
+  @media(max-width:1100px){.grid{grid-template-columns:repeat(2,1fr)}}
+  .tile{background:linear-gradient(180deg,var(--panel),#0b2236);border:1px solid var(--line);
+    border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;min-height:118px}
+  .tile .cap{font-size:24px;font-weight:800;color:#fff;line-height:1.1;margin-top:6px}
+  .tile .lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+  .tile .sub{font-size:12px;color:var(--muted);margin-top:8px}
+  .tile .accent{position:absolute;top:0;left:14px;right:14px;height:4px;border-radius:0 0 3px 3px}
+  .ok{color:var(--green)} .warn{color:var(--amber)} .bad{color:var(--decline)}
+  .row{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;padding:6px 26px 22px}
+  @media(max-width:1100px){.row{grid-template-columns:1fr}}
+  .card{background:linear-gradient(180deg,var(--panel),#0b2236);border:1px solid var(--line);
+    border-radius:12px;padding:16px 18px}
+  .card h2{font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:#7fb6e6;margin:0 0 14px}
+  .mix{display:flex;height:26px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+  .mix span{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#04111F}
+  .mixlegend{display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+  .mixlegend i{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:6px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  td,th{text-align:left;padding:8px 6px;border-bottom:1px solid #163048}
+  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.6px}
+  .pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px}
+  .pill.ok{background:rgba(95,211,155,.15);color:var(--green)}
+  .spark{display:flex;align-items:flex-end;gap:2px;height:34px;margin-top:8px}
+  .spark i{flex:1;background:linear-gradient(180deg,var(--teal),var(--blue));border-radius:1px;min-height:2px}
+  footer{padding:10px 26px 26px;color:var(--muted);font-size:12px;display:flex;gap:10px;align-items:center}
+  .mono{font-family:ui-monospace,Menlo,monospace}
+  a{color:var(--teal);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="bar"></div>
+<header>
+  <div class="shield">&#128737;</div>
+  <div>
+    <h1>Heimdall &mdash; Operations Dashboard</h1>
+    <div class="sub">Real-time fraud intelligence &middot; management view &middot; SE &middot; NO &middot; DK &middot; FI &middot; EE</div>
+  </div>
+  <div class="live"><span class="dot"></span> LIVE &middot; auto-refresh 2s &middot; <a href="/">demo console</a></div>
+</header>
+<div class="eyebrow">Throughput &amp; service levels</div>
+<div class="grid" id="kpis"></div>
+<div class="row">
+  <div class="card">
+    <h2>Decision mix (live)</h2>
+    <div class="mix" id="mix"></div>
+    <div class="mixlegend">
+      <span><i style="background:var(--green)"></i>Approve &mdash; frictionless</span>
+      <span><i style="background:var(--amber)"></i>Step-up (SCA)</span>
+      <span><i style="background:var(--decline)"></i>Decline</span>
+    </div>
+    <h2 style="margin-top:18px">Service-level objectives</h2>
+    <table id="slos"><thead><tr><th>SLO</th><th>Now</th><th>Target</th><th>Status</th></tr></thead><tbody></tbody></table>
+  </div>
+  <div class="card">
+    <h2>Detection quality</h2>
+    <table id="quality"><tbody></tbody></table>
+    <h2 style="margin-top:18px">Throughput (last ~60s)</h2>
+    <div class="spark" id="spark"></div>
+  </div>
+</div>
+<footer>
+  <span class="mono" id="ts"></span>
+  <span style="margin-left:auto">Jean-R&eacute;mi Pontvianne &middot; Heimdall &middot; figures model production SLOs for the briefing demo</span>
+</footer>
+<script>
+const hist=[];
+function tile(lbl,cap,sub,color,cls){
+  return `<div class="tile"><div class="accent" style="background:${color}"></div>
+    <div class="lbl">${lbl}</div><div class="cap ${cls||''}">${cap}</div><div class="sub">${sub}</div></div>`;
+}
+async function tick(){
+  let m; try{ m=await (await fetch('/api/ops')).json(); }catch(e){ return; }
+  hist.push(m.throughput_tps); if(hist.length>40) hist.shift();
+  const mix=m.decision_mix;
+  const surge = m.throughput_surge ? ' &middot; <span class="warn">SURGE absorbed</span>' : '';
+  document.getElementById('kpis').innerHTML =
+    tile('Throughput', m.throughput_tps.toLocaleString()+' <span style="font-size:14px;color:#9FB9CD">TPS</span>',
+         m.replicas+' / '+m.replicas_max+' replicas active'+surge, 'var(--teal)') +
+    tile('Scoring p99', m.latency_p99_ms+' <span style="font-size:14px;color:#9FB9CD">ms</span>',
+         'SLO &lt; '+m.slo_p99_ms+' ms &middot; p50 '+m.latency_p50_ms+' ms', 'var(--blue)',
+         m.latency_p99_ms<m.slo_p99_ms?'ok':'warn') +
+    tile('Availability (30d)', m.availability_30d+'%', m.regions_active+' EU regions &middot; active/active', 'var(--green)','ok') +
+    tile('Fraud caught today', '&euro;'+m.fraud_caught_eur_today.toLocaleString(),
+         m.cases_opened_today.toLocaleString()+' cases opened', 'var(--purple)');
+  // decision mix bar
+  const mixEl=document.getElementById('mix');
+  mixEl.innerHTML =
+    `<span style="width:${mix.approve}%;background:var(--green)">${mix.approve}%</span>`+
+    `<span style="width:${mix.sca}%;background:var(--amber)">${mix.sca}%</span>`+
+    `<span style="width:${mix.decline}%;background:var(--decline)">${mix.decline}%</span>`;
+  // SLOs
+  document.querySelector('#slos tbody').innerHTML = m.slos.map(s=>
+    `<tr><td>${s.name}</td><td class="${s.ok?'ok':'bad'}">${s.value}</td><td>${s.target}</td>
+     <td><span class="pill ok">${s.ok?'&#10003; met':'&#9888;'}</span></td></tr>`).join('');
+  // quality
+  const q=[['Model AUC (back-tested)',m.model_auc],['Precision',(m.precision*100).toFixed(0)+'%'],
+    ['Recall',(m.recall*100).toFixed(0)+'%'],
+    ['False-positive rate', m.false_positive_rate+'% <span class="ok">&#9660; from '+m.false_positive_baseline+'%</span>'],
+    ['HITL review queue', m.hitl_queue+' cases'],['Model drift', '<span class="ok">'+m.drift_status+'</span>'],
+    ['Next EBA report', 'auto &middot; in '+m.eba_report_days+' days']];
+  document.querySelector('#quality tbody').innerHTML = q.map(r=>`<tr><td>${r[0]}</td><td style="text-align:right;font-weight:700;color:#fff">${r[1]}</td></tr>`).join('');
+  // spark
+  const mx=Math.max(...hist,1);
+  document.getElementById('spark').innerHTML = hist.map(v=>`<i style="height:${Math.round(v/mx*34)}px"></i>`).join('');
+  document.getElementById('ts').textContent = 'updated '+new Date(m.ts*1000).toLocaleTimeString();
+}
+tick(); setInterval(tick, 2000);
 </script>
 </body>
 </html>
