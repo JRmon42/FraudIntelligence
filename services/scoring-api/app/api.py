@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 import structlog
 from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import RedirectResponse
 
 from .eh_producer import DecisionEmitter
 from .features import AggregatesStore, FeatureLookup
@@ -36,6 +37,12 @@ class HotPath:
 
 def _hot(request: Request) -> HotPath:
     return request.app.state.hot  # type: ignore[no-any-return]
+
+
+@router.get("/", include_in_schema=False)
+async def root() -> RedirectResponse:
+    """Send the bare root to the interactive API docs (no homepage otherwise)."""
+    return RedirectResponse(url="/docs")
 
 
 @router.get("/healthz")
