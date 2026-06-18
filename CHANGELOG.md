@@ -1,3 +1,9 @@
+## [1.4.0](https://github.com/JRmon42/FraudIntelligence/compare/v1.3.0...v1.4.0) (2026-06-18)
+
+### Features
+
+* **scoring-api:** redirect root path to /docs ([2ce3501](https://github.com/JRmon42/FraudIntelligence/commit/2ce350153533adcc7b5dbe0dd1884fba2828bb20))
+
 ## [1.3.0](https://github.com/JRmon42/FraudIntelligence/compare/v1.2.0...v1.3.0) (2026-06-16)
 
 ### Features
