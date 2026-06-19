@@ -1,3 +1,9 @@
+## [1.5.0](https://github.com/JRmon42/FraudIntelligence/compare/v1.4.0...v1.5.0) (2026-06-19)
+
+### Features
+
+* make deployment production-ready & fully variabilized ([1d6c742](https://github.com/JRmon42/FraudIntelligence/commit/1d6c7424432abfdd1c061714407e2031888eac2a))
+
 ## [1.4.0](https://github.com/JRmon42/FraudIntelligence/compare/v1.3.0...v1.4.0) (2026-06-18)
 
 ### Features
