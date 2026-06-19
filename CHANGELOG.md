@@ -1,3 +1,9 @@
+## [1.5.1](https://github.com/JRmon42/FraudIntelligence/compare/v1.5.0...v1.5.1) (2026-06-19)
+
+### Bug Fixes
+
+* make R3 ACR readiness check private-endpoint aware + document CI tradeoff ([845c62e](https://github.com/JRmon42/FraudIntelligence/commit/845c62ead17ecd61f39f92d9e31c2bcc56e6d421))
+
 ## [1.5.0](https://github.com/JRmon42/FraudIntelligence/compare/v1.4.0...v1.5.0) (2026-06-19)
 
 ### Features
