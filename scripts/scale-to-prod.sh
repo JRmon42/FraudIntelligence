@@ -4,12 +4,14 @@
 # ============================================================================
 set -euo pipefail
 
-SUBSCRIPTION_ID="ea8d83f8-8538-4914-ae12-24f954d61638"
-PRIMARY_RG="heimdall_rg"
-DR_RG="heimdall_dr_rg"
+# All settings are overridable via env vars so the script runs identically
+# locally and in GitHub Actions (which injects AZURE_SUBSCRIPTION_ID via OIDC).
+SUBSCRIPTION_ID="${SUBSCRIPTION_ID:-${AZURE_SUBSCRIPTION_ID:-ea8d83f8-8538-4914-ae12-24f954d61638}}"
+PRIMARY_RG="${PRIMARY_RG:-heimdall_rg}"
+DR_RG="${DR_RG:-heimdall_dr_rg}"
 ENV="${ENV:-prod}"
-PRIMARY_RC="swc"
-DR_RC="neu"
+PRIMARY_RC="${PRIMARY_RC:-swc}"
+DR_RC="${DR_RC:-neu}"
 
 az account set --subscription "$SUBSCRIPTION_ID"
 

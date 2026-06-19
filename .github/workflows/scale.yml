@@ -1,0 +1,70 @@
+name: scale
+
+# Scale the Heimdall platform up (production) or down (minimum cost) on demand.
+# Mirrors infra-deploy.yml: OIDC login, prod environment, runs the scale scripts.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Target scale
+        type: choice
+        options: [min, prod]
+        default: min
+      environment:
+        description: Target environment
+        type: choice
+        options: [dev, prod]
+        default: prod
+      location:
+        description: Azure region
+        type: string
+        default: swedencentral
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  # Never let an up and a down run race against the same resources.
+  group: scale-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  scale:
+    runs-on: ubuntu-22.04
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Allow Azure CLI extension auto-install
+        # scale-to-prod touches Azure ML / Stream Analytics, which live in
+        # CLI extensions. Pre-install them so those steps fully execute in CI.
+        run: |
+          az config set extension.use_dynamic_install=yes_without_prompt
+          az extension add -n ml --only-show-errors || true
+          az extension add -n stream-analytics --only-show-errors || true
+
+      - name: Scale to ${{ inputs.mode }}
+        env:
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ENV: ${{ inputs.environment }}
+        run: |
+          set -euo pipefail
+          script="scripts/scale-to-${{ inputs.mode }}.sh"
+          chmod +x "$script"
+          echo "==> Running $script (env=$ENV)"
+          ./"$script"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Heimdall scale: \`${{ inputs.mode }}\` (${{ inputs.environment }})" >> "$GITHUB_STEP_SUMMARY"
+          echo "Job result: ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
