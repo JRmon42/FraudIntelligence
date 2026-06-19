@@ -80,6 +80,16 @@ remediations (R5a `chmod`, R8 tags, provider registration in preflight); it
 *proposes* — and never silently applies — anything that costs money, changes
 network exposure, or is irreversible.
 
+## Accepted tradeoffs
+
+- **R3 / ACR public access.** The container registry is Premium with a private
+  endpoint (the secure target is `publicNetworkAccess: Disabled`). It is left
+  **Enabled** so the `docker-build` workflow can push images from
+  GitHub-hosted (public) runners. To reach full lockdown, run the image build
+  on a **self-hosted runner inside the VNet** (or via an ACR task), then
+  `az acr update -n <acr> --public-network-enabled false`. The readiness check
+  reports this as `WARN`, not `FAIL`, when a private endpoint already exists.
+
 ## Post-deploy manual steps
 
 See [infra/README.md](../infra/README.md#manual--post-deploy-steps) for the

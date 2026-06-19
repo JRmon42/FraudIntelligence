@@ -66,11 +66,15 @@ fi
 acr=$(az acr list -g "$PRIMARY_RG" --query "[0].name" -o tsv 2>/dev/null || echo "")
 if [[ -n "$acr" ]]; then
   pna=$(az acr show -n "$acr" --query "publicNetworkAccess" -o tsv 2>/dev/null)
+  has_pe=$(az acr show -n "$acr" --query "length(privateEndpointConnections)" -o tsv 2>/dev/null || echo 0)
   if [[ "$pna" == "Disabled" ]]; then
     PASS R3 "Network: ACR $acr public network access Disabled"
+  elif [[ "${has_pe:-0}" -ge 1 ]]; then
+    WARN R3 "Network: ACR $acr has a private endpoint but public access is still '$pna' (accepted tradeoff for public CI runners — see docs/production-readiness.md)"
+    FIX "if image pushes run inside the VNet (self-hosted runner): az acr update -n $acr --public-network-enabled false"
   else
-    WARN R3 "Network: ACR $acr public network access is '$pna'"
-    FIX "az acr update -n $acr --public-network-enabled false (ensure a private endpoint exists first)"
+    FAIL R3 "Network: ACR $acr public access '$pna' and no private endpoint"
+    FIX "create a private endpoint, then: az acr update -n $acr --public-network-enabled false"
   fi
 else
   WARN R3 "Network: no ACR found in $PRIMARY_RG"
