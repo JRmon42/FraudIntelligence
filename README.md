@@ -41,8 +41,11 @@ tests/       # Unit + integration
 # Local dev
 docker compose up
 
-# Deploy to Azure (Sweden Central primary + North Europe DR)
-./scripts/deploy.sh
+# Deploy to Azure — any subscription/region, fully variabilised (see
+# docs/production-readiness.md). Defaults: Sweden Central primary, prod env.
+az login && az account set --subscription <YOUR-SUBSCRIPTION-ID>
+cp infra/parameters.example.json infra/parameters.prod.json   # fill <PLACEHOLDERS>
+./scripts/deploy.sh        # preflight → deploy → production-readiness check
 
 # Run demo
 ./scripts/demo.sh
@@ -53,6 +56,12 @@ docker compose up
 # Full teardown
 ./scripts/teardown.sh
 ```
+
+> **Deploying as a new customer?** Read
+> [docs/production-readiness.md](./docs/production-readiness.md) — it lists the
+> prerequisites, every overridable variable (subscription, regions, resource
+> groups, secrets), and the automated readiness checks that run at the end of
+> each deployment.
 
 ## Compliance
 GDPR · EU AI Act (high-risk system) · PSD2 SCA · EBA fraud reporting. See [docs/compliance/](./docs/compliance/).

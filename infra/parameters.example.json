@@ -1,0 +1,35 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "_comment": "Copy this file to parameters.<env>.json and replace every <PLACEHOLDER>. Never commit real secrets — synapseSqlAdminPassword is injected by scripts/deploy.sh (env SYNAPSE_SQL_ADMIN_PASSWORD) and must NOT live here.",
+  "parameters": {
+    "env": { "value": "prod" },
+
+    "primaryLocation": { "value": "swedencentral" },
+    "drLocation": { "value": "northeurope" },
+    "enableDr": { "value": false },
+
+    "primaryRegionCode": { "value": "swc" },
+    "drRegionCode": { "value": "neu" },
+    "primaryResourceGroupName": { "value": "heimdall_rg" },
+    "drResourceGroupName": { "value": "heimdall_dr_rg" },
+
+    "tags": {
+      "value": {
+        "project": "Heimdall",
+        "env": "prod",
+        "costCenter": "<YOUR-COST-CENTER>",
+        "dataClass": "PII-Restricted",
+        "owner": "<YOUR-OWNER>"
+      }
+    },
+
+    "kvAdminPrincipalIds": { "value": ["<YOUR-AAD-OBJECT-ID>"] },
+    "fabricAdminMembers": { "value": ["<admin@yourtenant.onmicrosoft.com>"] },
+    "synapseAadAdminObjectId": { "value": "<YOUR-AAD-OBJECT-ID>" },
+    "synapseAadAdminLogin": { "value": "<admin@yourtenant.onmicrosoft.com>" },
+    "alertEmailReceivers": { "value": ["<ops@yourtenant.com>"] },
+
+    "cmkKeyUri": { "value": "" }
+  }
+}

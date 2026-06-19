@@ -117,5 +117,24 @@ az deployment sub validate \
 ## Deploy
 
 ```bash
+# 1. Authenticate and pick the subscription
+az login && az account set --subscription <YOUR-SUBSCRIPTION-ID>
+
+# 2. Create your parameters file and fill the <PLACEHOLDERS>
+cp infra/parameters.example.json infra/parameters.prod.json
+
+# 3. Deploy (runs preflight checks, then a production-readiness report)
 ./scripts/deploy.sh
 ```
+
+Everything is variabilised with sensible defaults — override via environment
+variables (`SUBSCRIPTION_ID`, `ENV`, `LOCATION`, `PARAM_FILE`,
+`SYNAPSE_SQL_ADMIN_PASSWORD`) or the bicep params
+(`primaryRegionCode`, `drRegionCode`, `primaryResourceGroupName`,
+`drResourceGroupName`). See
+[../docs/production-readiness.md](../docs/production-readiness.md) for the full
+list of requirements and overridable settings.
+
+> **Secrets:** `synapseSqlAdminPassword` is **never** committed. `deploy.sh`
+> reads it from `$SYNAPSE_SQL_ADMIN_PASSWORD` or generates a strong random one
+> and stores it in Key Vault as `synapse-sql-admin-password`.

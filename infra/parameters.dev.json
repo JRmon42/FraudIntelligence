@@ -22,7 +22,6 @@
     },
     "synapseAadAdminObjectId": { "value": "00000000-0000-0000-0000-000000000000" },
     "synapseAadAdminLogin":    { "value": "JRmon42@example.onmicrosoft.com" },
-    "synapseSqlAdminPassword": { "value": "ChangeMeOnFirstDeploy!Dev123" },
     "alertEmailReceivers": { "value": [] },
     "cmkKeyUri": { "value": "" }
   }

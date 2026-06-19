@@ -35,6 +35,8 @@ jobs:
         env:
           ENVIRONMENT: ${{ inputs.environment }}
           AZURE_LOCATION: ${{ inputs.location }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          SYNAPSE_SQL_ADMIN_PASSWORD: ${{ secrets.SYNAPSE_SQL_ADMIN_PASSWORD }}
         run: |
-          chmod +x scripts/deploy.sh
+          chmod +x scripts/*.sh
           ./scripts/deploy.sh

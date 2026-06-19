@@ -12,6 +12,18 @@ param primaryLocation string = 'swedencentral'
 @description('Disaster recovery location')
 param drLocation string = 'northeurope'
 
+@description('Short code for the primary region, used in resource names (e.g. swc)')
+param primaryRegionCode string = 'swc'
+
+@description('Short code for the DR region, used in resource names (e.g. neu)')
+param drRegionCode string = 'neu'
+
+@description('Name of the primary resource group')
+param primaryResourceGroupName string = 'heimdall_rg'
+
+@description('Name of the DR resource group')
+param drResourceGroupName string = 'heimdall_dr_rg'
+
 @description('Deploy the secondary (DR) region. When false, only the primary region is built. Set true later to add cross-region active/active without redeploying primary.')
 param enableDr bool = false
 
@@ -50,13 +62,13 @@ param cmkKeyUri string = ''
 // Resource groups
 // ---------------------------------------------------------------------------
 resource primaryRg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
-  name: 'heimdall_rg'
+  name: primaryResourceGroupName
   location: primaryLocation
   tags: tags
 }
 
 resource drRg 'Microsoft.Resources/resourceGroups@2024-03-01' = if (enableDr) {
-  name: 'heimdall_dr_rg'
+  name: drResourceGroupName
   location: drLocation
   tags: tags
 }
@@ -81,12 +93,12 @@ module primary 'platform.bicep' = {
   scope: primaryRg
   params: {
     env: env
-    regionCode: 'swc'
+    regionCode: primaryRegionCode
     location: primaryLocation
     isPrimary: true
     tags: tags
     secondaryLocation: drLocation
-    partnerRegionCode: 'neu'
+    partnerRegionCode: drRegionCode
     enableDr: enableDr
     kvAdminPrincipalIds: kvAdminPrincipalIds
     fabricAdminMembers: fabricAdminMembers
@@ -106,12 +118,12 @@ module dr 'platform.bicep' = if (enableDr) {
   scope: drRg
   params: {
     env: env
-    regionCode: 'neu'
+    regionCode: drRegionCode
     location: drLocation
     isPrimary: false
     tags: tags
     secondaryLocation: primaryLocation
-    partnerRegionCode: 'swc'
+    partnerRegionCode: primaryRegionCode
     enableDr: true
     kvAdminPrincipalIds: kvAdminPrincipalIds
     fabricAdminMembers: fabricAdminMembers

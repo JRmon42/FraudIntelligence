@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.43.8.12551",
-      "templateHash": "15498300077330413808"
+      "templateHash": "789810921687123880"
     }
   },
   "parameters": {
@@ -28,6 +28,34 @@
       "defaultValue": "northeurope",
       "metadata": {
         "description": "Disaster recovery location"
+      }
+    },
+    "primaryRegionCode": {
+      "type": "string",
+      "defaultValue": "swc",
+      "metadata": {
+        "description": "Short code for the primary region, used in resource names (e.g. swc)"
+      }
+    },
+    "drRegionCode": {
+      "type": "string",
+      "defaultValue": "neu",
+      "metadata": {
+        "description": "Short code for the DR region, used in resource names (e.g. neu)"
+      }
+    },
+    "primaryResourceGroupName": {
+      "type": "string",
+      "defaultValue": "heimdall_rg",
+      "metadata": {
+        "description": "Name of the primary resource group"
+      }
+    },
+    "drResourceGroupName": {
+      "type": "string",
+      "defaultValue": "heimdall_dr_rg",
+      "metadata": {
+        "description": "Name of the DR resource group"
       }
     },
     "enableDr": {
@@ -101,7 +129,7 @@
     {
       "type": "Microsoft.Resources/resourceGroups",
       "apiVersion": "2024-03-01",
-      "name": "heimdall_rg",
+      "name": "[parameters('primaryResourceGroupName')]",
       "location": "[parameters('primaryLocation')]",
       "tags": "[parameters('tags')]"
     },
@@ -109,7 +137,7 @@
       "condition": "[parameters('enableDr')]",
       "type": "Microsoft.Resources/resourceGroups",
       "apiVersion": "2024-03-01",
-      "name": "heimdall_dr_rg",
+      "name": "[parameters('drResourceGroupName')]",
       "location": "[parameters('drLocation')]",
       "tags": "[parameters('tags')]"
     },
@@ -347,7 +375,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "platform-primary",
-      "resourceGroup": "heimdall_rg",
+      "resourceGroup": "[parameters('primaryResourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -358,7 +386,7 @@
             "value": "[parameters('env')]"
           },
           "regionCode": {
-            "value": "swc"
+            "value": "[parameters('primaryRegionCode')]"
           },
           "location": {
             "value": "[parameters('primaryLocation')]"
@@ -373,7 +401,7 @@
             "value": "[parameters('drLocation')]"
           },
           "partnerRegionCode": {
-            "value": "neu"
+            "value": "[parameters('drRegionCode')]"
           },
           "enableDr": {
             "value": "[parameters('enableDr')]"
@@ -4573,7 +4601,7 @@
         }
       },
       "dependsOn": [
-        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', 'heimdall_rg')]"
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', parameters('primaryResourceGroupName'))]"
       ]
     },
     {
@@ -4581,7 +4609,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "platform-dr",
-      "resourceGroup": "heimdall_dr_rg",
+      "resourceGroup": "[parameters('drResourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -4592,7 +4620,7 @@
             "value": "[parameters('env')]"
           },
           "regionCode": {
-            "value": "neu"
+            "value": "[parameters('drRegionCode')]"
           },
           "location": {
             "value": "[parameters('drLocation')]"
@@ -4607,7 +4635,7 @@
             "value": "[parameters('primaryLocation')]"
           },
           "partnerRegionCode": {
-            "value": "swc"
+            "value": "[parameters('primaryRegionCode')]"
           },
           "enableDr": {
             "value": true
@@ -8807,66 +8835,66 @@
         }
       },
       "dependsOn": [
-        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', 'heimdall_dr_rg')]"
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', parameters('drResourceGroupName'))]"
       ]
     }
   ],
   "outputs": {
     "primaryResourceGroup": {
       "type": "string",
-      "value": "heimdall_rg"
+      "value": "[parameters('primaryResourceGroupName')]"
     },
     "drResourceGroup": {
       "type": "string",
-      "value": "[if(parameters('enableDr'), 'heimdall_dr_rg', '')]"
+      "value": "[if(parameters('enableDr'), parameters('drResourceGroupName'), '')]"
     },
     "primaryKeyVaultUri": {
       "type": "string",
-      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, 'heimdall_rg'), 'Microsoft.Resources/deployments', 'platform-primary'), '2025-04-01').outputs.keyVaultUri.value]"
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('primaryResourceGroupName')), 'Microsoft.Resources/deployments', 'platform-primary'), '2025-04-01').outputs.keyVaultUri.value]"
     },
     "primaryAcrLoginServer": {
       "type": "string",
-      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, 'heimdall_rg'), 'Microsoft.Resources/deployments', 'platform-primary'), '2025-04-01').outputs.acrLoginServer.value]"
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('primaryResourceGroupName')), 'Microsoft.Resources/deployments', 'platform-primary'), '2025-04-01').outputs.acrLoginServer.value]"
     },
     "primaryCosmosEndpoint": {
       "type": "string",
-      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, 'heimdall_rg'), 'Microsoft.Resources/deployments', 'platform-primary'), '2025-04-01').outputs.cosmosEndpoint.value]"
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('primaryResourceGroupName')), 'Microsoft.Resources/deployments', 'platform-primary'), '2025-04-01').outputs.cosmosEndpoint.value]"
     },
     "primaryOpenAiEndpoint": {
       "type": "string",
-      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, 'heimdall_rg'), 'Microsoft.Resources/deployments', 'platform-primary'), '2025-04-01').outputs.openAiEndpoint.value]"
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('primaryResourceGroupName')), 'Microsoft.Resources/deployments', 'platform-primary'), '2025-04-01').outputs.openAiEndpoint.value]"
     },
     "primaryEventHubsNamespace": {
       "type": "string",
-      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, 'heimdall_rg'), 'Microsoft.Resources/deployments', 'platform-primary'), '2025-04-01').outputs.eventHubsNamespaceName.value]"
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('primaryResourceGroupName')), 'Microsoft.Resources/deployments', 'platform-primary'), '2025-04-01').outputs.eventHubsNamespaceName.value]"
     },
     "drEventHubsNamespace": {
       "type": "string",
-      "value": "[if(parameters('enableDr'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, 'heimdall_dr_rg'), 'Microsoft.Resources/deployments', 'platform-dr'), '2025-04-01').outputs.eventHubsNamespaceName.value, '')]"
+      "value": "[if(parameters('enableDr'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('drResourceGroupName')), 'Microsoft.Resources/deployments', 'platform-dr'), '2025-04-01').outputs.eventHubsNamespaceName.value, '')]"
     },
     "scoringFrontDoorHost": {
       "type": "string",
-      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, 'heimdall_rg'), 'Microsoft.Resources/deployments', 'platform-primary'), '2025-04-01').outputs.frontDoorScoringHost.value]"
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('primaryResourceGroupName')), 'Microsoft.Resources/deployments', 'platform-primary'), '2025-04-01').outputs.frontDoorScoringHost.value]"
     },
     "consoleFrontDoorHost": {
       "type": "string",
-      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, 'heimdall_rg'), 'Microsoft.Resources/deployments', 'platform-primary'), '2025-04-01').outputs.frontDoorConsoleHost.value]"
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('primaryResourceGroupName')), 'Microsoft.Resources/deployments', 'platform-primary'), '2025-04-01').outputs.frontDoorConsoleHost.value]"
     },
     "synapseServerlessEndpoint": {
       "type": "string",
-      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, 'heimdall_rg'), 'Microsoft.Resources/deployments', 'platform-primary'), '2025-04-01').outputs.synapseServerlessEndpoint.value]"
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('primaryResourceGroupName')), 'Microsoft.Resources/deployments', 'platform-primary'), '2025-04-01').outputs.synapseServerlessEndpoint.value]"
     },
     "fabricCapacityName": {
       "type": "string",
-      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, 'heimdall_rg'), 'Microsoft.Resources/deployments', 'platform-primary'), '2025-04-01').outputs.fabricCapacityName.value]"
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('primaryResourceGroupName')), 'Microsoft.Resources/deployments', 'platform-primary'), '2025-04-01').outputs.fabricCapacityName.value]"
     },
     "purviewName": {
       "type": "string",
-      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, 'heimdall_rg'), 'Microsoft.Resources/deployments', 'platform-primary'), '2025-04-01').outputs.purviewName.value]"
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('primaryResourceGroupName')), 'Microsoft.Resources/deployments', 'platform-primary'), '2025-04-01').outputs.purviewName.value]"
     },
     "amlWorkspaceName": {
       "type": "string",
-      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, 'heimdall_rg'), 'Microsoft.Resources/deployments', 'platform-primary'), '2025-04-01').outputs.amlName.value]"
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('primaryResourceGroupName')), 'Microsoft.Resources/deployments', 'platform-primary'), '2025-04-01').outputs.amlName.value]"
     }
   }
 }
