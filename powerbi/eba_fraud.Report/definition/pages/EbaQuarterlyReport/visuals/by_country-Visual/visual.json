@@ -75,9 +75,20 @@
         }
       }
     },
-    "title": {
-      "text": "By Country / Geography",
-      "visible": true
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'By Country / Geography'"
+                }
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }

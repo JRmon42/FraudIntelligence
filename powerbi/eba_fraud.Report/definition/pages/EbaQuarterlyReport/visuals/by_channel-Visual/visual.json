@@ -75,9 +75,20 @@
         }
       }
     },
-    "title": {
-      "text": "By Channel",
-      "visible": true
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'By Channel'"
+                }
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }

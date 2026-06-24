@@ -84,9 +84,20 @@
         }
       ]
     },
-    "title": {
-      "text": "By SCA / Exemption Type",
-      "visible": true
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'By SCA / Exemption Type'"
+                }
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }

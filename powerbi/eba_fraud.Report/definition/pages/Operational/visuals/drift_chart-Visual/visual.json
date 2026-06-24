@@ -66,9 +66,20 @@
         }
       }
     },
-    "title": {
-      "text": "Model Drift & Decline Rate over Time",
-      "visible": true
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Model Drift & Decline Rate over Time'"
+                }
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }
