@@ -2,7 +2,7 @@ table Dim_Date
 	lineageTag: dim-date
 
 	column Date
-		dataType: string
+		dataType: dateTime
 		lineageTag: 5c51fe81-8527-4e2f-ac04-192a1644fb34
 		summarizeBy: none
 		sourceColumn: Date
@@ -35,5 +35,5 @@ table Dim_Date
 
 	partition Dim_Date = m
 		mode: import
-		source = let Source = List.Dates(#date(2023,1,1), Duration.Days(#date(2027,12,31)-#date(2023,1,1))+1, #duration(1,0,0,0)), T = Table.FromList(Source, Splitter.SplitByNothing(), {"Date"}), T2 = Table.AddColumn(T,"Year", each Date.Year([Date]), Int64.Type), T3 = Table.AddColumn(T2,"Quarter", each Text.From(Date.Year([Date])) & "-Q" & Text.From(Date.QuarterOfYear([Date])) ), T4 = Table.AddColumn(T3,"Month", each Date.Month([Date]), Int64.Type), T5 = Table.AddColumn(T4,"MonthName", each Date.MonthName([Date])) in T5
+		source = let Source = List.Dates(#date(2023,1,1), Duration.Days(#date(2027,12,31)-#date(2023,1,1))+1, #duration(1,0,0,0)), T = Table.FromList(Source, Splitter.SplitByNothing(), {"Date"}), T2 = Table.AddColumn(T,"Year", each Date.Year([Date]), Int64.Type), T3 = Table.AddColumn(T2,"Quarter", each Text.From(Date.Year([Date])) & "-Q" & Text.From(Date.QuarterOfYear([Date])) ), T4 = Table.AddColumn(T3,"Month", each Date.Month([Date]), Int64.Type), T5 = Table.AddColumn(T4,"MonthName", each Date.MonthName([Date])), Typed = Table.TransformColumnTypes(T5,{{"Date", type datetime},{"Quarter", type text},{"MonthName", type text}}) in Typed
 
