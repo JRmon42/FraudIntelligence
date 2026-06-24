@@ -1,0 +1,97 @@
+[
+  {
+    "key": "groceries-lowvalue",
+    "title": "Genuine groceries (low value)",
+    "amount": 24.9,
+    "currency": "EUR",
+    "country": "SE",
+    "channel": "ECOM",
+    "decision": "APPROVE",
+    "score": 0.098,
+    "exemption": "LOW_VALUE",
+    "reason_codes": [
+      "LOW_RISK",
+      "PSD2_LOW_VALUE"
+    ],
+    "narrative": "A \u20ac24.90 online grocery order from a long-standing Swedish customer."
+  },
+  {
+    "key": "trusted-tra",
+    "title": "Trusted retailer (TRA exemption)",
+    "amount": 180.0,
+    "currency": "EUR",
+    "country": "SE",
+    "channel": "ECOM",
+    "decision": "APPROVE",
+    "score": 0.132,
+    "exemption": "TRA",
+    "reason_codes": [
+      "LOW_RISK",
+      "PSD2_TRA"
+    ],
+    "narrative": "A \u20ac180 purchase at a low-fraud retailer the bank can risk-exempt under TRA."
+  },
+  {
+    "key": "false-positive-stepup",
+    "title": "Borderline payment \u2192 possible FALSE POSITIVE",
+    "amount": 850.0,
+    "currency": "EUR",
+    "country": "NO",
+    "channel": "ECOM",
+    "decision": "SCA",
+    "score": 0.422,
+    "exemption": "NONE",
+    "reason_codes": [
+      "MEDIUM_RISK_SCORE"
+    ],
+    "narrative": "An \u20ac850 electronics order. Mildly elevated risk (new-ish device, moderate-fraud merchant) \u2014 could be the real customer, could be fraud."
+  },
+  {
+    "key": "velocity-stepup",
+    "title": "Unusual velocity \u2192 step-up",
+    "amount": 120.0,
+    "currency": "EUR",
+    "country": "FI",
+    "channel": "ECOM",
+    "decision": "SCA",
+    "score": 0.528,
+    "exemption": "NONE",
+    "reason_codes": [
+      "MEDIUM_RISK_SCORE",
+      "VELOCITY_DECLINES_1H"
+    ],
+    "narrative": "A \u20ac120 payment from a card that has seen many attempts and several declines in the last hour."
+  },
+  {
+    "key": "blocked-card-fraud",
+    "title": "Confirmed fraud \u2014 blocked card",
+    "amount": 430.0,
+    "currency": "EUR",
+    "country": "SE",
+    "channel": "ECOM",
+    "decision": "DECLINE",
+    "score": 1.0,
+    "exemption": "NONE",
+    "reason_codes": [
+      "CARD_BLOCKED",
+      "HIGH_RISK_SCORE"
+    ],
+    "narrative": "A \u20ac430 attempt on a card the issuer has already blocked (reported stolen)."
+  },
+  {
+    "key": "ring-cashout-fraud",
+    "title": "Fraud-ring cash-out \u2014 high risk",
+    "amount": 5200.0,
+    "currency": "EUR",
+    "country": "SE",
+    "channel": "ECOM",
+    "decision": "DECLINE",
+    "score": 1.0,
+    "exemption": "NONE",
+    "reason_codes": [
+      "HIGH_RISK_SCORE",
+      "MERCHANT_HIGH_RISK"
+    ],
+    "narrative": "A \u20ac5,200 'purchase' that is really a ring cashing out: risky card, high-risk merchant, large amount."
+  }
+]
