@@ -1,3 +1,15 @@
+## [1.6.0](https://github.com/JRmon42/FraudIntelligence/compare/v1.5.1...v1.6.0) (2026-06-24)
+
+### Features
+
+* add 8-minute demo walkthrough video generator ([e1424df](https://github.com/JRmon42/FraudIntelligence/commit/e1424df91537f09ce17f2a7e4aa1fadeee4eb558))
+* **powerbi:** add SCA, Channel & Country breakdowns to EBA Quarterly Report ([5f016fc](https://github.com/JRmon42/FraudIntelligence/commit/5f016fc0fe8eba63634abd64e6de22e4f9fc0333))
+
+### Bug Fixes
+
+* Power BI drift chart & measures + add EBA slicer and KPI visuals ([4178926](https://github.com/JRmon42/FraudIntelligence/commit/417892619bfe27a87a6b4e74d5a95d2d9a782719))
+* **powerbi:** wrap multi-line Model Drift Index measure in TMDL backticks ([5237f4d](https://github.com/JRmon42/FraudIntelligence/commit/5237f4d3571eb5dac3fb33f5f5c541659e018b89))
+
 ## [1.5.1](https://github.com/JRmon42/FraudIntelligence/compare/v1.5.0...v1.5.1) (2026-06-19)
 
 ### Bug Fixes
