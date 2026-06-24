@@ -1,3 +1,9 @@
+## [1.6.1](https://github.com/JRmon42/FraudIntelligence/compare/v1.6.0...v1.6.1) (2026-06-24)
+
+### Bug Fixes
+
+* **powerbi:** use visualContainerObjects.title instead of invalid 'title' prop ([d700c19](https://github.com/JRmon42/FraudIntelligence/commit/d700c19c4cc0fb2267bffb688219163cdf02e7e5))
+
 ## [1.6.0](https://github.com/JRmon42/FraudIntelligence/compare/v1.5.1...v1.6.0) (2026-06-24)
 
 ### Features
