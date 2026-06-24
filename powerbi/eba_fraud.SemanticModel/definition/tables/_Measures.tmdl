@@ -62,7 +62,10 @@ table _Measures
 		lineageTag: 7afd8567-6dfb-4b6f-ad1f-9ea9d0a5448b
 
 	/// Relative drift in p99 latency vs the 30-day-prior baseline — alert at > 25%.
-	measure 'Model Drift Index' = VAR p99_today = AVERAGE(Fact_Latency[P99Ms]) VAR p99_baseline = CALCULATE(AVERAGE(Fact_Latency[P99Ms]), DATEADD(Dim_Date[Date], -30, DAY)) RETURN DIVIDE(p99_today - p99_baseline, p99_baseline)
+	measure 'Model Drift Index' =
+		VAR p99_today = AVERAGE(Fact_Latency[P99Ms])
+		VAR p99_baseline = CALCULATE(AVERAGE(Fact_Latency[P99Ms]), DATEADD(Dim_Date[Date], -30, DAY))
+		RETURN IF(ISBLANK(p99_baseline) || ISBLANK(p99_today), 0, DIVIDE(p99_today - p99_baseline, p99_baseline))
 		formatString: 0.00%
 		lineageTag: 51f4efa1-924f-4a0a-8644-8db928c3d900
 

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heimdall — Key Performance Indicators</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "Segoe UI", -apple-system, system-ui, Roboto, "Helvetica Neue", sans-serif;
+    background: #ffffff;
+    padding: 48px 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
+  .subtitle {
+    font-size: 0.95rem;
+    color: #6b7280;
+    margin-bottom: 40px;
+    text-align: center;
+  }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    max-width: 1020px;
+    width: 100%;
+  }
+
+  .kpi-card {
+    background: linear-gradient(135deg, #f8f9ff 0%, #eef1ff 100%);
+    border: 1px solid #e0e4f5;
+    border-radius: 16px;
+    padding: 28px 20px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(70, 79, 235, 0.06);
+  }
+
+  .kpi-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(70, 79, 235, 0.12);
+  }
+
+  .kpi-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #464feb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: #fff;
+  }
+
+  .kpi-value {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #464feb;
+    line-height: 1.1;
+  }
+
+  .kpi-value span {
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  .kpi-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1a1a2e;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .kpi-desc {
+    font-size: 0.82rem;
+    color: #6b7280;
+    line-height: 1.45;
+  }
+
+  .footer {
+    margin-top: 40px;
+    font-size: 0.78rem;
+    color: #9ca3af;
+    text-align: center;
+  }
+
+  @media (max-width: 768px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 480px) {
+    .kpi-grid { grid-template-columns: 1fr; }
+  }
+
+  @media print {
+    body { padding: 24px; }
+    .kpi-card:hover { transform: none; box-shadow: 0 2px 8px rgba(70, 79, 235, 0.06); }
+  }
+</style>
+</head>
+<body>
+
+<h1>Heimdall Fraud Intelligence Platform</h1>
+<p class="subtitle">Key Performance Indicators — Production Results</p>
+
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-icon">📊</div>
+    <div class="kpi-value">4.2<span> B</span></div>
+    <div class="kpi-label">Annual Transactions</div>
+    <div class="kpi-desc">Volume processed yearly across 5 countries, requiring highly scalable and low-latency detection</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-icon">🛡️</div>
+    <div class="kpi-value">–41<span>%</span></div>
+    <div class="kpi-label">Fraud Losses Reduction</div>
+    <div class="kpi-desc">Fraud losses cut by nearly half after deploying the AI platform (reversing a prior 34% yearly growth in fraud)</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-icon">✅</div>
+    <div class="kpi-value">↑ ~60<span>%</span></div>
+    <div class="kpi-label">Customer Approval Rate</div>
+    <div class="kpi-desc">False declines dropped from 2.8% to 1.1% of transactions, significantly reducing friction and churn</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-icon">⚡</div>
+    <div class="kpi-value">18<span> ms</span></div>
+    <div class="kpi-label">Real-Time Scoring Latency</div>
+    <div class="kpi-desc">Achieved ~18ms per transaction scoring — well below the strict 120ms SLA required by the business</div>
+  </div>
+</div>
+
+<p class="footer">Heimdall Platform · Azure-native · EU AI Act compliant</p>
+
+</body>
+</html>

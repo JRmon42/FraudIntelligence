@@ -1,0 +1,52 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "instrument_slicer",
+  "position": {
+    "x": 648,
+    "y": 72,
+    "z": 10,
+    "height": 40,
+    "width": 616,
+    "tabOrder": 0
+  },
+  "visual": {
+    "visualType": "slicer",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Dim_Instrument"
+                    }
+                  },
+                  "Property": "InstrumentLabel"
+                }
+              },
+              "queryRef": "Dim_Instrument.InstrumentLabel",
+              "nativeQueryRef": "InstrumentLabel"
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "data": [
+        {
+          "properties": {
+            "mode": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Dropdown'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

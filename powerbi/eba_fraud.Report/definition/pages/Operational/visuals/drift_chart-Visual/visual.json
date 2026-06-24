@@ -32,24 +32,6 @@
             }
           ]
         },
-        "Series": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Fact_Latency"
-                    }
-                  },
-                  "Property": "ModelVersion"
-                }
-              },
-              "queryRef": "Fact_Latency.ModelVersion",
-              "nativeQueryRef": "ModelVersion"
-            }
-          ]
-        },
         "Y": {
           "projections": [
             {
@@ -83,6 +65,10 @@
           ]
         }
       }
+    },
+    "title": {
+      "text": "Model Drift & Decline Rate over Time",
+      "visible": true
     }
   }
 }
