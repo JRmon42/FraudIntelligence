@@ -1,3 +1,9 @@
+## [1.6.2](https://github.com/JRmon42/FraudIntelligence/compare/v1.6.1...v1.6.2) (2026-06-24)
+
+### Bug Fixes
+
+* **powerbi:** type Dim_Date[Date] as dateTime so DATEADD works ([da5c08d](https://github.com/JRmon42/FraudIntelligence/commit/da5c08def8a646ce1e5f488dcd6505ec6d6e94a5)), closes [#datetime](https://github.com/JRmon42/FraudIntelligence/issues/datetime)
+
 ## [1.6.1](https://github.com/JRmon42/FraudIntelligence/compare/v1.6.0...v1.6.1) (2026-06-24)
 
 ### Bug Fixes
