@@ -1,12 +1,12 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
-  "name": "instrument_slicer",
+  "name": "country_slicer",
   "position": {
-    "x": 656,
+    "x": 968,
     "y": 20,
-    "z": 10,
+    "z": 14,
     "height": 44,
-    "width": 300,
+    "width": 296,
     "tabOrder": 0
   },
   "visual": {
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Dim_Instrument"
+                      "Entity": "Dim_Country"
                     }
                   },
-                  "Property": "InstrumentLabel"
+                  "Property": "CountryName"
                 }
               },
-              "queryRef": "Dim_Instrument.InstrumentLabel",
-              "nativeQueryRef": "InstrumentLabel"
+              "queryRef": "Dim_Country.CountryName",
+              "nativeQueryRef": "CountryName"
             }
           ]
         }

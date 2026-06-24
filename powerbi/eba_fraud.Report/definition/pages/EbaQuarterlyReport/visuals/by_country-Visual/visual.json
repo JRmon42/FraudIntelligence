@@ -1,0 +1,83 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "by_country",
+  "position": {
+    "x": 880,
+    "y": 720,
+    "z": 13,
+    "height": 280,
+    "width": 400,
+    "tabOrder": 7
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Dim_Country"
+                    }
+                  },
+                  "Property": "CountryName"
+                }
+              },
+              "queryRef": "Dim_Country.CountryName",
+              "nativeQueryRef": "Country"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "EBA Tx Count"
+                }
+              },
+              "queryRef": "_Measures.EBA Tx Count",
+              "nativeQueryRef": "EBA Tx Count"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "EBA Fraud Value (€)"
+                }
+              },
+              "queryRef": "_Measures.EBA Fraud Value (€)",
+              "nativeQueryRef": "Fraud Value (€)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "EBA Annex C Fraud Rate (bps)"
+                }
+              },
+              "queryRef": "_Measures.EBA Annex C Fraud Rate (bps)",
+              "nativeQueryRef": "Fraud Rate (bps)"
+            }
+          ]
+        }
+      }
+    },
+    "title": {
+      "text": "By Country / Geography",
+      "visible": true
+    }
+  }
+}

@@ -61,6 +61,21 @@ table _Measures
 		formatString: #,0
 		lineageTag: 7afd8567-6dfb-4b6f-ad1f-9ea9d0a5448b
 
+	/// EBA aggregate transaction count (from Fact_Eba, for EBA report breakdowns).
+	measure 'EBA Tx Count' = SUM(Fact_Eba[TxCount])
+		formatString: #,0
+		lineageTag: a2c7e901-1a9c-4f0d-9b6e-710344e7f1a1
+
+	/// EBA aggregate transaction value in EUR.
+	measure 'EBA Tx Value (€)' = SUM(Fact_Eba[TxValueEur])
+		formatString: "€"#,0
+		lineageTag: b3d8f902-2b0c-4f1e-8c7f-820455f8b2b2
+
+	/// EBA fraud value in EUR.
+	measure 'EBA Fraud Value (€)' = SUM(Fact_Eba[FraudValueEur])
+		formatString: "€"#,0
+		lineageTag: c4e9g903-3c1d-4f2f-9d8e-930566g9c3c3
+
 	/// Relative drift in p99 latency vs the 30-day-prior baseline — alert at > 25%.
 	measure 'Model Drift Index' =
 		VAR p99_today = AVERAGE(Fact_Latency[P99Ms])

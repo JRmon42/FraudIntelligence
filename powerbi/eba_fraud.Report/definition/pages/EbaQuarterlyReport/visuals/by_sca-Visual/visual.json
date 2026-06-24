@@ -1,0 +1,92 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "by_sca",
+  "position": {
+    "x": 16,
+    "y": 720,
+    "z": 11,
+    "height": 280,
+    "width": 416,
+    "tabOrder": 5
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Dim_Exemption"
+                    }
+                  },
+                  "Property": "ExemptionLabel"
+                }
+              },
+              "queryRef": "Dim_Exemption.ExemptionLabel",
+              "nativeQueryRef": "ExemptionLabel"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "EBA Tx Count"
+                }
+              },
+              "queryRef": "_Measures.EBA Tx Count",
+              "nativeQueryRef": "EBA Tx Count"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Total Fraud Count"
+                }
+              },
+              "queryRef": "_Measures.Total Fraud Count",
+              "nativeQueryRef": "Total Fraud Count"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "EBA Annex C Fraud Rate (bps)"
+                }
+              },
+              "queryRef": "_Measures.EBA Annex C Fraud Rate (bps)",
+              "nativeQueryRef": "Fraud Rate (bps)"
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "altText": "Fraud by SCA / Exemption Type"
+          }
+        }
+      ]
+    },
+    "title": {
+      "text": "By SCA / Exemption Type",
+      "visible": true
+    }
+  }
+}

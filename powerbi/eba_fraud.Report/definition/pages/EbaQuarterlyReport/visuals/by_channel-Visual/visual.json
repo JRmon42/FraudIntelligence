@@ -1,0 +1,83 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "by_channel",
+  "position": {
+    "x": 448,
+    "y": 720,
+    "z": 12,
+    "height": 280,
+    "width": 416,
+    "tabOrder": 6
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Fact_Eba"
+                    }
+                  },
+                  "Property": "Channel"
+                }
+              },
+              "queryRef": "Fact_Eba.Channel",
+              "nativeQueryRef": "Channel"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "EBA Tx Count"
+                }
+              },
+              "queryRef": "_Measures.EBA Tx Count",
+              "nativeQueryRef": "EBA Tx Count"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Total Fraud Count"
+                }
+              },
+              "queryRef": "_Measures.Total Fraud Count",
+              "nativeQueryRef": "Total Fraud Count"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "EBA Annex C Fraud Rate (bps)"
+                }
+              },
+              "queryRef": "_Measures.EBA Annex C Fraud Rate (bps)",
+              "nativeQueryRef": "Fraud Rate (bps)"
+            }
+          ]
+        }
+      }
+    },
+    "title": {
+      "text": "By Channel",
+      "visible": true
+    }
+  }
+}
