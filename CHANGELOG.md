@@ -1,3 +1,9 @@
+## [1.7.1](https://github.com/JRmon42/FraudIntelligence/compare/v1.7.0...v1.7.1) (2026-06-25)
+
+### Bug Fixes
+
+* **infra:** don't link empty Azure Monitor private DNS zones to the VNet ([39ca4f8](https://github.com/JRmon42/FraudIntelligence/commit/39ca4f805c15137402e92884baee540cfc28810d))
+
 ## [1.7.0](https://github.com/JRmon42/FraudIntelligence/compare/v1.6.2...v1.7.0) (2026-06-25)
 
 ### Features
