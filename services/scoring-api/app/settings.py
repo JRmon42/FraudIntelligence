@@ -49,6 +49,12 @@ class Settings(BaseSettings):
     otel_service_name: str = "scoring-api"
     otel_resource_attributes: str = "service.namespace=fraudintel"
 
+    # Azure Monitor / Application Insights. When set, request + dependency spans
+    # are exported to App Insights (populating the `requests` table) so audit
+    # KQL queries over scoring decisions work. Standard env var name:
+    # APPLICATIONINSIGHTS_CONNECTION_STRING.
+    applicationinsights_connection_string: str = ""
+
     # Key Vault
     azure_key_vault_url: str = ""
 

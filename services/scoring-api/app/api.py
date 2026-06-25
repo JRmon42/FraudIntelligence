@@ -8,6 +8,7 @@ from dataclasses import dataclass
 import structlog
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
+from opentelemetry import trace
 
 from .eh_producer import DecisionEmitter
 from .features import AggregatesStore, FeatureLookup
@@ -175,6 +176,18 @@ async def score(
         psd2=exemption,
         latency_ms=round(latency_ms, 3),
     )
+
+    # Attach audit fields to the FastAPI request span. These surface as
+    # customDimensions on the `requests` record in Application Insights, so
+    # KQL audit queries (decision / fraud_score / transaction_id) return data.
+    span = trace.get_current_span()
+    if span is not None:
+        span.set_attribute("transaction_id", payload.transaction_id)
+        span.set_attribute("decision", decision)
+        span.set_attribute("fraud_score", round(score_value, 6))
+        span.set_attribute("psd2_exemption", exemption or "none")
+        span.set_attribute("model_version", hot.scorer.model_version)
+        span.set_attribute("degraded", degraded)
 
     return ScoreResponse(
         decision=decision,  # type: ignore[arg-type]

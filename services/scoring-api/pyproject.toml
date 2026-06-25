@@ -26,6 +26,7 @@ dependencies = [
     "opentelemetry-exporter-otlp>=1.25",
     "opentelemetry-instrumentation-fastapi>=0.46b0",
     "opentelemetry-instrumentation-logging>=0.46b0",
+    "azure-monitor-opentelemetry-exporter>=1.0.0b25",
 ]
 
 [project.optional-dependencies]

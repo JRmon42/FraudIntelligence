@@ -74,6 +74,24 @@ def configure_tracing(settings: Settings) -> trace.Tracer:
                 "otel_exporter_init_failed", endpoint=settings.otel_exporter_otlp_endpoint
             )
 
+    # Export spans to Azure Monitor / Application Insights when a connection
+    # string is configured. FastAPI server spans land in the `requests` table
+    # (with our custom attributes as customDimensions), so audit KQL over
+    # scoring decisions returns results.
+    if settings.applicationinsights_connection_string:
+        try:
+            from azure.monitor.opentelemetry.exporter import AzureMonitorTraceExporter
+
+            provider.add_span_processor(
+                BatchSpanProcessor(
+                    AzureMonitorTraceExporter(
+                        connection_string=settings.applicationinsights_connection_string
+                    )
+                )
+            )
+        except Exception:  # noqa: BLE001 - tracing is best-effort
+            structlog.get_logger(__name__).warning("azure_monitor_exporter_init_failed")
+
     trace.set_tracer_provider(provider)
     _TRACER = trace.get_tracer("scoring-api")
     return _TRACER
