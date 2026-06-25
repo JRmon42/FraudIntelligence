@@ -202,7 +202,20 @@ resource dnsZones 'Microsoft.Network/privateDnsZones@2020-06-01' = [for zone in 
   tags: tags
 }]
 
-resource dnsLinks 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = [for (zone, i) in dnsZoneNames: {
+// Azure Monitor private DNS zones must NOT be linked to the VNet unless an
+// Azure Monitor Private Link Scope (AMPLS) + private endpoint actually backs
+// them. Linking the empty zones shadows the public CNAME chain for the App
+// Insights ingestion endpoint (*.in.applicationinsights.azure.com ->
+// *.privatelink.monitor.azure.com) and makes DNS return NXDOMAIN, so telemetry
+// export silently fails. Since there is no AMPLS, skip linking these until one
+// is introduced. (App Insights ingestion is public-network-access Enabled.)
+var monitorZones = [
+  'privatelink.monitor.azure.com'
+  'privatelink.oms.opinsights.azure.com'
+  'privatelink.ods.opinsights.azure.com'
+]
+
+resource dnsLinks 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = [for (zone, i) in dnsZoneNames: if (!contains(monitorZones, zone)) {
   name: '${zone}/link-${vnetName}'
   location: 'global'
   dependsOn: [ dnsZones[i] ]
