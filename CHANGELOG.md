@@ -1,3 +1,9 @@
+## [1.7.0](https://github.com/JRmon42/FraudIntelligence/compare/v1.6.2...v1.7.0) (2026-06-25)
+
+### Features
+
+* **scoring-api:** export request telemetry to App Insights for audit ([813db68](https://github.com/JRmon42/FraudIntelligence/commit/813db688583ace5e4e5d1d017130b32183583770))
+
 ## [1.6.2](https://github.com/JRmon42/FraudIntelligence/compare/v1.6.1...v1.6.2) (2026-06-24)
 
 ### Bug Fixes
