@@ -1,3 +1,9 @@
+## [1.8.0](https://github.com/JRmon42/FraudIntelligence/compare/v1.7.1...v1.8.0) (2026-06-26)
+
+### Features
+
+* **infra:** grant human/auditor principals Cosmos data-plane access ([2ee2109](https://github.com/JRmon42/FraudIntelligence/commit/2ee2109585f06682ebc0cd412562e3a86d8a3279))
+
 ## [1.7.1](https://github.com/JRmon42/FraudIntelligence/compare/v1.7.0...v1.7.1) (2026-06-25)
 
 ### Bug Fixes
