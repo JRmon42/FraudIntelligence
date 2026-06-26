@@ -27,6 +27,9 @@ param keyVaultId string = ''
 @description('Throughput per container')
 param containerThroughput int = 400
 
+@description('AAD principal object IDs to grant Cosmos data-plane access (Built-in Data Contributor). Required for humans/auditors to query Data Explorer because local (key) auth is disabled.')
+param dataPlanePrincipalIds array = []
+
 var accountName = 'cosmos-heimdall-${env}-${regionCode}'
 
 var sqlContainers = [
@@ -179,3 +182,15 @@ output cosmosId string = cosmos.id
 output cosmosName string = cosmos.name
 output cosmosEndpoint string = cosmos.properties.documentEndpoint
 output cosmosPrincipalId string = cosmos.identity.principalId
+
+// Grant human/auditor principals Cosmos data-plane access (Built-in Data Contributor).
+// Required because local (key) auth is disabled — Data Explorer queries authenticate via AAD.
+resource dataPlaneAssignments 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2024-05-15' = [for pid in dataPlanePrincipalIds: {
+  parent: cosmos
+  name: guid(cosmos.id, pid, 'cosmos-data-contributor')
+  properties: {
+    principalId: pid
+    roleDefinitionId: '${cosmos.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002'
+    scope: cosmos.id
+  }
+}]

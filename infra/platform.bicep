@@ -32,6 +32,7 @@ param dnsZoneResourceGroupName string = resourceGroup().name
 
 // Identity / admin params
 param kvAdminPrincipalIds array = []
+param cosmosDataPrincipalIds array = []
 param fabricAdminMembers array = []
 param amlAadAdminObjectId string
 param amlAadAdminLogin string
@@ -123,6 +124,7 @@ module cosmos 'modules/cosmos.bicep' = if (isPrimary) {
     enableSecondaryRegion: enableDr
     cmkKeyUri: cmkKeyUri
     keyVaultId: kv.outputs.keyVaultId
+    dataPlanePrincipalIds: cosmosDataPrincipalIds
   }
 }
 

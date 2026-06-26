@@ -39,6 +39,9 @@ param tags object = {
 @description('Object IDs of Key Vault administrators')
 param kvAdminPrincipalIds array = []
 
+@description('Object IDs of principals (humans/auditors) granted Cosmos data-plane access. Needed because Cosmos local auth is disabled.')
+param cosmosDataPrincipalIds array = []
+
 @description('Fabric capacity admin members (UPNs or object IDs)')
 param fabricAdminMembers array = []
 
@@ -101,6 +104,7 @@ module primary 'platform.bicep' = {
     partnerRegionCode: drRegionCode
     enableDr: enableDr
     kvAdminPrincipalIds: kvAdminPrincipalIds
+    cosmosDataPrincipalIds: cosmosDataPrincipalIds
     fabricAdminMembers: fabricAdminMembers
     amlAadAdminObjectId: synapseAadAdminObjectId
     amlAadAdminLogin: synapseAadAdminLogin
@@ -126,6 +130,7 @@ module dr 'platform.bicep' = if (enableDr) {
     partnerRegionCode: primaryRegionCode
     enableDr: true
     kvAdminPrincipalIds: kvAdminPrincipalIds
+    cosmosDataPrincipalIds: cosmosDataPrincipalIds
     fabricAdminMembers: fabricAdminMembers
     amlAadAdminObjectId: synapseAadAdminObjectId
     amlAadAdminLogin: synapseAadAdminLogin

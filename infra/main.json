@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.44.1.10279",
-      "templateHash": "6395842213900642599"
+      "templateHash": "14605861714822197077"
     }
   },
   "parameters": {
@@ -83,6 +83,13 @@
       "defaultValue": [],
       "metadata": {
         "description": "Object IDs of Key Vault administrators"
+      }
+    },
+    "cosmosDataPrincipalIds": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Object IDs of principals (humans/auditors) granted Cosmos data-plane access. Needed because Cosmos local auth is disabled."
       }
     },
     "fabricAdminMembers": {
@@ -409,6 +416,9 @@
           "kvAdminPrincipalIds": {
             "value": "[parameters('kvAdminPrincipalIds')]"
           },
+          "cosmosDataPrincipalIds": {
+            "value": "[parameters('cosmosDataPrincipalIds')]"
+          },
           "fabricAdminMembers": {
             "value": "[parameters('fabricAdminMembers')]"
           },
@@ -436,7 +446,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.44.1.10279",
-              "templateHash": "1629682551525981951"
+              "templateHash": "8013101912255055648"
             }
           },
           "parameters": {
@@ -497,6 +507,10 @@
               }
             },
             "kvAdminPrincipalIds": {
+              "type": "array",
+              "defaultValue": []
+            },
+            "cosmosDataPrincipalIds": {
               "type": "array",
               "defaultValue": []
             },
@@ -1530,6 +1544,9 @@
                   },
                   "keyVaultId": {
                     "value": "[reference('kv').outputs.keyVaultId.value]"
+                  },
+                  "dataPlanePrincipalIds": {
+                    "value": "[parameters('cosmosDataPrincipalIds')]"
                   }
                 },
                 "template": {
@@ -1539,7 +1556,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.44.1.10279",
-                      "templateHash": "9538936753135720597"
+                      "templateHash": "7758262382448034402"
                     }
                   },
                   "parameters": {
@@ -1598,6 +1615,13 @@
                       "defaultValue": 400,
                       "metadata": {
                         "description": "Throughput per container"
+                      }
+                    },
+                    "dataPlanePrincipalIds": {
+                      "type": "array",
+                      "defaultValue": [],
+                      "metadata": {
+                        "description": "AAD principal object IDs to grant Cosmos data-plane access (Built-in Data Contributor). Required for humans/auditors to query Data Explorer because local (key) auth is disabled."
                       }
                     }
                   },
@@ -1789,6 +1813,23 @@
                         "principalId": "[reference(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('accountName')), '2024-05-15', 'full').identity.principalId]",
                         "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('cryptoUserRoleId'))]",
                         "principalType": "ServicePrincipal"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('accountName'))]"
+                      ]
+                    },
+                    {
+                      "copy": {
+                        "name": "dataPlaneAssignments",
+                        "count": "[length(parameters('dataPlanePrincipalIds'))]"
+                      },
+                      "type": "Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments",
+                      "apiVersion": "2024-05-15",
+                      "name": "[format('{0}/{1}', variables('accountName'), guid(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('accountName')), parameters('dataPlanePrincipalIds')[copyIndex()], 'cosmos-data-contributor'))]",
+                      "properties": {
+                        "principalId": "[parameters('dataPlanePrincipalIds')[copyIndex()]]",
+                        "roleDefinitionId": "[format('{0}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002', resourceId('Microsoft.DocumentDB/databaseAccounts', variables('accountName')))]",
+                        "scope": "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('accountName'))]"
                       },
                       "dependsOn": [
                         "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('accountName'))]"
@@ -4649,6 +4690,9 @@
           "kvAdminPrincipalIds": {
             "value": "[parameters('kvAdminPrincipalIds')]"
           },
+          "cosmosDataPrincipalIds": {
+            "value": "[parameters('cosmosDataPrincipalIds')]"
+          },
           "fabricAdminMembers": {
             "value": "[parameters('fabricAdminMembers')]"
           },
@@ -4676,7 +4720,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.44.1.10279",
-              "templateHash": "1629682551525981951"
+              "templateHash": "8013101912255055648"
             }
           },
           "parameters": {
@@ -4737,6 +4781,10 @@
               }
             },
             "kvAdminPrincipalIds": {
+              "type": "array",
+              "defaultValue": []
+            },
+            "cosmosDataPrincipalIds": {
               "type": "array",
               "defaultValue": []
             },
@@ -5770,6 +5818,9 @@
                   },
                   "keyVaultId": {
                     "value": "[reference('kv').outputs.keyVaultId.value]"
+                  },
+                  "dataPlanePrincipalIds": {
+                    "value": "[parameters('cosmosDataPrincipalIds')]"
                   }
                 },
                 "template": {
@@ -5779,7 +5830,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.44.1.10279",
-                      "templateHash": "9538936753135720597"
+                      "templateHash": "7758262382448034402"
                     }
                   },
                   "parameters": {
@@ -5838,6 +5889,13 @@
                       "defaultValue": 400,
                       "metadata": {
                         "description": "Throughput per container"
+                      }
+                    },
+                    "dataPlanePrincipalIds": {
+                      "type": "array",
+                      "defaultValue": [],
+                      "metadata": {
+                        "description": "AAD principal object IDs to grant Cosmos data-plane access (Built-in Data Contributor). Required for humans/auditors to query Data Explorer because local (key) auth is disabled."
                       }
                     }
                   },
@@ -6029,6 +6087,23 @@
                         "principalId": "[reference(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('accountName')), '2024-05-15', 'full').identity.principalId]",
                         "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('cryptoUserRoleId'))]",
                         "principalType": "ServicePrincipal"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('accountName'))]"
+                      ]
+                    },
+                    {
+                      "copy": {
+                        "name": "dataPlaneAssignments",
+                        "count": "[length(parameters('dataPlanePrincipalIds'))]"
+                      },
+                      "type": "Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments",
+                      "apiVersion": "2024-05-15",
+                      "name": "[format('{0}/{1}', variables('accountName'), guid(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('accountName')), parameters('dataPlanePrincipalIds')[copyIndex()], 'cosmos-data-contributor'))]",
+                      "properties": {
+                        "principalId": "[parameters('dataPlanePrincipalIds')[copyIndex()]]",
+                        "roleDefinitionId": "[format('{0}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002', resourceId('Microsoft.DocumentDB/databaseAccounts', variables('accountName')))]",
+                        "scope": "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('accountName'))]"
                       },
                       "dependsOn": [
                         "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('accountName'))]"
