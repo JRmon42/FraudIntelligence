@@ -1,0 +1,463 @@
+{
+  "uid": "heimdall-scoring-slo",
+  "title": "Heimdall \u2014 Scoring API SLO",
+  "tags": [
+    "heimdall",
+    "fraud",
+    "slo",
+    "scoring"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 0,
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "title": "Scoring API latency \u2014 p99 / p95 (SLO < 18 ms)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${GRAFANA_AZ_MONITOR_DS_UID}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 18
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${GRAFANA_AZ_MONITOR_DS_UID}"
+          },
+          "queryType": "Azure Log Analytics",
+          "azureLogAnalytics": {
+            "query": "requests\n| where name == \"POST /v1/score\"\n| summarize p99=percentile(duration,99), p95=percentile(duration,95) by bin(timestamp, $__timeInterval)\n| order by timestamp asc",
+            "resources": [
+              "${APPINSIGHTS_RESOURCE_ID}"
+            ],
+            "resultFormat": "time_series",
+            "dashboardTime": true
+          }
+        }
+      ],
+      "id": 1
+    },
+    {
+      "title": "Scoring replicas (auto scale-out)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${GRAFANA_AZ_MONITOR_DS_UID}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "lineWidth": 2,
+            "stepBefore": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${GRAFANA_AZ_MONITOR_DS_UID}"
+          },
+          "queryType": "Azure Monitor",
+          "subscription": "${SUBSCRIPTION_ID}",
+          "azureMonitor": {
+            "resources": [
+              {
+                "subscription": "${SUBSCRIPTION_ID}",
+                "resourceGroup": "${RESOURCE_GROUP}",
+                "resourceName": "${SCORING_APP_NAME}",
+                "metricNamespace": "microsoft.app/containerapps"
+              }
+            ],
+            "metricNamespace": "microsoft.app/containerapps",
+            "metricName": "Replicas",
+            "aggregation": "Maximum",
+            "timeGrain": "auto"
+          }
+        }
+      ],
+      "id": 2
+    },
+    {
+      "title": "Throughput \u2014 scoring requests / min",
+      "type": "timeseries",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${GRAFANA_AZ_MONITOR_DS_UID}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${GRAFANA_AZ_MONITOR_DS_UID}"
+          },
+          "queryType": "Azure Log Analytics",
+          "azureLogAnalytics": {
+            "query": "requests\n| where name == \"POST /v1/score\"\n| summarize count() by bin(timestamp, $__timeInterval)\n| order by timestamp asc",
+            "resources": [
+              "${APPINSIGHTS_RESOURCE_ID}"
+            ],
+            "resultFormat": "time_series",
+            "dashboardTime": true
+          }
+        }
+      ],
+      "id": 3
+    },
+    {
+      "title": "Decision mix (APPROVE / SCA / DECLINE)",
+      "type": "piechart",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${GRAFANA_AZ_MONITOR_DS_UID}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        },
+        "pieType": "donut",
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": [
+            "value",
+            "percent"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${GRAFANA_AZ_MONITOR_DS_UID}"
+          },
+          "queryType": "Azure Log Analytics",
+          "azureLogAnalytics": {
+            "query": "requests\n| where name == \"POST /v1/score\"\n| extend decision = tostring(customDimensions[\"decision\"])\n| summarize count() by decision",
+            "resources": [
+              "${APPINSIGHTS_RESOURCE_ID}"
+            ],
+            "resultFormat": "table",
+            "dashboardTime": true
+          }
+        }
+      ],
+      "id": 4
+    },
+    {
+      "title": "Degraded decisions (fail-open)",
+      "type": "stat",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${GRAFANA_AZ_MONITOR_DS_UID}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${GRAFANA_AZ_MONITOR_DS_UID}"
+          },
+          "queryType": "Azure Log Analytics",
+          "azureLogAnalytics": {
+            "query": "requests\n| where name == \"POST /v1/score\"\n| extend degraded = tostring(customDimensions[\"degraded\"])\n| summarize Degraded=countif(degraded==\"true\"), Total=count()",
+            "resources": [
+              "${APPINSIGHTS_RESOURCE_ID}"
+            ],
+            "resultFormat": "table",
+            "dashboardTime": true
+          }
+        }
+      ],
+      "id": 5
+    },
+    {
+      "title": "Cosmos DB \u2014 normalized RU consumption & total RU",
+      "type": "timeseries",
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "${GRAFANA_AZ_MONITOR_DS_UID}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "last",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${GRAFANA_AZ_MONITOR_DS_UID}"
+          },
+          "queryType": "Azure Monitor",
+          "subscription": "${SUBSCRIPTION_ID}",
+          "azureMonitor": {
+            "resources": [
+              {
+                "subscription": "${SUBSCRIPTION_ID}",
+                "resourceGroup": "${RESOURCE_GROUP}",
+                "resourceName": "${COSMOS_ACCOUNT_NAME}",
+                "metricNamespace": "microsoft.documentdb/databaseaccounts"
+              }
+            ],
+            "metricNamespace": "microsoft.documentdb/databaseaccounts",
+            "metricName": "NormalizedRUConsumption",
+            "aggregation": "Maximum",
+            "timeGrain": "auto"
+          }
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "${GRAFANA_AZ_MONITOR_DS_UID}"
+          },
+          "queryType": "Azure Monitor",
+          "subscription": "${SUBSCRIPTION_ID}",
+          "azureMonitor": {
+            "resources": [
+              {
+                "subscription": "${SUBSCRIPTION_ID}",
+                "resourceGroup": "${RESOURCE_GROUP}",
+                "resourceName": "${COSMOS_ACCOUNT_NAME}",
+                "metricNamespace": "microsoft.documentdb/databaseaccounts"
+              }
+            ],
+            "metricNamespace": "microsoft.documentdb/databaseaccounts",
+            "metricName": "TotalRequestUnits",
+            "aggregation": "Total",
+            "timeGrain": "auto"
+          }
+        }
+      ],
+      "id": 6
+    }
+  ]
+}

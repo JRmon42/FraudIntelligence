@@ -42,6 +42,9 @@ param kvAdminPrincipalIds array = []
 @description('Object IDs of principals (humans/auditors) granted Cosmos data-plane access. Needed because Cosmos local auth is disabled.')
 param cosmosDataPrincipalIds array = []
 
+@description('Object IDs of principals to grant Grafana Admin on the Managed Grafana instance.')
+param grafanaAdminPrincipalIds array = []
+
 @description('Fabric capacity admin members (UPNs or object IDs)')
 param fabricAdminMembers array = []
 
@@ -105,6 +108,7 @@ module primary 'platform.bicep' = {
     enableDr: enableDr
     kvAdminPrincipalIds: kvAdminPrincipalIds
     cosmosDataPrincipalIds: cosmosDataPrincipalIds
+    grafanaAdminPrincipalIds: grafanaAdminPrincipalIds
     fabricAdminMembers: fabricAdminMembers
     amlAadAdminObjectId: synapseAadAdminObjectId
     amlAadAdminLogin: synapseAadAdminLogin
@@ -131,6 +135,7 @@ module dr 'platform.bicep' = if (enableDr) {
     enableDr: true
     kvAdminPrincipalIds: kvAdminPrincipalIds
     cosmosDataPrincipalIds: cosmosDataPrincipalIds
+    grafanaAdminPrincipalIds: grafanaAdminPrincipalIds
     fabricAdminMembers: fabricAdminMembers
     amlAadAdminObjectId: synapseAadAdminObjectId
     amlAadAdminLogin: synapseAadAdminLogin
@@ -148,6 +153,7 @@ output drResourceGroup string = enableDr ? drRg.name : ''
 output primaryKeyVaultUri string = primary.outputs.keyVaultUri
 output primaryAcrLoginServer string = primary.outputs.acrLoginServer
 output primaryCosmosEndpoint string = primary.outputs.cosmosEndpoint
+output primaryGrafanaEndpoint string = primary.outputs.grafanaEndpoint
 output primaryOpenAiEndpoint string = primary.outputs.openAiEndpoint
 output primaryEventHubsNamespace string = primary.outputs.eventHubsNamespaceName
 output drEventHubsNamespace string = enableDr ? dr.outputs.eventHubsNamespaceName : ''

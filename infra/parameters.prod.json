@@ -17,6 +17,7 @@
     },
     "kvAdminPrincipalIds": { "value": ["49ccd746-cbb9-4c54-8e51-4593fea1f63c"] },
     "cosmosDataPrincipalIds": { "value": ["49ccd746-cbb9-4c54-8e51-4593fea1f63c", "9c0a9673-a207-4852-85b2-c9e0c4b21424"] },
+    "grafanaAdminPrincipalIds": { "value": ["49ccd746-cbb9-4c54-8e51-4593fea1f63c"] },
     "fabricAdminMembers": { "value": ["admin@MngEnv995349.onmicrosoft.com"] },
     "synapseAadAdminObjectId": { "value": "49ccd746-cbb9-4c54-8e51-4593fea1f63c" },
     "synapseAadAdminLogin": { "value": "admin@MngEnv995349.onmicrosoft.com" },

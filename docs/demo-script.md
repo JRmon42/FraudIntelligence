@@ -122,7 +122,7 @@ Hover the tiles: TPS, p99, decline %, exemption mix, fraud rate per band.
 ```
 This drives `scripts/demo_client.py` against the Sweden Central AFD endpoint (circular flow is built-in).
 
-**Show**: Grafana **Scoring API SLO** dashboard — replicas scale from 6 to ~22, p99 stays **under 18 ms** (typically 13–15 ms).
+**Show**: Grafana **Scoring API SLO** dashboard (`/d/heimdall-scoring-slo`) — replicas scale from 6 to ~22, p99 stays **under 18 ms** (typically 13–15 ms).
 
 Talk track:
 > "I've doubled the load. KEDA on Container Apps scales out the Dedicated D8 workload profile in under 30 seconds — you can see the replica count climb. p99 is holding at **14 ms** because the scorer is **ONNX in-process** — there is no separate model server in the hot path. Cosmos multi-master takes the writes locally; the cold path is async to Event Hubs."

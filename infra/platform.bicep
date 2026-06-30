@@ -33,6 +33,7 @@ param dnsZoneResourceGroupName string = resourceGroup().name
 // Identity / admin params
 param kvAdminPrincipalIds array = []
 param cosmosDataPrincipalIds array = []
+param grafanaAdminPrincipalIds array = []
 param fabricAdminMembers array = []
 param amlAadAdminObjectId string
 param amlAadAdminLogin string
@@ -125,6 +126,17 @@ module cosmos 'modules/cosmos.bicep' = if (isPrimary) {
     cmkKeyUri: cmkKeyUri
     keyVaultId: kv.outputs.keyVaultId
     dataPlanePrincipalIds: cosmosDataPrincipalIds
+  }
+}
+
+module grafana 'modules/grafana.bicep' = if (isPrimary) {
+  name: 'grafana-${regionCode}'
+  params: {
+    env: env
+    regionCode: regionCode
+    location: location
+    tags: tags
+    adminPrincipalIds: grafanaAdminPrincipalIds
   }
 }
 
@@ -276,6 +288,7 @@ output keyVaultUri string = kv.outputs.keyVaultUri
 output eventHubsNamespaceId string = eh.outputs.namespaceId
 output eventHubsNamespaceName string = eh.outputs.namespaceName
 output cosmosEndpoint string = isPrimary ? cosmos.outputs.cosmosEndpoint : ''
+output grafanaEndpoint string = isPrimary ? grafana.outputs.grafanaEndpoint : ''
 output acrLoginServer string = isPrimary ? acr.outputs.acrLoginServer : ''
 output openAiEndpoint string = isPrimary ? oai.outputs.openAiEndpoint : ''
 output amlName string = isPrimary ? aml.outputs.amlName : ''

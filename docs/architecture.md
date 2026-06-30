@@ -140,7 +140,7 @@ flowchart TB
 
 Cost classes: S < €2k/mo, M €2–15k/mo, H > €15k/mo (per region, prod baseline).
 
-> **Implementation status.** This is the **target** logical architecture. Not every component is yet represented in `infra/` Bicep — APIM, Redis Enterprise, Service Bus, Managed Grafana and Sentinel are currently *documented targets*; deployed modules live under `infra/modules/` (the `feature-builder` Function is implemented; the enforcement Function is a planned target).
+> **Implementation status.** This is the **target** logical architecture. Not every component is yet represented in `infra/` Bicep — APIM, Redis Enterprise, Service Bus and Sentinel are currently *documented targets*; deployed modules live under `infra/modules/` (the `feature-builder` Function is implemented; the enforcement Function is a planned target). **Managed Grafana is deployed** (`infra/modules/grafana.bicep`) with its "Scoring API SLO" dashboard in `dashboards/grafana/` (imported via `scripts/import-grafana-dashboard.sh`).
 
 ---
 
