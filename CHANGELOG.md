@@ -1,3 +1,9 @@
+## [1.9.0](https://github.com/JRmon42/FraudIntelligence/compare/v1.8.0...v1.9.0) (2026-06-30)
+
+### Features
+
+* **observability:** codify Managed Grafana + Scoring API SLO dashboard ([acf2c32](https://github.com/JRmon42/FraudIntelligence/commit/acf2c3222f52f682c259be4a188b26ebb3ae92a0))
+
 ## [1.8.0](https://github.com/JRmon42/FraudIntelligence/compare/v1.7.1...v1.8.0) (2026-06-26)
 
 ### Features
