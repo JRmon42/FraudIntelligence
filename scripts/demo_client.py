@@ -69,27 +69,53 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def _ts_at_hour(hour: int) -> str:
+    """ISO timestamp for today at a given UTC hour (drives the model's
+    time-of-day fraud signal — the ensemble learned that high-value
+    card-not-present purchases in the small hours are high risk)."""
+    now = datetime.now(timezone.utc)
+    return now.replace(hour=hour % 24, minute=random.randint(0, 59),
+                       second=0, microsecond=0).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def make_tx(profile: str = "normal", **overrides) -> dict:
     """Build a valid ScoreRequest payload (snake_case, extra=forbid).
 
-    Profiles map to seeded demo entities so the *live* scoring API returns a
-    realistic decision when ``SEED_DEMO_FEATURES=true``:
-      normal  -> random clean card/merchant            -> APPROVE
-      sca     -> high-risk merchant (step-up auth)      -> SCA
-      decline -> blocked card on a fraud merchant       -> DECLINE
-      high    -> alias of ``decline`` (legacy name)     -> DECLINE
+    Every profile produces a decision from the **live stacked-ensemble**
+    (XGBoost + LightGBM + Logistic, ONNX in-process). The model learned that
+    high-value card-not-present purchases in the small hours are high risk, so
+    we drive the spectrum with amount + time-of-day:
+      normal  -> daytime, low value         -> APPROVE (model score ~0.03)
+      sca     -> 00:00-01:59, ~EUR 300-350  -> SCA step-up (model score ~0.41)
+      decline -> 00:00-01:59, EUR 450+      -> DECLINE (model score ~0.99)
+      high    -> alias of ``decline``        -> DECLINE
+    A seeded blocked card (``blocked`` profile) is additionally hard-declined by
+    the policy layer to demonstrate the rule path.
     """
     txid = f"demo-{random.randint(10**5, 10**6)}"
-    if profile in ("high", "decline"):
+    if profile == "blocked":
         tx = {
             "transaction_id": txid,
             "card_id": DEMO_BLOCKED_CARD,
             "merchant_id": DEMO_FRAUD_MERCHANT,
-            "amount": round(random.uniform(20000, 50000), 2),
+            "amount": round(random.uniform(40, 400), 2),
             "currency": "EUR",
-            "country": random.choice(["NG", "RU", "VE", "IR"]),
-            "channel": "MOTO",
-            "timestamp": now_iso(),
+            "country": random.choice(COUNTRIES),
+            "channel": "ECOM",
+            "timestamp": _ts_at_hour(14),
+            "device_fingerprint": f"df-{random.randint(0, 99999)}",
+            "ip": "203.0.113.7",
+        }
+    elif profile in ("high", "decline"):
+        tx = {
+            "transaction_id": txid,
+            "card_id": f"c-{random.randint(1, 999)}",
+            "merchant_id": f"m-{random.randint(1, 200)}",
+            "amount": round(random.uniform(450, 1200), 2),
+            "currency": "EUR",
+            "country": random.choice(COUNTRIES),
+            "channel": "ECOM",
+            "timestamp": _ts_at_hour(random.choice([0, 1])),
             "device_fingerprint": f"df-new-{random.randint(0, 9999)}",
             "ip": "185.220.101.5",
         }
@@ -97,25 +123,25 @@ def make_tx(profile: str = "normal", **overrides) -> dict:
         tx = {
             "transaction_id": txid,
             "card_id": f"c-{random.randint(1, 999)}",
-            "merchant_id": DEMO_RISKY_MERCHANT,
-            "amount": round(random.uniform(1500, 6000), 2),
+            "merchant_id": f"m-{random.randint(1, 200)}",
+            "amount": round(random.uniform(330, 350), 2),
             "currency": "EUR",
             "country": random.choice(COUNTRIES),
             "channel": "ECOM",
-            "timestamp": now_iso(),
+            "timestamp": _ts_at_hour(random.choice([0, 1])),
             "device_fingerprint": f"df-{random.randint(0, 99999)}",
             "ip": "203.0.113.7",
         }
-    else:  # normal
+    else:  # normal — daytime low value so the ensemble scores it as APPROVE
         tx = {
             "transaction_id": txid,
             "card_id": f"c-{random.randint(1, 999)}",
             "merchant_id": f"m-{random.randint(1, 200)}",
-            "amount": round(random.uniform(5, 4000), 2),
+            "amount": round(random.uniform(5, 250), 2),
             "currency": "SEK",
             "country": random.choice(COUNTRIES),
-            "channel": random.choice(CHANNELS),
-            "timestamp": now_iso(),
+            "channel": random.choice(["ECOM", "POS"]),
+            "timestamp": _ts_at_hour(random.randint(9, 19)),
             "device_fingerprint": f"df-{random.randint(0, 99999)}",
             "ip": "203.0.113.7",
         }

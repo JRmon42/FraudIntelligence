@@ -21,10 +21,15 @@ ENV PATH="/opt/venv/bin:${PATH}" \
     PYTHONPATH="/opt/venv/lib/python3.11/site-packages" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    SCORING_API_PORT=8080
+    SCORING_API_PORT=8080 \
+    MODEL_PATH="/app/models/ensemble.onnx" \
+    MODEL_VERSION="v1.0.0-ensemble"
 
 COPY --from=builder /opt/venv /opt/venv
 COPY --from=builder /build/app /app/app
+# Trained stacked-ensemble (XGBoost + LightGBM + Logistic) exported to ONNX by
+# ml/train_ensemble.py. Bundled so the scorer runs the real model in-process.
+COPY models /app/models
 
 WORKDIR /app
 EXPOSE 8080

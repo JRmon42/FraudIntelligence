@@ -31,15 +31,22 @@ They drive the scoring API over Azure Front Door using `scripts/demo.sh`
 ./scripts/demo.sh all
 ```
 
-> **Live decisions now span the full spectrum.** The deployed scoring API runs the
-> deterministic **stub** scorer (no trained ONNX model wired in), but its in-memory
-> feature store is **seeded with curated risky/clean entities** (`SEED_DEMO_FEATURES=true`,
-> see `services/scoring-api/app/seed_data.py`). So live requests return real
-> **APPROVE / SCA / DECLINE** decisions straight from the production decision rules:
->  - `score --profile normal`  → APPROVE (random clean card/merchant)
->  - `score --profile sca`     → SCA step-up (high-risk merchant)
->  - `score --profile decline` → DECLINE (blocked card on a fraud merchant)
->  - `load --profile mix`      → a realistic ~70/20/10 APPROVE/SCA/DECLINE stream
+> **Live decisions now span the full spectrum — driven by the real model.** The
+> deployed scoring API runs the trained **stacked ensemble** (XGBoost + LightGBM +
+> Logistic regression, exported to ONNX by `ml/train_ensemble.py`, served in-process,
+> `model_version = v1.0.0-ensemble`). The model learned that high-value
+> card-not-present purchases in the small hours are high risk, so the demo profiles
+> drive the spectrum with transaction amount + time-of-day, and the policy layer
+> (`psd2_optimizer.py`) maps the score to a decision:
+>  - `score --profile normal`  → APPROVE (daytime, low value → model score ~0.00)
+>  - `score --profile sca`     → SCA step-up (00:00-01:59, ~€330-350 → model score ~0.41)
+>  - `score --profile decline` → DECLINE (00:00-01:59, €450+ → model score ~0.99)
+>  - `score --profile blocked` → DECLINE (seeded blocked card, hard policy rule)
+>  - `load --profile mix`      → a realistic ~75/15/10 APPROVE/SCA/DECLINE stream
+>
+> A small set of curated entities is also seeded into the in-memory feature store
+> (`SEED_DEMO_FEATURES=true`, see `services/scoring-api/app/seed_data.py`) so the
+> blocked-card policy rule and PSD2 exemptions have data to act on.
 >
 > The `scenario` step additionally walks a curated narrative spectrum via the
 > dependency-free port of `psd2_optimizer.py` + `scoring.py` in `scripts/demo_scenarios.py`,

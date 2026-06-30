@@ -61,6 +61,8 @@ class CardFeatures(BaseModel):
     chargebacks_30d: int = 0
     is_blocked: bool = False
     customer_segment: str = "retail"
+    card_age_days: int = 800
+    card_brand: str = "VISA"
 
 
 class MerchantFeatures(BaseModel):

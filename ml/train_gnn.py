@@ -112,6 +112,16 @@ def _train_pyg(df: pd.DataFrame, out_dir: Path, epochs: int = 5) -> dict:
         edges[("card", "from", "ip")]["src"],
         edges[("card", "from", "ip")]["dst"], cards, ips)
 
+    # Reverse edges so that `card` is also a message-passing destination —
+    # without them card embeddings never get updated (card only ever appears
+    # as a source), and HeteroConv returns None for the card node type.
+    data["merchant", "rev_txn", "card"].edge_index = \
+        data["card", "txn", "merchant"].edge_index.flip(0)
+    data["device", "rev_uses", "card"].edge_index = \
+        data["card", "uses", "device"].edge_index.flip(0)
+    data["ip", "rev_from", "card"].edge_index = \
+        data["card", "from", "ip"].edge_index.flip(0)
+
     class HetSAGE(nn.Module):
         def __init__(self, dim=EMB_DIM):
             super().__init__()
@@ -119,11 +129,17 @@ def _train_pyg(df: pd.DataFrame, out_dir: Path, epochs: int = 5) -> dict:
                 ("card", "txn", "merchant"): SAGEConv((-1, -1), dim),
                 ("card", "uses", "device"): SAGEConv((-1, -1), dim),
                 ("card", "from", "ip"): SAGEConv((-1, -1), dim),
+                ("merchant", "rev_txn", "card"): SAGEConv((-1, -1), dim),
+                ("device", "rev_uses", "card"): SAGEConv((-1, -1), dim),
+                ("ip", "rev_from", "card"): SAGEConv((-1, -1), dim),
             }, aggr="sum")
             self.conv2 = HeteroConv({
                 ("card", "txn", "merchant"): SAGEConv((-1, -1), dim),
                 ("card", "uses", "device"): SAGEConv((-1, -1), dim),
                 ("card", "from", "ip"): SAGEConv((-1, -1), dim),
+                ("merchant", "rev_txn", "card"): SAGEConv((-1, -1), dim),
+                ("device", "rev_uses", "card"): SAGEConv((-1, -1), dim),
+                ("ip", "rev_from", "card"): SAGEConv((-1, -1), dim),
             }, aggr="sum")
             self.head = nn.Linear(dim, 1)
 

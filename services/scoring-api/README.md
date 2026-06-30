@@ -40,7 +40,7 @@ Real-time card-transaction scoring service for the Heimdall platform.
   "score": 0.0312,
   "reason_codes": ["LOW_RISK"],
   "psd2_exemption": "TRA",
-  "model_version": "v0.0.0-stub",
+  "model_version": "v1.0.0-ensemble",
   "latency_ms": 6.2,
   "explain": null
 }
@@ -90,6 +90,30 @@ curl -s -X POST 'http://localhost:8080/v1/score?explain=true' \
 pip install -e ".[dev]"
 pytest -q
 ```
+
+## Model
+
+The scorer runs the trained **stacked ensemble** (XGBoost + LightGBM + Logistic
+regression) exported to ONNX by `ml/train_ensemble.py`. The serving layer
+(`app/scoring.py::build_onnx_inputs`) maps each request to the model's 17-feature
+schema (10 numeric + 7 categorical, one-hot with `handle_unknown="ignore"`), reads
+the `probabilities` output and feeds the fraud probability into the PSD2 policy
+layer (`app/psd2_optimizer.py`).
+
+- **Loaded from:** `MODEL_PATH` (default `/app/models/ensemble.onnx`), reported as
+  `MODEL_VERSION` (default `v1.0.0-ensemble`).
+- **Fallback:** if `MODEL_PATH` is unset/missing the service falls back to a
+  deterministic in-memory **stub** scorer (`v0.0.0-stub`) — handy for local runs
+  without the artifact.
+- **Regenerate the artifact:**
+
+  ```bash
+  python ml/train_ensemble.py            # writes ml/artifacts/ensemble.onnx
+  cp ml/artifacts/ensemble.onnx services/scoring-api/models/ensemble.onnx
+  ```
+
+  The Dockerfile bundles `models/ensemble.onnx` into the image. The committed copy
+  under `services/scoring-api/models/` keeps the image build self-contained.
 
 ## Docker
 

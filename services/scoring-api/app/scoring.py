@@ -77,6 +77,69 @@ def build_feature_vector(ctx: ScoringContext) -> np.ndarray:
     return vec.reshape(1, -1)
 
 
+# Named inputs expected by the trained stacked-ensemble ONNX graph
+# (XGBoost + LightGBM + Logistic, exported from ml/train_ensemble.py). The model
+# consumes behavioural / contextual features; hard business rules such as a
+# blocked card are applied by the policy layer (psd2_optimizer), not the model.
+ONNX_NUM_INPUTS: tuple[str, ...] = (
+    "amount", "amount_log", "hour", "dow", "is_weekend",
+    "card_age_days", "merchant_risk", "card_txn_count_24h",
+    "card_amount_sum_24h", "card_distinct_merchants_24h",
+)
+ONNX_CAT_INPUTS: tuple[str, ...] = (
+    "card_country", "merchant_country", "ip_country",
+    "card_brand", "channel", "device_os", "mcc",
+)
+
+
+def build_onnx_inputs(ctx: ScoringContext) -> dict[str, np.ndarray]:
+    """Materialise the per-column named tensors consumed by the ensemble ONNX.
+
+    Each input is shaped ``[1, 1]``; numeric columns are float32, categorical
+    columns are object (string) arrays. Fields absent from the online request /
+    feature schema are derived or defaulted; the model's OneHotEncoder was fit
+    with ``handle_unknown="ignore"`` so unseen categories degrade gracefully.
+    """
+
+    req = ctx.request
+    card = ctx.card
+    merch = ctx.merchant
+    agg = ctx.aggregates
+
+    amount = float(req.amount)
+    dow = float(req.timestamp.weekday())
+    num = {
+        "amount": amount,
+        "amount_log": float(np.log1p(max(amount, 0.0))),
+        "hour": float(req.timestamp.hour),
+        "dow": dow,
+        "is_weekend": 1.0 if dow >= 5 else 0.0,
+        "card_age_days": float(card.card_age_days) if card else 800.0,
+        "merchant_risk": float(merch.risk_score) if merch else 0.0,
+        "card_txn_count_24h": float(agg.count_1h),
+        "card_amount_sum_24h": float(agg.amount_1h),
+        # Not tracked online; default to a benign baseline.
+        "card_distinct_merchants_24h": 1.0,
+    }
+    cat = {
+        "card_country": (card.issue_country if card and card.issue_country else req.country),
+        "merchant_country": (merch.country if merch and merch.country else req.country),
+        # We do not geo-resolve the source IP online; use the txn country as proxy.
+        "ip_country": req.country,
+        "card_brand": (card.card_brand if card else "VISA"),
+        "channel": req.channel.lower(),
+        "device_os": "unknown",
+        "mcc": (str(merch.mcc) if merch else "0000"),
+    }
+
+    feed: dict[str, np.ndarray] = {}
+    for name in ONNX_NUM_INPUTS:
+        feed[name] = np.array([[num[name]]], dtype=np.float32)
+    for name in ONNX_CAT_INPUTS:
+        feed[name] = np.array([[cat[name]]], dtype=object)
+    return feed
+
+
 class OnnxScorer:
     """Scoring engine. Loads ONNX model if present; otherwise uses a stub."""
 
@@ -84,7 +147,9 @@ class OnnxScorer:
         self._model_path = model_path
         self._version = model_version
         self._session: Any | None = None
-        self._input_name: str | None = None
+        self._input_names: list[str] = []
+        self._output_names: list[str] = []
+        self._vector_input: str | None = None
         self._loaded = self._load()
 
     def _load(self) -> bool:
@@ -105,8 +170,19 @@ class OnnxScorer:
             self._session = ort.InferenceSession(
                 self._model_path, sess_options=so, providers=["CPUExecutionProvider"]
             )
-            self._input_name = self._session.get_inputs()[0].name
-            log.info("onnx_model_loaded", path=self._model_path, version=self._version)
+            inputs = self._session.get_inputs()
+            self._input_names = [i.name for i in inputs]
+            self._output_names = [o.name for o in self._session.get_outputs()]
+            # A single tensor input means a legacy flat-vector model; multiple
+            # named inputs means the stacked-ensemble per-column contract.
+            self._vector_input = inputs[0].name if len(inputs) == 1 else None
+            log.info(
+                "onnx_model_loaded",
+                path=self._model_path,
+                version=self._version,
+                inputs=len(self._input_names),
+                outputs=self._output_names,
+            )
             return True
         except Exception as exc:  # noqa: BLE001 - never crash the hot path
             log.error("onnx_model_load_failed", path=self._model_path, err=str(exc))
@@ -122,17 +198,36 @@ class OnnxScorer:
         return self._loaded
 
     def score(self, ctx: ScoringContext) -> float:
-        vec = build_feature_vector(ctx)
-        if self._session is None or self._input_name is None:
-            return _stub_score(ctx, vec)
+        if self._session is None:
+            return _stub_score(ctx, build_feature_vector(ctx))
         try:
-            out = self._session.run(None, {self._input_name: vec})
-            raw = out[0]
-            arr = np.asarray(raw).reshape(-1)
-            return float(np.clip(arr[0], 0.0, 1.0))
+            if self._vector_input is not None:
+                feed: dict[str, np.ndarray] = {self._vector_input: build_feature_vector(ctx)}
+            else:
+                feed = build_onnx_inputs(ctx)
+            outs = self._session.run(self._output_names, feed)
+            result = dict(zip(self._output_names, outs))
+            return _extract_fraud_probability(result, outs)
         except Exception as exc:  # noqa: BLE001
             log.error("onnx_inference_failed", err=str(exc))
-            return _stub_score(ctx, vec)
+            return _stub_score(ctx, build_feature_vector(ctx))
+
+
+def _extract_fraud_probability(result: dict[str, Any], outs: list[Any]) -> float:
+    """Pull the positive-class fraud probability from the model outputs.
+
+    Handles the skl2onnx classifier contract (``label`` + ``probabilities``
+    [N, 2]) as well as a plain single-probability regression output.
+    """
+
+    proba = result.get("probabilities")
+    if proba is not None:
+        arr = np.asarray(proba)
+        if arr.ndim == 2 and arr.shape[1] >= 2:
+            return float(np.clip(arr[0, 1], 0.0, 1.0))
+        return float(np.clip(arr.reshape(-1)[-1], 0.0, 1.0))
+    arr = np.asarray(outs[-1]).reshape(-1)
+    return float(np.clip(arr[-1], 0.0, 1.0))
 
 
 def _stub_score(ctx: ScoringContext, vec: np.ndarray) -> float:
