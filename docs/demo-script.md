@@ -31,18 +31,25 @@ They drive the scoring API over Azure Front Door using `scripts/demo.sh`
 ./scripts/demo.sh all
 ```
 
-> **Live decisions now span the full spectrum — driven by the real model.** The
-> deployed scoring API runs the trained **stacked ensemble** (XGBoost + LightGBM +
-> Logistic regression, exported to ONNX by `ml/train_ensemble.py`, served in-process,
-> `model_version = v1.0.0-ensemble`). The model learned that high-value
-> card-not-present purchases in the small hours are high risk, so the demo profiles
-> drive the spectrum with transaction amount + time-of-day, and the policy layer
-> (`psd2_optimizer.py`) maps the score to a decision:
->  - `score --profile normal`  → APPROVE (daytime, low value → model score ~0.00)
->  - `score --profile sca`     → SCA step-up (00:00-01:59, ~€330-350 → model score ~0.41)
->  - `score --profile decline` → DECLINE (00:00-01:59, €450+ → model score ~0.99)
+> **Live decisions now span the full spectrum — driven by the real model *and the
+> fraud-ring GNN*.** The deployed scoring API runs the trained **stacked ensemble**
+> (XGBoost + LightGBM + Logistic regression, exported to ONNX by
+> `ml/train_ensemble.py`, served in-process, `model_version = v1.1.0-ensemble-gnn`).
+> The ensemble consumes the **fraud-ring GNN**'s per-card features — `ring_score`
+> plus a 16-dim GraphSAGE embedding (`ml/train_gnn.py`), published into the feature
+> store by `ml/publish_gnn_features.py`. So a card the GNN flags as ring-linked is
+> stepped up / declined even on an ordinary small-hours transaction, while the
+> *identical* transaction on a random card is approved — the **GNN genuinely drives
+> the live decision**. The policy layer (`psd2_optimizer.py`) maps the score to a
+> decision:
+>  - `score --profile normal`  → APPROVE (random card, daytime, low value)
+>  - `score --profile sca`     → SCA step-up (GNN ring card, 02:00-03:59, €300-550)
+>  - `score --profile decline` → DECLINE (GNN ring card, 00:00-01:59, €350-700)
 >  - `score --profile blocked` → DECLINE (seeded blocked card, hard policy rule)
 >  - `load --profile mix`      → a realistic ~75/15/10 APPROVE/SCA/DECLINE stream
+>
+> Run the same payload on a non-ring card to show it APPROVE: the only thing that
+> changed is the GNN's verdict on the card.
 >
 > A small set of curated entities is also seeded into the in-memory feature store
 > (`SEED_DEMO_FEATURES=true`, see `services/scoring-api/app/seed_data.py`) so the

@@ -154,7 +154,7 @@ Cost classes: S < €2k/mo, M €2–15k/mo, H > €15k/mo (per region, prod bas
 4. **scoring-api** (FastAPI on **Container Apps Dedicated D8**, 3 min replicas/region):
    - Pulls feature vector from **Redis Enterprise** (hit ratio > 98 %); cache miss → Cosmos SQL API point-read (`<5 ms`).
    - Pulls 1-hop graph features from **Cosmos Gremlin** (PAN ↔ device ↔ merchant edges).
-   - Runs the **ensemble in-process via ONNX Runtime** — gradient-boosted trees (LightGBM/XGBoost) + a compact neural net (LSTM over session sequences) combined by a meta-learner, plus the offline-trained **GNN entity-embedding** lookup — typical 4–7 ms inference.
+   - Runs the **ensemble in-process via ONNX Runtime** — gradient-boosted trees (LightGBM/XGBoost) + a Logistic meta-learner — fed with the transaction/aggregate features **and the fraud-ring GNN's per-card outputs** (`ring_score` + 16-dim GraphSAGE embedding, trained offline by `ml/train_gnn.py`, published to the Cosmos `cards` feature store by `ml/publish_gnn_features.py`). The GNN signal is a first-class ensemble input, so a card the GNN flags as ring-linked is stepped up / declined even on an otherwise ordinary transaction — typical 4–7 ms inference.
    - Calls **SCA optimiser** (rule + small model) to pick exemption type if score < threshold.
    - Returns `{decision ∈ approve|decline|step_up|manual_review, score, exemption, reason_codes[]}`. **Reason codes are derived from in-proc SHAP feature attributions**; the synchronous response carries the **full authorization decision** — `step_up` and `manual_review` are decision outcomes returned to the caller, *not* deferred actions.
 5. Asynchronously emits `tx.scored` to **Event Hubs** (fire-and-forget, batched, separate executor).

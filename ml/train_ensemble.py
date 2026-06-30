@@ -48,9 +48,16 @@ NUM_FEATURES = [
     "amount", "amount_log", "hour", "dow", "is_weekend",
     "card_age_days", "merchant_risk", "card_txn_count_24h",
     "card_amount_sum_24h", "card_distinct_merchants_24h",
+    # GNN-derived per-card features (published by ml/train_gnn.py into the
+    # feature store and consumed online by the scorer). card_ring_score is the
+    # fraud-ring membership probability; card_emb_* is the GraphSAGE embedding.
+    "card_ring_score",
+    *[f"card_emb_{i}" for i in range(16)],
 ]
 CAT_FEATURES = ["card_country", "merchant_country", "ip_country",
                 "card_brand", "channel", "device_os", "mcc"]
+
+GNN_EMB_DIM = 16
 
 
 # ---------------------------------------------------------------------------
@@ -90,6 +97,44 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
         df[c] = df[c].fillna(0.0).astype(float)
 
     df["mcc"] = df["mcc"].astype(str)
+    return df
+
+
+def attach_gnn_features(df: pd.DataFrame, gnn_dir: str | Path) -> pd.DataFrame:
+    """Merge the GNN's per-card outputs (ring_score + embedding) onto each
+    transaction by ``card_id``.
+
+    The fraud-ring GNN (``ml/train_gnn.py``) writes ``ring_scores.parquet`` and
+    ``embeddings_card.parquet``. Cards absent from those artifacts (or a missing
+    artifact entirely) default to a benign zero signal, exactly mirroring the
+    online scorer's behaviour for cards without a published GNN feature.
+    """
+
+    df = df.copy()
+    emb_cols = [f"card_emb_{i}" for i in range(GNN_EMB_DIM)]
+    gnn_dir = Path(gnn_dir)
+    ring_path = gnn_dir / "ring_scores.parquet"
+    emb_path = gnn_dir / "embeddings_card.parquet"
+
+    if ring_path.exists():
+        ring = pd.read_parquet(ring_path)[["card_id", "ring_score"]]
+        df = df.merge(ring.rename(columns={"ring_score": "card_ring_score"}),
+                      on="card_id", how="left")
+    else:
+        df["card_ring_score"] = 0.0
+
+    if emb_path.exists():
+        emb = pd.read_parquet(emb_path)
+        rename = {f"emb_{i}": f"card_emb_{i}" for i in range(GNN_EMB_DIM)}
+        emb = emb[["card_id", *rename.keys()]].rename(columns=rename)
+        df = df.merge(emb, on="card_id", how="left")
+    else:
+        for c in emb_cols:
+            df[c] = 0.0
+
+    df["card_ring_score"] = df["card_ring_score"].fillna(0.0).astype(float)
+    for c in emb_cols:
+        df[c] = df[c].fillna(0.0).astype(float)
     return df
 
 
@@ -355,7 +400,8 @@ def write_model_card(path: Path, metrics: dict, fairness: dict, n_train: int) ->
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
-def run(input_path: str | None, output_dir: str, n_smoke: int = 0) -> dict:
+def run(input_path: str | None, output_dir: str, n_smoke: int = 0,
+        gnn_dir: str | None = None) -> dict:
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
 
@@ -368,6 +414,7 @@ def run(input_path: str | None, output_dir: str, n_smoke: int = 0) -> dict:
         print(f"Generated synthetic data: {len(df):,} rows")
 
     df = engineer_features(df)
+    df = attach_gnn_features(df, gnn_dir or output_dir)
     y = df["is_fraud"].astype(int).values
     X_df = df[NUM_FEATURES + CAT_FEATURES].copy()
 
@@ -462,8 +509,11 @@ def main() -> None:
     ap.add_argument("--output", type=str, default="ml/artifacts/")
     ap.add_argument("--smoke", type=int, default=0,
                     help="If >0, generate this many synthetic rows for a fast run.")
+    ap.add_argument("--gnn-dir", type=str, default=None,
+                    help="Dir with GNN ring_scores.parquet + embeddings_card.parquet "
+                         "(defaults to --output).")
     args = ap.parse_args()
-    run(args.input, args.output, n_smoke=args.smoke)
+    run(args.input, args.output, n_smoke=args.smoke, gnn_dir=args.gnn_dir)
 
 
 if __name__ == "__main__":

@@ -569,8 +569,8 @@ INDEX_HTML = r"""<!DOCTYPE html>
     <button class="btn" data-action="health"><span class="ic">🩺</span>1 · Health &amp; readiness</button>
 
     <button class="btn" data-action="score" data-profile="normal"><span class="ic">✅</span>2 · Score normal transaction (APPROVE)</button>
-    <button class="btn" data-action="score" data-profile="sca"><span class="ic">🔐</span>3 · Score risky transaction (SCA step-up)</button>
-    <button class="btn" data-action="score" data-profile="decline"><span class="ic">⛔</span>4 · Score fraud transaction (DECLINE)</button>
+    <button class="btn" data-action="score" data-profile="sca"><span class="ic">🔐</span>3 · Score GNN ring-linked card (SCA step-up)</button>
+    <button class="btn" data-action="score" data-profile="decline"><span class="ic">⛔</span>4 · Score GNN ring-linked card (DECLINE)</button>
 
     <div class="params">
       <label>TPS target <input id="tps" type="number" value="2000" min="1"></label>

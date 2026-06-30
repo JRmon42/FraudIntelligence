@@ -26,9 +26,21 @@ from .models import CardFeatures, MerchantFeatures
 DEMO_BLOCKED_CARD = "card-blocked-001"   # is_blocked -> hard DECLINE
 DEMO_HOT_CARD = "card-hot-014"           # high risk tier + chargebacks -> SCA
 DEMO_CORP_CARD = "card-corp-700"         # corporate -> CORPORATE exemption (APPROVE)
+DEMO_RING_CARD = "card-ring-099"         # high GNN ring_score -> GNN-driven SCA/DECLINE
+DEMO_RING_CARDS = ["card-ring-099", "card-ring-100", "card-ring-101"]
 DEMO_FRAUD_MERCHANT = "merch-darkbazaar-66"  # high-risk + high fraud rate -> DECLINE
 DEMO_RISKY_MERCHANT = "merch-luckyspin-21"   # high-risk, medium fraud rate -> SCA
 DEMO_CLEAN_MERCHANT = "merch-nordstore-5"    # low fraud rate -> TRA exemption (APPROVE)
+
+# Centroid of the GraphSAGE embeddings of the true ring cards (ring_score > 0.8)
+# from the latest ml/train_gnn.py run. Seeding the demo ring cards with this
+# vector + a high ring_score makes the GNN signal flow through the ensemble so an
+# ordinary small-hours transaction on these cards is stepped up / declined while
+# the identical transaction on a random card is approved.
+DEMO_RING_EMBEDDING = [
+    0.6647, -1.1967, 0.0916, 0.2290, -2.5663, 1.1260, 1.3330, -0.9057,
+    0.8630, -1.0388, -2.3975, 0.7887, 1.1515, -1.0082, -0.9796, -1.5087,
+]
 
 
 def demo_cards() -> dict[str, CardFeatures]:
@@ -66,6 +78,25 @@ def demo_cards() -> dict[str, CardFeatures]:
             is_blocked=False,
             customer_segment="corporate",
         ),
+        # Ring cards: flagged by the fraud-ring GNN (high ring_score + ring-cluster
+        # embedding). The ensemble consumes those GNN features, so an ordinary
+        # small-hours transaction on these cards is stepped up / declined — the
+        # GNN genuinely driving the live decision (an identical transaction on a
+        # random card is approved). ring_score varies slightly per card.
+        **{
+            cid: CardFeatures(
+                card_id=cid,
+                risk_tier=2,
+                avg_ticket=300.0,
+                issue_country="SE",
+                chargebacks_30d=1,
+                is_blocked=False,
+                customer_segment="retail",
+                ring_score=rs,
+                gnn_embedding=DEMO_RING_EMBEDDING,
+            )
+            for cid, rs in zip(DEMO_RING_CARDS, (0.97, 0.95, 0.96))
+        },
     }
 
 

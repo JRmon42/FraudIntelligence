@@ -81,10 +81,16 @@ def build_feature_vector(ctx: ScoringContext) -> np.ndarray:
 # (XGBoost + LightGBM + Logistic, exported from ml/train_ensemble.py). The model
 # consumes behavioural / contextual features; hard business rules such as a
 # blocked card are applied by the policy layer (psd2_optimizer), not the model.
+GNN_EMB_DIM = 16
 ONNX_NUM_INPUTS: tuple[str, ...] = (
     "amount", "amount_log", "hour", "dow", "is_weekend",
     "card_age_days", "merchant_risk", "card_txn_count_24h",
     "card_amount_sum_24h", "card_distinct_merchants_24h",
+    # GNN-derived per-card features (published into the feature store by the
+    # nightly fraud-ring GraphSAGE job). These wire the GNN into the live
+    # decision: a known ring card scores high regardless of amount / time.
+    "card_ring_score",
+    *(f"card_emb_{i}" for i in range(GNN_EMB_DIM)),
 )
 ONNX_CAT_INPUTS: tuple[str, ...] = (
     "card_country", "merchant_country", "ip_country",
@@ -120,7 +126,13 @@ def build_onnx_inputs(ctx: ScoringContext) -> dict[str, np.ndarray]:
         "card_amount_sum_24h": float(agg.amount_1h),
         # Not tracked online; default to a benign baseline.
         "card_distinct_merchants_24h": 1.0,
+        # GNN signal from the feature store (0 / zero-vector for cards without a
+        # published embedding -> the model falls back to behavioural features).
+        "card_ring_score": float(card.ring_score) if card else 0.0,
     }
+    emb = (card.gnn_embedding if card and card.gnn_embedding else [0.0] * GNN_EMB_DIM)
+    for i in range(GNN_EMB_DIM):
+        num[f"card_emb_{i}"] = float(emb[i]) if i < len(emb) else 0.0
     cat = {
         "card_country": (card.issue_country if card and card.issue_country else req.country),
         "merchant_country": (merch.country if merch and merch.country else req.country),

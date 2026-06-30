@@ -37,6 +37,8 @@ CHANNELS = ["ECOM", "POS", "ATM", "MOTO"]
 DEMO_BLOCKED_CARD = "card-blocked-001"
 DEMO_HOT_CARD = "card-hot-014"
 DEMO_CORP_CARD = "card-corp-700"
+DEMO_RING_CARD = "card-ring-099"
+DEMO_RING_CARDS = ["card-ring-099", "card-ring-100", "card-ring-101"]
 DEMO_FRAUD_MERCHANT = "merch-darkbazaar-66"
 DEMO_RISKY_MERCHANT = "merch-luckyspin-21"
 DEMO_CLEAN_MERCHANT = "merch-nordstore-5"
@@ -82,13 +84,17 @@ def make_tx(profile: str = "normal", **overrides) -> dict:
     """Build a valid ScoreRequest payload (snake_case, extra=forbid).
 
     Every profile produces a decision from the **live stacked-ensemble**
-    (XGBoost + LightGBM + Logistic, ONNX in-process). The model learned that
-    high-value card-not-present purchases in the small hours are high risk, so
-    we drive the spectrum with amount + time-of-day:
-      normal  -> daytime, low value         -> APPROVE (model score ~0.03)
-      sca     -> 00:00-01:59, ~EUR 300-350  -> SCA step-up (model score ~0.41)
-      decline -> 00:00-01:59, EUR 450+      -> DECLINE (model score ~0.99)
-      high    -> alias of ``decline``        -> DECLINE
+    (XGBoost + LightGBM + Logistic, ONNX in-process). The ensemble consumes the
+    fraud-ring **GNN**'s per-card features (ring_score + GraphSAGE embedding,
+    published into the feature store), so the elevated decisions are genuinely
+    GNN-driven: an ordinary small-hours transaction on a GNN-flagged ring card is
+    stepped up / declined, while the *identical* transaction on a random card is
+    approved.
+      normal  -> random card, daytime, low value     -> APPROVE
+      sca     -> ring card, 02:00-03:59, EUR 300-550  -> SCA  (GNN-driven step-up)
+      decline -> ring card, 00:00-01:59, EUR 350-700  -> DECLINE (GNN-driven)
+      ring    -> alias of ``sca`` (GNN ring step-up)
+      high    -> alias of ``decline``
     A seeded blocked card (``blocked`` profile) is additionally hard-declined by
     the policy layer to demonstrate the rule path.
     """
@@ -106,25 +112,27 @@ def make_tx(profile: str = "normal", **overrides) -> dict:
             "device_fingerprint": f"df-{random.randint(0, 99999)}",
             "ip": "203.0.113.7",
         }
-    elif profile in ("high", "decline"):
+    elif profile in ("ring", "sca"):
+        # GNN-flagged ring card, deep-night step-up band -> SCA.
         tx = {
             "transaction_id": txid,
-            "card_id": f"c-{random.randint(1, 999)}",
+            "card_id": random.choice(DEMO_RING_CARDS),
             "merchant_id": f"m-{random.randint(1, 200)}",
-            "amount": round(random.uniform(450, 1200), 2),
+            "amount": round(random.uniform(300, 550), 2),
             "currency": "EUR",
             "country": random.choice(COUNTRIES),
             "channel": "ECOM",
-            "timestamp": _ts_at_hour(random.choice([0, 1])),
-            "device_fingerprint": f"df-new-{random.randint(0, 9999)}",
-            "ip": "185.220.101.5",
+            "timestamp": _ts_at_hour(random.choice([2, 3])),
+            "device_fingerprint": f"df-{random.randint(0, 99999)}",
+            "ip": "203.0.113.7",
         }
-    elif profile == "sca":
+    elif profile in ("high", "decline"):
+        # GNN-flagged ring card, midnight high-confidence band -> DECLINE.
         tx = {
             "transaction_id": txid,
-            "card_id": f"c-{random.randint(1, 999)}",
+            "card_id": random.choice(DEMO_RING_CARDS),
             "merchant_id": f"m-{random.randint(1, 200)}",
-            "amount": round(random.uniform(330, 350), 2),
+            "amount": round(random.uniform(350, 700), 2),
             "currency": "EUR",
             "country": random.choice(COUNTRIES),
             "channel": "ECOM",
@@ -132,7 +140,7 @@ def make_tx(profile: str = "normal", **overrides) -> dict:
             "device_fingerprint": f"df-{random.randint(0, 99999)}",
             "ip": "203.0.113.7",
         }
-    else:  # normal — daytime low value so the ensemble scores it as APPROVE
+    else:  # normal — random card, daytime low value -> APPROVE
         tx = {
             "transaction_id": txid,
             "card_id": f"c-{random.randint(1, 999)}",

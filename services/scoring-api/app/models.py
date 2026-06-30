@@ -63,6 +63,13 @@ class CardFeatures(BaseModel):
     customer_segment: str = "retail"
     card_age_days: int = 800
     card_brand: str = "VISA"
+    # GNN-derived features published into the feature store by the nightly
+    # fraud-ring GraphSAGE job (ml/train_gnn.py + ml/publish_gnn_features.py).
+    # ring_score is the per-card fraud-ring membership probability; gnn_embedding
+    # is the 16-dim GraphSAGE card embedding. Both feed the ensemble scorer so a
+    # known ring card is stepped up / declined regardless of amount or time.
+    ring_score: float = 0.0
+    gnn_embedding: list[float] = Field(default_factory=lambda: [0.0] * 16)
 
 
 class MerchantFeatures(BaseModel):

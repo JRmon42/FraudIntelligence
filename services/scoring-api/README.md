@@ -95,21 +95,33 @@ pytest -q
 
 The scorer runs the trained **stacked ensemble** (XGBoost + LightGBM + Logistic
 regression) exported to ONNX by `ml/train_ensemble.py`. The serving layer
-(`app/scoring.py::build_onnx_inputs`) maps each request to the model's 17-feature
-schema (10 numeric + 7 categorical, one-hot with `handle_unknown="ignore"`), reads
-the `probabilities` output and feeds the fraud probability into the PSD2 policy
-layer (`app/psd2_optimizer.py`).
+(`app/scoring.py::build_onnx_inputs`) maps each request to the model's 34-feature
+schema and feeds the fraud probability into the PSD2 policy layer
+(`app/psd2_optimizer.py`):
+
+- **10 numeric** transaction/aggregate features + **7 categorical** (one-hot with
+  `handle_unknown="ignore"`).
+- **17 fraud-ring GNN features** — `card_ring_score` plus the 16-dim GraphSAGE
+  card embedding (`card_emb_0..15`) produced by `ml/train_gnn.py`. These are
+  published into the online feature store (Cosmos `cards`) by
+  `ml/publish_gnn_features.py` and read back per transaction via
+  `CardFeatures.ring_score` / `CardFeatures.gnn_embedding`. Because the ensemble
+  consumes them, a card the GNN flags as ring-linked is stepped up / declined
+  even on an ordinary transaction — the **GNN genuinely drives live decisions**,
+  not just an offline/advisory signal. Unknown cards default these to zeros.
 
 - **Loaded from:** `MODEL_PATH` (default `/app/models/ensemble.onnx`), reported as
-  `MODEL_VERSION` (default `v1.0.0-ensemble`).
+  `MODEL_VERSION` (default `v1.1.0-ensemble-gnn`).
 - **Fallback:** if `MODEL_PATH` is unset/missing the service falls back to a
   deterministic in-memory **stub** scorer (`v0.0.0-stub`) — handy for local runs
   without the artifact.
 - **Regenerate the artifact:**
 
   ```bash
-  python ml/train_ensemble.py            # writes ml/artifacts/ensemble.onnx
+  python ml/train_gnn.py                              # ring_scores + embeddings parquet
+  python ml/train_ensemble.py --gnn-dir ml/artifacts  # writes ml/artifacts/ensemble.onnx
   cp ml/artifacts/ensemble.onnx services/scoring-api/models/ensemble.onnx
+  python ml/publish_gnn_features.py                   # upsert GNN features into Cosmos
   ```
 
   The Dockerfile bundles `models/ensemble.onnx` into the image. The committed copy
