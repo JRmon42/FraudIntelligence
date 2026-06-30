@@ -140,6 +140,7 @@ Switch to Power BI live page — the TPS tile updates within ~5 s.
 This emits 10 cards across 3 merchants in a circular flow.
 
 **Show**:
+- **Fraud-ring entity graph** (demo console → `/graph`): the Card · Merchant · Device · Country · IP neighbourhood, with the shared device + merchant edges highlighted in red and the anomaly score (0.91).
 - Grafana panel "GNN ring score" spikes.
 - Power BI **Risk** page → "Active rings" tile increments to 1; map highlights SE-DK corridor.
 - Sentinel incident appears (severity HIGH).

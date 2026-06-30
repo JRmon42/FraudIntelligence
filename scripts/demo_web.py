@@ -400,8 +400,12 @@ class Handler(BaseHTTPRequestHandler):
             return self._send_html(INDEX_HTML)
         if route in ("/ops", "/ops.html", "/dashboard"):
             return self._send_html(OPS_HTML)
+        if route in ("/graph", "/graph.html", "/ring"):
+            return self._send_html(GRAPH_HTML)
         if route == "/api/ops":
             return self._send_json(ops_metrics())
+        if route == "/api/graph":
+            return self._send_json(fraud_ring_graph())
         if route == "/api/config":
             return self._send_json({
                 "scoring_host": SCORING_HOST,
@@ -552,6 +556,7 @@ INDEX_HTML = r"""<!DOCTYPE html>
   </div>
   <div class="host">scoring: <span id="host">…</span></div>
   <a class="host" href="/ops" style="margin-left:10px;text-decoration:none;color:#fff">📊 Ops dashboard</a>
+  <a class="host" href="/graph" style="margin-left:10px;text-decoration:none;color:#fff">🕸️ Fraud-ring graph</a>
 </header>
 
 <div class="wrap">
@@ -852,7 +857,7 @@ OPS_HTML = r"""<!DOCTYPE html>
     <h1>Heimdall &mdash; Operations Dashboard</h1>
     <div class="sub">Real-time fraud intelligence &middot; management view &middot; SE &middot; NO &middot; DK &middot; FI &middot; EE</div>
   </div>
-  <div class="live"><span class="dot"></span> LIVE &middot; auto-refresh 2s &middot; <a href="/">demo console</a></div>
+  <div class="live"><span class="dot"></span> LIVE &middot; auto-refresh 2s &middot; <a href="/graph">fraud-ring graph</a> &middot; <a href="/">demo console</a></div>
 </header>
 <div class="eyebrow">Throughput &amp; service levels</div>
 <div class="grid" id="kpis"></div>
@@ -922,6 +927,222 @@ async function tick(){
   document.getElementById('ts').textContent = 'updated '+new Date(m.ts*1000).toLocaleTimeString();
 }
 tick(); setInterval(tick, 2000);
+</script>
+</body>
+</html>
+"""
+
+
+# --------------------------------------------------------------------------- #
+# Fraud-ring entity graph (Card · Merchant · Device · Country · IP)
+# --------------------------------------------------------------------------- #
+def fraud_ring_graph() -> dict:
+    """A representative coordinated card-testing ring for the demo.
+
+    Mirrors the shape the GraphAnalystAgent pulls from Cosmos Gremlin
+    (2-hop neighbourhood), enriched with country + IP entities so the demo
+    shows Card ↔ Device ↔ Merchant ↔ Country ↔ IP relationships.
+    """
+    merchant = "merch-9001"
+    merchant2 = "merch-2277"
+    device = "device-FP-7731"
+    ip = "185.220.101.7"
+    cards = [
+        ("card-A1", "SE"), ("card-A2", "SE"), ("card-A3", "DK"),
+        ("card-A4", "DK"), ("card-A5", "SE"),
+    ]
+    countries = sorted({c for _, c in cards})
+
+    nodes = [
+        {"id": merchant, "label": merchant, "group": "merchant", "risk": 0.88},
+        {"id": merchant2, "label": merchant2, "group": "merchant", "risk": 0.41},
+        {"id": device, "label": device, "group": "device", "risk": 0.95},
+        {"id": ip, "label": ip, "group": "ip", "risk": 0.83},
+    ]
+    nodes += [{"id": c, "label": c, "group": "card", "risk": 0.9} for c, _ in cards]
+    nodes += [{"id": c, "label": c, "group": "country", "risk": 0.2} for c in countries]
+
+    edges = []
+    for c, country in cards:
+        edges.append({"from": c, "to": device, "label": "used_on"})
+        edges.append({"from": c, "to": merchant, "label": "transacted_with"})
+        edges.append({"from": c, "to": country, "label": "issued_in"})
+    # one card also hits a second merchant — shows spread of the ring
+    edges.append({"from": "card-A5", "to": merchant2, "label": "transacted_with"})
+    edges.append({"from": device, "to": ip, "label": "connects_from"})
+
+    return {
+        "scenario": "Coordinated card-testing ring",
+        "anomaly_score": 0.91,
+        "nodes": nodes,
+        "edges": edges,
+        "notes": [
+            f"{len(cards)} cards share device fingerprint {device}",
+            f"All cards transacted with {merchant} within a 90-minute window",
+            f"Cards issued across {len(countries)} countries ({', '.join(countries)}) — cross-border ring",
+            f"Device {device} connects from a single high-risk IP {ip}",
+        ],
+    }
+
+
+GRAPH_HTML = r"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Heimdall — Fraud-Ring Entity Graph</title>
+<style>
+  :root{
+    --blue:#1F8FE5; --teal:#3DD6C4; --ink:#04111F; --green:#5FD39B;
+    --amber:#F2B441; --decline:#FF5C72; --purple:#8C7BE0;
+    --txt:#dbe9f7; --muted:#9FB9CD; --line:#21506F;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",Inter,system-ui,sans-serif;color:var(--txt);
+    background:radial-gradient(1200px 600px at 80% -10%, #14365a 0%, transparent 60%), #04111F;
+    height:100vh;display:flex;flex-direction:column;overflow:hidden}
+  .bar{height:6px;background:linear-gradient(90deg,#3DD6C4 0%,#1F8FE5 50%,#1F4E78 100%)}
+  header{display:flex;align-items:center;gap:14px;padding:14px 26px}
+  header .shield{font-size:26px}
+  header h1{font-size:20px;margin:0;font-weight:700;color:#fff}
+  header .sub{font-size:12px;color:var(--muted);margin-top:2px}
+  header .live{margin-left:auto;font-size:12px;color:var(--muted)}
+  header a{color:var(--teal);text-decoration:none}
+  .wrap{flex:1;display:flex;min-height:0}
+  #graph{flex:1;min-width:0}
+  aside{width:320px;border-left:1px solid var(--line);padding:18px 20px;overflow:auto;
+    background:rgba(8,22,38,.6)}
+  aside h2{font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:var(--teal);margin:0 0 6px}
+  .score{font-size:40px;font-weight:800;color:var(--decline);line-height:1}
+  .score small{font-size:13px;color:var(--muted);font-weight:600}
+  .scenario{font-size:15px;font-weight:700;color:#fff;margin:14px 0 4px}
+  ul.notes{padding-left:18px;margin:8px 0 18px}
+  ul.notes li{font-size:13px;color:#cfe0f0;margin:6px 0;line-height:1.4}
+  .legend{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+  .legend .row{display:flex;align-items:center;gap:9px;font-size:13px;color:#cfe0f0}
+  .legend .dot{width:13px;height:13px;border-radius:50%}
+  .hint{font-size:11px;color:var(--muted);margin-top:18px;line-height:1.5}
+  line.edge{stroke:#3a5f86;stroke-width:1.4px;opacity:.7}
+  line.edge.ring{stroke:var(--decline);stroke-width:2px;opacity:.85}
+  text.elabel{fill:#6f93b8;font-size:9px;pointer-events:none}
+  g.node{cursor:grab}
+  g.node text{fill:#eaf6ff;font-size:11px;font-weight:600;pointer-events:none;text-shadow:0 1px 3px #000}
+  circle.halo{opacity:.18}
+</style>
+</head>
+<body>
+<div class="bar"></div>
+<header>
+  <div class="shield">&#128737;</div>
+  <div>
+    <h1>Heimdall &mdash; Fraud-Ring Entity Graph</h1>
+    <div class="sub">Card &middot; Merchant &middot; Device &middot; Country &middot; IP &mdash; 2-hop neighbourhood</div>
+  </div>
+  <div class="live">graph analyst &middot; <a href="/ops">ops</a> &middot; <a href="/">console</a></div>
+</header>
+<div class="wrap">
+  <svg id="graph"></svg>
+  <aside>
+    <h2>Anomaly score</h2>
+    <div class="score" id="score">&mdash;<small> / 1.00</small></div>
+    <div class="scenario" id="scenario"></div>
+    <h2 style="margin-top:18px">Why flagged</h2>
+    <ul class="notes" id="notes"></ul>
+    <h2>Entities</h2>
+    <div class="legend">
+      <div class="row"><span class="dot" style="background:#1F8FE5"></span> Card</div>
+      <div class="row"><span class="dot" style="background:#F2B441"></span> Merchant</div>
+      <div class="row"><span class="dot" style="background:#8C7BE0"></span> Device fingerprint</div>
+      <div class="row"><span class="dot" style="background:#5FD39B"></span> Country</div>
+      <div class="row"><span class="dot" style="background:#FF5C72"></span> IP address</div>
+    </div>
+    <div class="hint">Drag any node to rearrange. Red edges link the shared device &amp; merchant that bind the ring together.</div>
+  </aside>
+</div>
+<script>
+const SVGNS="http://www.w3.org/2000/svg";
+const COLORS={merchant:"#F2B441",card:"#1F8FE5",device:"#8C7BE0",country:"#5FD39B",ip:"#FF5C72"};
+const RADIUS={merchant:22,card:15,device:24,country:18,ip:20};
+const svg=document.getElementById("graph");
+let nodes=[],edges=[],idMap={},W=0,H=0,dragging=null;
+
+function size(){W=svg.clientWidth;H=svg.clientHeight;}
+window.addEventListener("resize",()=>{size();});
+
+async function load(){
+  const g=await (await fetch("/api/graph")).json();
+  document.getElementById("score").innerHTML=g.anomaly_score.toFixed(2)+"<small> / 1.00</small>";
+  document.getElementById("scenario").textContent=g.scenario;
+  document.getElementById("notes").innerHTML=g.notes.map(n=>"<li>"+n+"</li>").join("");
+  nodes=g.nodes;edges=g.edges;
+  size();
+  nodes.forEach((n,i)=>{const a=2*Math.PI*i/nodes.length;n.x=W/2+Math.cos(a)*Math.min(W,H)*0.3;
+    n.y=H/2+Math.sin(a)*Math.min(W,H)*0.3;n.vx=0;n.vy=0;});
+  idMap=Object.fromEntries(nodes.map(n=>[n.id,n]));
+  build();
+  for(let i=0;i<400;i++) physics();
+  loop();
+}
+
+let gEdges,gELabels,gNodes;
+function build(){
+  svg.innerHTML="";
+  gEdges=document.createElementNS(SVGNS,"g");
+  gELabels=document.createElementNS(SVGNS,"g");
+  gNodes=document.createElementNS(SVGNS,"g");
+  svg.appendChild(gEdges);svg.appendChild(gELabels);svg.appendChild(gNodes);
+  edges.forEach(e=>{
+    const ring=(e.label==="used_on"||e.label==="transacted_with"||e.label==="connects_from");
+    e.el=document.createElementNS(SVGNS,"line");
+    e.el.setAttribute("class","edge"+(ring?" ring":""));
+    gEdges.appendChild(e.el);
+    e.lab=document.createElementNS(SVGNS,"text");
+    e.lab.setAttribute("class","elabel");e.lab.textContent=e.label;
+    gELabels.appendChild(e.lab);
+  });
+  nodes.forEach(n=>{
+    const g=document.createElementNS(SVGNS,"g");g.setAttribute("class","node");
+    const halo=document.createElementNS(SVGNS,"circle");
+    halo.setAttribute("class","halo");halo.setAttribute("r",RADIUS[n.group]+10);
+    halo.setAttribute("fill",COLORS[n.group]);
+    const c=document.createElementNS(SVGNS,"circle");
+    c.setAttribute("r",RADIUS[n.group]);c.setAttribute("fill",COLORS[n.group]);
+    c.setAttribute("stroke","#04111F");c.setAttribute("stroke-width","2");
+    const t=document.createElementNS(SVGNS,"text");
+    t.setAttribute("text-anchor","middle");t.setAttribute("dy",RADIUS[n.group]+13);
+    t.textContent=n.label;
+    g.appendChild(halo);g.appendChild(c);g.appendChild(t);
+    gNodes.appendChild(g);n.el=g;
+    g.addEventListener("pointerdown",ev=>{dragging=n;n.fixed=true;g.setPointerCapture(ev.pointerId);});
+    g.addEventListener("pointermove",ev=>{if(dragging===n){const r=svg.getBoundingClientRect();
+      n.x=ev.clientX-r.left;n.y=ev.clientY-r.top;}});
+    g.addEventListener("pointerup",ev=>{dragging=null;n.fixed=false;});
+  });
+}
+
+function physics(){
+  for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){
+    const a=nodes[i],b=nodes[j];let dx=a.x-b.x,dy=a.y-b.y;let d2=dx*dx+dy*dy+0.01;
+    let d=Math.sqrt(d2);let f=6500/d2;let fx=f*dx/d,fy=f*dy/d;
+    a.vx+=fx;a.vy+=fy;b.vx-=fx;b.vy-=fy;
+  }
+  edges.forEach(e=>{const a=idMap[e.from],b=idMap[e.to];if(!a||!b)return;
+    let dx=b.x-a.x,dy=b.y-a.y;let d=Math.sqrt(dx*dx+dy*dy)+0.01;let f=(d-120)*0.03;
+    let fx=f*dx/d,fy=f*dy/d;a.vx+=fx;a.vy+=fy;b.vx-=fx;b.vy-=fy;});
+  nodes.forEach(n=>{n.vx+=(W/2-n.x)*0.003;n.vy+=(H/2-n.y)*0.003;n.vx*=0.82;n.vy*=0.82;
+    if(!n.fixed){n.x+=n.vx;n.y+=n.vy;}
+    n.x=Math.max(40,Math.min(W-40,n.x));n.y=Math.max(40,Math.min(H-40,n.y));});
+}
+
+function render(){
+  edges.forEach(e=>{const a=idMap[e.from],b=idMap[e.to];if(!a||!b)return;
+    e.el.setAttribute("x1",a.x);e.el.setAttribute("y1",a.y);
+    e.el.setAttribute("x2",b.x);e.el.setAttribute("y2",b.y);
+    e.lab.setAttribute("x",(a.x+b.x)/2);e.lab.setAttribute("y",(a.y+b.y)/2-2);});
+  nodes.forEach(n=>{n.el.setAttribute("transform","translate("+n.x+","+n.y+")");});
+}
+function loop(){physics();render();requestAnimationFrame(loop);}
+load();
 </script>
 </body>
 </html>
