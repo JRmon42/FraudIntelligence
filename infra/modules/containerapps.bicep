@@ -27,6 +27,9 @@ param orchestratorImage string = 'mcr.microsoft.com/k8se/quickstart:latest'
 @description('Container image for scoring API')
 param scoringImage string = 'mcr.microsoft.com/k8se/quickstart:latest'
 
+@description('Seed the scoring API in-memory feature store with curated demo entities (APPROVE/SCA/DECLINE).')
+param seedDemoFeatures bool = false
+
 var envName = 'cae-heimdall-${env}-${regionCode}'
 
 resource acaEnv 'Microsoft.App/managedEnvironments@2024-03-01' = {
@@ -169,6 +172,10 @@ resource scoring 'Microsoft.App/containerApps@2024-03-01' = {
           env: [
             { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', secretRef: 'appinsights-connection' }
             { name: 'OTEL_SERVICE_NAME', value: 'scoring' }
+            // Seed the in-memory feature store with curated risky/clean entities
+            // so live scoring returns a realistic APPROVE/SCA/DECLINE mix while no
+            // Cosmos feature store is wired in. See services/scoring-api/app/seed_data.py.
+            { name: 'SEED_DEMO_FEATURES', value: string(seedDemoFeatures) }
           ]
           // Health probes drive zero-downtime rolling updates and automatic
           // eviction of a degraded replica. /readyz reports Cosmos+Redis+model.

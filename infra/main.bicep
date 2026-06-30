@@ -45,6 +45,9 @@ param cosmosDataPrincipalIds array = []
 @description('Object IDs of principals to grant Grafana Admin on the Managed Grafana instance.')
 param grafanaAdminPrincipalIds array = []
 
+@description('Seed the scoring API in-memory feature store with curated demo entities (APPROVE/SCA/DECLINE).')
+param seedDemoFeatures bool = false
+
 @description('Fabric capacity admin members (UPNs or object IDs)')
 param fabricAdminMembers array = []
 
@@ -109,6 +112,7 @@ module primary 'platform.bicep' = {
     kvAdminPrincipalIds: kvAdminPrincipalIds
     cosmosDataPrincipalIds: cosmosDataPrincipalIds
     grafanaAdminPrincipalIds: grafanaAdminPrincipalIds
+    seedDemoFeatures: seedDemoFeatures
     fabricAdminMembers: fabricAdminMembers
     amlAadAdminObjectId: synapseAadAdminObjectId
     amlAadAdminLogin: synapseAadAdminLogin
@@ -136,6 +140,7 @@ module dr 'platform.bicep' = if (enableDr) {
     kvAdminPrincipalIds: kvAdminPrincipalIds
     cosmosDataPrincipalIds: cosmosDataPrincipalIds
     grafanaAdminPrincipalIds: grafanaAdminPrincipalIds
+    seedDemoFeatures: seedDemoFeatures
     fabricAdminMembers: fabricAdminMembers
     amlAadAdminObjectId: synapseAadAdminObjectId
     amlAadAdminLogin: synapseAadAdminLogin

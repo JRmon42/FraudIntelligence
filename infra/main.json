@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.44.1.10279",
-      "templateHash": "4288433802907500599"
+      "templateHash": "13657552759139677307"
     }
   },
   "parameters": {
@@ -97,6 +97,13 @@
       "defaultValue": [],
       "metadata": {
         "description": "Object IDs of principals to grant Grafana Admin on the Managed Grafana instance."
+      }
+    },
+    "seedDemoFeatures": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Seed the scoring API in-memory feature store with curated demo entities (APPROVE/SCA/DECLINE)."
       }
     },
     "fabricAdminMembers": {
@@ -429,6 +436,9 @@
           "grafanaAdminPrincipalIds": {
             "value": "[parameters('grafanaAdminPrincipalIds')]"
           },
+          "seedDemoFeatures": {
+            "value": "[parameters('seedDemoFeatures')]"
+          },
           "fabricAdminMembers": {
             "value": "[parameters('fabricAdminMembers')]"
           },
@@ -456,7 +466,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.44.1.10279",
-              "templateHash": "12587493462098108223"
+              "templateHash": "12811482527251258484"
             }
           },
           "parameters": {
@@ -544,6 +554,13 @@
             "alertEmailReceivers": {
               "type": "array",
               "defaultValue": []
+            },
+            "seedDemoFeatures": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Seed the scoring API in-memory feature store with curated demo entities (APPROVE/SCA/DECLINE)."
+              }
             },
             "cmkKeyUri": {
               "type": "string",
@@ -3206,6 +3223,9 @@
                   },
                   "appInsightsConnectionString": {
                     "value": "[reference('logs').outputs.appInsightsConnectionString.value]"
+                  },
+                  "seedDemoFeatures": {
+                    "value": "[parameters('seedDemoFeatures')]"
                   }
                 },
                 "template": {
@@ -3215,7 +3235,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.44.1.10279",
-                      "templateHash": "15953781401550048506"
+                      "templateHash": "4710350443021163097"
                     }
                   },
                   "parameters": {
@@ -3272,6 +3292,13 @@
                       "defaultValue": "mcr.microsoft.com/k8se/quickstart:latest",
                       "metadata": {
                         "description": "Container image for scoring API"
+                      }
+                    },
+                    "seedDemoFeatures": {
+                      "type": "bool",
+                      "defaultValue": false,
+                      "metadata": {
+                        "description": "Seed the scoring API in-memory feature store with curated demo entities (APPROVE/SCA/DECLINE)."
                       }
                     }
                   },
@@ -3450,6 +3477,10 @@
                                 {
                                   "name": "OTEL_SERVICE_NAME",
                                   "value": "scoring"
+                                },
+                                {
+                                  "name": "SEED_DEMO_FEATURES",
+                                  "value": "[string(parameters('seedDemoFeatures'))]"
                                 }
                               ],
                               "probes": [
@@ -4862,6 +4893,9 @@
           "grafanaAdminPrincipalIds": {
             "value": "[parameters('grafanaAdminPrincipalIds')]"
           },
+          "seedDemoFeatures": {
+            "value": "[parameters('seedDemoFeatures')]"
+          },
           "fabricAdminMembers": {
             "value": "[parameters('fabricAdminMembers')]"
           },
@@ -4889,7 +4923,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.44.1.10279",
-              "templateHash": "12587493462098108223"
+              "templateHash": "12811482527251258484"
             }
           },
           "parameters": {
@@ -4977,6 +5011,13 @@
             "alertEmailReceivers": {
               "type": "array",
               "defaultValue": []
+            },
+            "seedDemoFeatures": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Seed the scoring API in-memory feature store with curated demo entities (APPROVE/SCA/DECLINE)."
+              }
             },
             "cmkKeyUri": {
               "type": "string",
@@ -7639,6 +7680,9 @@
                   },
                   "appInsightsConnectionString": {
                     "value": "[reference('logs').outputs.appInsightsConnectionString.value]"
+                  },
+                  "seedDemoFeatures": {
+                    "value": "[parameters('seedDemoFeatures')]"
                   }
                 },
                 "template": {
@@ -7648,7 +7692,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.44.1.10279",
-                      "templateHash": "15953781401550048506"
+                      "templateHash": "4710350443021163097"
                     }
                   },
                   "parameters": {
@@ -7705,6 +7749,13 @@
                       "defaultValue": "mcr.microsoft.com/k8se/quickstart:latest",
                       "metadata": {
                         "description": "Container image for scoring API"
+                      }
+                    },
+                    "seedDemoFeatures": {
+                      "type": "bool",
+                      "defaultValue": false,
+                      "metadata": {
+                        "description": "Seed the scoring API in-memory feature store with curated demo entities (APPROVE/SCA/DECLINE)."
                       }
                     }
                   },
@@ -7883,6 +7934,10 @@
                                 {
                                   "name": "OTEL_SERVICE_NAME",
                                   "value": "scoring"
+                                },
+                                {
+                                  "name": "SEED_DEMO_FEATURES",
+                                  "value": "[string(parameters('seedDemoFeatures'))]"
                                 }
                               ],
                               "probes": [

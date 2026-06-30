@@ -30,6 +30,17 @@ async def _build_hot_path(settings: Settings) -> tuple[HotPath, list[object]]:
         await cosmos.connect()
         source = cosmos
         closeables.append(cosmos)
+    elif settings.seed_demo_features:
+        from .seed_data import demo_cards, demo_merchants
+
+        cards = demo_cards()
+        merchants = demo_merchants()
+        log.info(
+            "cosmos_disabled_using_seeded_inmemory",
+            cards=len(cards),
+            merchants=len(merchants),
+        )
+        source = InMemoryFeatureClient(cards=cards, merchants=merchants)
     else:
         log.info("cosmos_disabled_using_inmemory")
         source = InMemoryFeatureClient()

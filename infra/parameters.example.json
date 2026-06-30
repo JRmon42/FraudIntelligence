@@ -27,6 +27,7 @@
     "kvAdminPrincipalIds": { "value": ["<YOUR-AAD-OBJECT-ID>"] },
     "cosmosDataPrincipalIds": { "value": ["<YOUR-AAD-OBJECT-ID>"] },
     "grafanaAdminPrincipalIds": { "value": ["<YOUR-AAD-OBJECT-ID>"] },
+    "seedDemoFeatures": { "value": true },
     "fabricAdminMembers": { "value": ["<admin@yourtenant.onmicrosoft.com>"] },
     "synapseAadAdminObjectId": { "value": "<YOUR-AAD-OBJECT-ID>" },
     "synapseAadAdminLogin": { "value": "<admin@yourtenant.onmicrosoft.com>" },

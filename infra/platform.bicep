@@ -41,6 +41,9 @@ param amlAadAdminLogin string
 param synapseSqlAdminPassword string
 param alertEmailReceivers array = []
 
+@description('Seed the scoring API in-memory feature store with curated demo entities (APPROVE/SCA/DECLINE).')
+param seedDemoFeatures bool = false
+
 // Optional CMK URI (post-bootstrap; leave empty on first deploy)
 param cmkKeyUri string = ''
 
@@ -211,6 +214,7 @@ module aca 'modules/containerapps.bicep' = {
     logAnalyticsSharedKey: logs.outputs.workspaceSharedKey
     acaSubnetId: net.outputs.subnetAcaId
     appInsightsConnectionString: logs.outputs.appInsightsConnectionString
+    seedDemoFeatures: seedDemoFeatures
   }
 }
 

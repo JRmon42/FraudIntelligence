@@ -122,14 +122,14 @@ def run_load(params):
     duration = int(params.get("duration", ["5"])[0])
     max_total = int(params.get("max", ["1000"])[0])
     workers = int(params.get("workers", ["20"])[0])
-    profile = (params.get("profile", ["normal"])[0]) or "normal"
+    profile = (params.get("profile", ["mix"])[0]) or "mix"
     target = tps * duration
     total = min(target, max_total)
     workers = min(workers, max(1, total))
     yield _emit("phase", name="load",
                 label=f"Load burst — target {tps} TPS x {duration}s ({total} req, {workers} workers)")
     yield _emit("log", level="info",
-                text=f"Sending representative burst of {total} requests ({workers} workers)…")
+                text=f"Sending representative '{profile}' burst of {total} requests ({workers} workers)…")
 
     # Stream each result as it completes for a real-time feel. We bound the live
     # tx feed to keep the browser snappy, but every request still counts toward metrics.
@@ -137,8 +137,10 @@ def run_load(params):
     emit_detail_cap = 300  # cap individual tx rows streamed to the UI
     t0 = time.perf_counter()
 
+    make_one = dc.make_mixed_tx if profile == "mix" else (lambda: dc.make_tx(profile))
+
     def _worker(_i):
-        tx = dc.make_tx(profile)
+        tx = make_one()
         ok, status, body, elapsed = dc.post_score(SCORING_HOST, tx)
         results_q.put((tx, ok, status, body, elapsed))
 
@@ -272,14 +274,15 @@ def run_all(params):
     yield _emit("log", level="info", text="### HEIMDALL LIVE DEMO — full sequence ###")
     yield from run_health(params)
     yield from run_score({"profile": ["normal"]})
-    yield from run_score({"profile": ["high"]})
+    yield from run_score({"profile": ["sca"]})
+    yield from run_score({"profile": ["decline"]})
     yield from run_scenario(params)
     yield from run_load({
         "tps": params.get("tps", ["200"]),
         "duration": params.get("duration", ["5"]),
         "max": params.get("max", ["600"]),
         "workers": params.get("workers", ["20"]),
-        "profile": ["normal"],
+        "profile": ["mix"],
     })
     yield from run_inject({
         "cards": params.get("cards", ["10"]),
@@ -565,8 +568,9 @@ INDEX_HTML = r"""<!DOCTYPE html>
     <h2>Demo steps</h2>
     <button class="btn" data-action="health"><span class="ic">🩺</span>1 · Health &amp; readiness</button>
 
-    <button class="btn" data-action="score" data-profile="normal"><span class="ic">✅</span>2 · Score normal transaction</button>
-    <button class="btn" data-action="score" data-profile="high"><span class="ic">⚠️</span>3 · Score high-risk transaction</button>
+    <button class="btn" data-action="score" data-profile="normal"><span class="ic">✅</span>2 · Score normal transaction (APPROVE)</button>
+    <button class="btn" data-action="score" data-profile="sca"><span class="ic">🔐</span>3 · Score risky transaction (SCA step-up)</button>
+    <button class="btn" data-action="score" data-profile="decline"><span class="ic">⛔</span>4 · Score fraud transaction (DECLINE)</button>
 
     <div class="params">
       <label>TPS target <input id="tps" type="number" value="2000" min="1"></label>

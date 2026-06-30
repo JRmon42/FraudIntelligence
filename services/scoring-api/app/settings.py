@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     cosmos_merchants_container: str = "merchants"
     cosmos_key: str = ""
 
+    # Demo: when Cosmos is unset, seed the in-memory feature store with a
+    # curated set of risky/clean entities so decisions span APPROVE/SCA/DECLINE.
+    seed_demo_features: bool = False
+
     # Redis (real-time aggregates)
     redis_url: str = "redis://localhost:6379/0"
     redis_fake: bool = False

@@ -31,6 +31,16 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 COUNTRIES = ["SE", "NO", "DK", "FI", "EE"]
 CHANNELS = ["ECOM", "POS", "ATM", "MOTO"]
 
+# Seeded demo entities — MUST match services/scoring-api/app/seed_data.py.
+# These IDs are recognised by the live scoring API's in-memory feature store
+# (when SEED_DEMO_FEATURES=true) and drive real APPROVE/SCA/DECLINE decisions.
+DEMO_BLOCKED_CARD = "card-blocked-001"
+DEMO_HOT_CARD = "card-hot-014"
+DEMO_CORP_CARD = "card-corp-700"
+DEMO_FRAUD_MERCHANT = "merch-darkbazaar-66"
+DEMO_RISKY_MERCHANT = "merch-luckyspin-21"
+DEMO_CLEAN_MERCHANT = "merch-nordstore-5"
+
 
 # --------------------------------------------------------------------------- #
 # Helpers
@@ -60,12 +70,21 @@ def now_iso() -> str:
 
 
 def make_tx(profile: str = "normal", **overrides) -> dict:
-    """Build a valid ScoreRequest payload (snake_case, extra=forbid)."""
-    if profile == "high":
+    """Build a valid ScoreRequest payload (snake_case, extra=forbid).
+
+    Profiles map to seeded demo entities so the *live* scoring API returns a
+    realistic decision when ``SEED_DEMO_FEATURES=true``:
+      normal  -> random clean card/merchant            -> APPROVE
+      sca     -> high-risk merchant (step-up auth)      -> SCA
+      decline -> blocked card on a fraud merchant       -> DECLINE
+      high    -> alias of ``decline`` (legacy name)     -> DECLINE
+    """
+    txid = f"demo-{random.randint(10**5, 10**6)}"
+    if profile in ("high", "decline"):
         tx = {
-            "transaction_id": f"demo-{random.randint(10**5, 10**6)}",
-            "card_id": f"c-{random.randint(900, 999)}",
-            "merchant_id": f"m-{random.randint(700, 799)}",
+            "transaction_id": txid,
+            "card_id": DEMO_BLOCKED_CARD,
+            "merchant_id": DEMO_FRAUD_MERCHANT,
             "amount": round(random.uniform(20000, 50000), 2),
             "currency": "EUR",
             "country": random.choice(["NG", "RU", "VE", "IR"]),
@@ -74,9 +93,22 @@ def make_tx(profile: str = "normal", **overrides) -> dict:
             "device_fingerprint": f"df-new-{random.randint(0, 9999)}",
             "ip": "185.220.101.5",
         }
+    elif profile == "sca":
+        tx = {
+            "transaction_id": txid,
+            "card_id": f"c-{random.randint(1, 999)}",
+            "merchant_id": DEMO_RISKY_MERCHANT,
+            "amount": round(random.uniform(1500, 6000), 2),
+            "currency": "EUR",
+            "country": random.choice(COUNTRIES),
+            "channel": "ECOM",
+            "timestamp": now_iso(),
+            "device_fingerprint": f"df-{random.randint(0, 99999)}",
+            "ip": "203.0.113.7",
+        }
     else:  # normal
         tx = {
-            "transaction_id": f"demo-{random.randint(10**5, 10**6)}",
+            "transaction_id": txid,
             "card_id": f"c-{random.randint(1, 999)}",
             "merchant_id": f"m-{random.randint(1, 200)}",
             "amount": round(random.uniform(5, 4000), 2),
@@ -89,6 +121,16 @@ def make_tx(profile: str = "normal", **overrides) -> dict:
         }
     tx.update(overrides)
     return tx
+
+
+# Weighted profile mix for representative load bursts: mostly approvals, a
+# minority of step-ups, and a few declines — like a healthy production stream.
+_MIX_PROFILES = ["normal"] * 7 + ["sca"] * 2 + ["decline"]
+
+
+def make_mixed_tx(**overrides) -> dict:
+    """Draw a transaction from a realistic decision-mix distribution."""
+    return make_tx(random.choice(_MIX_PROFILES), **overrides)
 
 
 def post_score(host: str, tx: dict, explain: bool = False, timeout: int = 20):
@@ -168,9 +210,10 @@ def cmd_score(host: str, args) -> int:
 def _run_burst(host: str, total: int, workers: int, profile: str):
     """Send `total` requests with a thread pool. Returns metrics dict."""
     latencies, decisions, errors = [], {}, 0
+    tx_factory = make_mixed_tx if profile == "mix" else (lambda: make_tx(profile))
     t0 = time.perf_counter()
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        futs = [pool.submit(post_score, host, make_tx(profile)) for _ in range(total)]
+        futs = [pool.submit(post_score, host, tx_factory()) for _ in range(total)]
         for fut in as_completed(futs):
             ok, _status, body, elapsed = fut.result()
             if ok and isinstance(body, dict):
@@ -299,14 +342,22 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("health", help="GET /healthz and /readyz")
 
     sp = sub.add_parser("score", help="Score one transaction")
-    sp.add_argument("--profile", choices=["normal", "high"], default="normal")
+    sp.add_argument(
+        "--profile",
+        choices=["normal", "sca", "decline", "high"],
+        default="normal",
+    )
 
     lp = sub.add_parser("load", help="Send a representative load burst")
     lp.add_argument("--tps", type=int, default=200)
     lp.add_argument("--duration", type=int, default=5, help="seconds")
     lp.add_argument("--max", type=int, default=1000, help="hard cap on total requests")
     lp.add_argument("--workers", type=int, default=20)
-    lp.add_argument("--profile", choices=["normal", "high"], default="normal")
+    lp.add_argument(
+        "--profile",
+        choices=["normal", "sca", "decline", "high", "mix"],
+        default="mix",
+    )
 
     ip = sub.add_parser("inject", help="Inject a fraud-ring pattern")
     ip.add_argument("--pattern", choices=["ring"], default="ring")

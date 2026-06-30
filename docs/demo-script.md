@@ -31,16 +31,22 @@ They drive the scoring API over Azure Front Door using `scripts/demo.sh`
 ./scripts/demo.sh all
 ```
 
-> **Why a dedicated `scenario` step?** The deployed scoring API currently runs as a
-> *stub* (no feature store / model wired into the Container App), so it APPROVEs every
-> live request at score ~0.2 — perfect for the latency/throughput story, but it cannot
-> show declines or step-ups. The `scenario` step runs the **real production decision
-> rules** (a faithful, dependency-free port of `psd2_optimizer.py` + `scoring.py`, in
-> `scripts/demo_scenarios.py`) over feature-enriched demo transactions, so you can show
-> the full outcome spectrum honestly: frictionless approvals (PSD2 low-value/TRA
-> exemptions), **SCA step-up for borderline / potential false positives** (challenged,
-> not blocked — genuine customers clear 3-D Secure and the payment proceeds), and hard
-> **DECLINE** for confirmed fraud (blocked card, fraud-ring cash-out → an agentic case is opened).
+> **Live decisions now span the full spectrum.** The deployed scoring API runs the
+> deterministic **stub** scorer (no trained ONNX model wired in), but its in-memory
+> feature store is **seeded with curated risky/clean entities** (`SEED_DEMO_FEATURES=true`,
+> see `services/scoring-api/app/seed_data.py`). So live requests return real
+> **APPROVE / SCA / DECLINE** decisions straight from the production decision rules:
+>  - `score --profile normal`  → APPROVE (random clean card/merchant)
+>  - `score --profile sca`     → SCA step-up (high-risk merchant)
+>  - `score --profile decline` → DECLINE (blocked card on a fraud merchant)
+>  - `load --profile mix`      → a realistic ~70/20/10 APPROVE/SCA/DECLINE stream
+>
+> The `scenario` step additionally walks a curated narrative spectrum via the
+> dependency-free port of `psd2_optimizer.py` + `scoring.py` in `scripts/demo_scenarios.py`,
+> showing frictionless approvals (PSD2 low-value/TRA exemptions), **SCA step-up for
+> borderline / potential false positives** (challenged, not blocked — genuine customers
+> clear 3-D Secure and the payment proceeds), and hard **DECLINE** for confirmed fraud
+> (blocked card, fraud-ring cash-out → an agentic case is opened).
 
 > On the WSL host used for development, invoke with `/bin/bash scripts/demo.sh …`
 > and `export PATH="$HOME/snap/copilot-cli/common/local/bin:$PATH"` for `az`.
@@ -98,7 +104,7 @@ and are **not** reproduced by the CLI demo above (which exercises the live scori
 - Demo timer visible.
 
 **Verified live URLs (Sweden Central, prod):**
-- **Scoring API** (Phases 1–3, via Front Door): `https://scoring-prod-dpbebwgrfud2egd2.b01.azurefd.net` — `/healthz` + `/readyz` return 200 (scorer currently runs the **stub** model, so all decisions are APPROVE ~0.22).
+- **Scoring API** (Phases 1–3, via Front Door): `https://scoring-prod-dpbebwgrfud2egd2.b01.azurefd.net` — `/healthz` + `/readyz` return 200. The scorer runs the **stub** model over a **seeded feature store** (`SEED_DEMO_FEATURES=true`), so live requests return real APPROVE / SCA / DECLINE decisions (see the `score`/`load` profiles above).
 - **Agentic console** (Phase 4): `https://ca-orchestrator-prod-swc.purpleforest-f993111a.swedencentral.azurecontainerapps.io` — direct Container Apps FQDN (external ingress); `/healthz` 200, `/v1/agents` lists the 5 agents. Use this URL on stage. _Note: the Front Door console endpoint (`console-prod-…b01.azurefd.net`) currently returns an AFD 404 (edge route not serving) — use the direct FQDN above instead._
 
 ---
