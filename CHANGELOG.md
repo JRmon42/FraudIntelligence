@@ -1,3 +1,9 @@
+## [1.10.0](https://github.com/JRmon42/FraudIntelligence/compare/v1.9.1...v1.10.0) (2026-06-30)
+
+### Features
+
+* **demo:** add fraud-ring entity graph view (Card/Merchant/Device/Country/IP) ([c9d8625](https://github.com/JRmon42/FraudIntelligence/commit/c9d86256d7b34f90831bae6259bf03a56e845e8d))
+
 ## [1.9.1](https://github.com/JRmon42/FraudIntelligence/compare/v1.9.0...v1.9.1) (2026-06-30)
 
 ### Bug Fixes
