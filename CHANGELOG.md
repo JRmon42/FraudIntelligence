@@ -1,3 +1,9 @@
+## [1.9.1](https://github.com/JRmon42/FraudIntelligence/compare/v1.9.0...v1.9.1) (2026-06-30)
+
+### Bug Fixes
+
+* **grafana:** use $__interval (not invalid $__timeInterval) in KQL panels ([d122f29](https://github.com/JRmon42/FraudIntelligence/commit/d122f29a6f61f3ee2c51d327b46923d523231f62))
+
 ## [1.9.0](https://github.com/JRmon42/FraudIntelligence/compare/v1.8.0...v1.9.0) (2026-06-30)
 
 ### Features
