@@ -97,7 +97,7 @@
           },
           "queryType": "Azure Log Analytics",
           "azureLogAnalytics": {
-            "query": "requests\n| where name == \"POST /v1/score\"\n| summarize p99=percentile(duration,99), p95=percentile(duration,95) by bin(timestamp, $__timeInterval)\n| order by timestamp asc",
+            "query": "requests\n| where name == \"POST /v1/score\"\n| summarize p99=percentile(duration,99), p95=percentile(duration,95) by bin(timestamp, $__interval)\n| order by timestamp asc",
             "resources": [
               "${APPINSIGHTS_RESOURCE_ID}"
             ],
@@ -210,7 +210,7 @@
           },
           "queryType": "Azure Log Analytics",
           "azureLogAnalytics": {
-            "query": "requests\n| where name == \"POST /v1/score\"\n| summarize count() by bin(timestamp, $__timeInterval)\n| order by timestamp asc",
+            "query": "requests\n| where name == \"POST /v1/score\"\n| summarize count() by bin(timestamp, $__interval)\n| order by timestamp asc",
             "resources": [
               "${APPINSIGHTS_RESOURCE_ID}"
             ],
