@@ -1,3 +1,9 @@
+## [1.11.0](https://github.com/JRmon42/FraudIntelligence/compare/v1.10.0...v1.11.0) (2026-06-30)
+
+### Features
+
+* **demo:** seed scoring feature store for realistic APPROVE/SCA/DECLINE mix ([f13ef20](https://github.com/JRmon42/FraudIntelligence/commit/f13ef2068caf6f86ff1be6aaed950a48b3361d40))
+
 ## [1.10.0](https://github.com/JRmon42/FraudIntelligence/compare/v1.9.1...v1.10.0) (2026-06-30)
 
 ### Features
