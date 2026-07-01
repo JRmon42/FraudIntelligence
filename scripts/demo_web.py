@@ -344,12 +344,55 @@ def run_all(params):
     yield _emit("log", level="info", text="### DEMO COMPLETE ###")
 
 
+def run_stress(params):
+    """Synthetic scale-test: drive the /ops throughput to a production target.
+
+    Real single-client scoring against the live API over the public internet is
+    network-bound to ~100 TPS, so it cannot demonstrate the platform's autoscale
+    behaviour. This runner feeds the metrics store at the requested target rate
+    (no live API calls) so /ops shows the surge, ~target TPS, and replicas scaling
+    toward the 60-replica ceiling. Purely a demonstration of headroom — clearly
+    labelled as simulated so it is never mistaken for live-scored volume.
+    """
+    target = max(1, int(params.get("tps", ["18000"])[0]))
+    duration = max(1, int(params.get("duration", ["8"])[0]))
+    steps_per_s = 4
+    per_step = max(1, target // steps_per_s)
+    total_steps = duration * steps_per_s
+
+    yield _emit("phase", name="stress",
+                label=f"Synthetic scale test — ramping to ~{target:,} TPS for "
+                      f"{duration}s (simulated feed, no live API calls)")
+    yield _emit("log", level="warn",
+                text=f"SIMULATED load: feeding the metrics store at ~{target:,} TPS "
+                     f"to demonstrate autoscale. These are NOT live-scored transactions.")
+
+    for i in range(total_steps):
+        METRICS.record_synthetic(per_step)
+        if i % steps_per_s == 0 or i == total_steps - 1:
+            snap = METRICS.snapshot()
+            reps = max(1, min(60, round(snap["tps"] / 300.0)))
+            yield _emit("progress", done=i + 1, total=total_steps)
+            yield _emit("log", level="info",
+                        text=f"t={(i + 1) / steps_per_s:.0f}s  throughput≈"
+                             f"{snap['tps']:,.0f} TPS  → {reps}/60 replicas")
+        time.sleep(1.0 / steps_per_s)
+
+    snap = METRICS.snapshot()
+    reps = max(1, min(60, round(snap["tps"] / 300.0)))
+    yield _emit("log", level="info",
+                text=f"Peak throughput ≈ {snap['tps']:,.0f} TPS → {reps}/60 replicas. "
+                     f"Open /ops to watch the surge scale back in.")
+    yield _emit("phase", name="idle", label="Synthetic scale test complete")
+
+
 RUNNERS = {
     "health": run_health,
     "score": run_score,
     "scenario": run_scenario,
     "load": run_load,
     "inject": run_inject,
+    "stress": run_stress,
     "all": run_all,
 }
 
@@ -437,6 +480,40 @@ class MetricsStore:
         cut = now - self._keep_s
         while self._samples and self._samples[0][0] < cut:
             self._samples.popleft()
+
+    def record_synthetic(self, n: int, weights=(0.82, 0.13, 0.05)) -> None:
+        """Feed ``n`` synthetic scored-tx samples at the current instant.
+
+        Used only by the /ops synthetic scale-test (``run_stress``) to demonstrate
+        autoscale headroom at production throughput that cannot be reached by real
+        single-client scoring over the public internet. Samples carry no latency
+        (``None``) so they never distort the modelled scoring p99; the decision mix
+        follows a realistic APPROVE/SCA/DECLINE split.
+        """
+        if n <= 0:
+            return
+        now = time.time()
+        aw, sw, _ = weights
+        n_appr = int(n * aw)
+        n_sca = int(n * sw)
+        n_dec = n - n_appr - n_sca
+        with self._lock:
+            self._prune(now)
+            for _ in range(n_appr):
+                self._samples.append((now, None, "APPROVE", True, 0.0))
+            for _ in range(n_sca):
+                self._samples.append((now, None, "SCA", True, 0.0))
+            fraud = 0.0
+            for _ in range(n_dec):
+                amt = random.uniform(180.0, 920.0)
+                fraud += amt
+                self._samples.append((now, None, "DECLINE", True, amt))
+            self._total += n
+            self._decisions["APPROVE"] += n_appr
+            self._decisions["SCA"] += n_sca
+            self._decisions["DECLINE"] += n_dec
+            self._sca += n_sca
+            self._fraud_eur += fraud
 
     def reset(self) -> None:
         """Clear all recorded session activity (used by the console Clear button)."""
@@ -833,6 +910,12 @@ INDEX_HTML = r"""<!DOCTYPE html>
     </div>
     <button class="btn" data-action="inject"><span class="ic">🕸️</span>5 · Inject fraud ring</button>
 
+    <div class="params">
+      <label>Scale-test TPS <input id="stps" type="number" value="18000" min="1000" step="1000"></label>
+      <label>Duration (s) <input id="sdur" type="number" value="8" min="1"></label>
+    </div>
+    <button class="btn" data-action="stress"><span class="ic">🚀</span>6 · Simulate scale test (synthetic → /ops)</button>
+
     <button class="btn" data-action="scenario"><span class="ic">⚖️</span>6 · Decision scenarios (approve / step-up / decline)</button>
 
     <button class="btn primary" data-action="all"><span class="ic">🚀</span>Run full demo (all steps)</button>
@@ -994,6 +1077,7 @@ function run(action,opts){
   if(action==='inject'||action==='all'){
     q.set('cards',$('cards').value); q.set('merchants',$('merchants').value);
   }
+  if(action==='stress'){ q.set('tps',$('stps').value); q.set('duration',$('sdur').value); }
   if(action==='load'||action==='all'){ loadStart=performance.now(); loadActive=true; }
   disableButtons(true); setStatus(true,'running: '+action);
   $('progbar').style.width='0%';
