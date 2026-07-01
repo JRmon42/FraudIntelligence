@@ -21,6 +21,7 @@ dependencies = [
     "websockets>=12.0",
     "semantic-kernel>=1.0.0",
     "azure-cosmos>=4.6",
+    "azure-identity>=1.16",
     "gremlinpython>=3.7",
     "opentelemetry-api>=1.24",
     "opentelemetry-sdk>=1.24",

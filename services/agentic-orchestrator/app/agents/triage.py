@@ -42,11 +42,9 @@ class TriageAgent(Agent):
                 LLMMessage("user", json.dumps(user_payload)),
             ],
             temperature=0.0,
+            response_format={"type": "json_object"},
         )
-        try:
-            parsed = json.loads(resp.get("content") or "{}")
-        except json.JSONDecodeError:
-            parsed = {}
+        parsed = self.parse_json(resp.get("content"))
 
         cls_raw = parsed.get("classification") or self._heuristic_classify(state)
         try:

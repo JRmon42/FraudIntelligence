@@ -33,11 +33,9 @@ class NarrativeAgent(Agent):
         resp = await self.llm.chat(
             [LLMMessage("system", SYS), LLMMessage("user", json.dumps(ctx, default=str))],
             temperature=0.2,
+            response_format={"type": "json_object"},
         )
-        try:
-            parsed = json.loads(resp.get("content") or "{}")
-        except json.JSONDecodeError:
-            parsed = {}
+        parsed = self.parse_json(resp.get("content"))
 
         sar_tmpl = parsed.get("sar", "")
         eba_tmpl = parsed.get("eba", "")

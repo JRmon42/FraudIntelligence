@@ -50,6 +50,91 @@ _LAST_INJECTION: dict | None = None
 # (cleared) graph instead of the static illustrative ring until the next inject.
 _GRAPH_CLEARED: bool = False
 
+# Deployed agentic orchestrator host (Semantic-Kernel 6-agent workflow, live
+# Azure OpenAI). Resolved at startup from --orchestrator-host / ORCHESTRATOR_HOST
+# with a sensible default; empty string disables the agentic integration so the
+# rest of the demo still works if the orchestrator is unreachable.
+ORCH_HOST: str = ""
+_DEFAULT_ORCH_HOST = (
+    "ca-orchestrator-prod-swc.purpleforest-f993111a.swedencentral.azurecontainerapps.io"
+)
+
+
+def _agentic_alert_from(tx: dict, body) -> dict:
+    """Map a scored demo transaction into the orchestrator's alert schema."""
+    b = body if isinstance(body, dict) else {}
+    return {
+        "transaction_id": tx.get("transaction_id"),
+        "card_id": tx.get("card_id"),
+        "merchant_id": tx.get("merchant_id"),
+        "device_id": tx.get("device_fingerprint") or tx.get("device_id"),
+        "customer_id": tx.get("customer_id"),
+        "amount": tx.get("amount"),
+        "currency": tx.get("currency", "EUR"),
+        "score": b.get("score"),
+        "reason_codes": b.get("reason_codes") or [],
+        "raw": {
+            "channel": tx.get("channel"),
+            "country": tx.get("country"),
+            "decision": b.get("decision"),
+            "psd2_exemption": b.get("psd2_exemption"),
+        },
+    }
+
+
+def agentic_case_events(alert: dict, phase: str = "agentic"):
+    """Open an agentic fraud case on the deployed orchestrator and stream the
+    multi-agent workflow (Triage → GraphAnalyst → Policy → Narrative → Reflector,
+    Semantic Kernel + live Azure OpenAI gpt-4o-mini) into the console.
+
+    Best-effort: if the orchestrator is unreachable the demo continues; we surface
+    a warning rather than failing the run.
+    """
+    if not ORCH_HOST:
+        return
+    import urllib.request as _rq
+
+    yield _emit("phase", name="agentic",
+                label="Agentic case — triage → graph → policy → narrative (Semantic Kernel · gpt-4o-mini)")
+    yield _emit("log", level="info",
+                text="Opening an agentic fraud case on the deployed 6-agent orchestrator "
+                     "(live Azure OpenAI + Cosmos)…")
+    try:
+        req = _rq.Request(
+            f"https://{ORCH_HOST}/v1/alerts",
+            data=json.dumps(alert).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with _rq.urlopen(req, timeout=45) as r:
+            resp = json.loads(r.read().decode())
+        case_id = resp.get("case_id")
+        with _rq.urlopen(f"https://{ORCH_HOST}/v1/cases/{case_id}", timeout=20) as r2:
+            case = json.loads(r2.read().decode())
+    except Exception as exc:  # noqa: BLE001 — never break the demo on orchestrator issues
+        yield _emit("log", level="warn",
+                    text=f"Agentic orchestrator unavailable ({str(exc)[:140]}). Skipping case.")
+        return
+
+    for step in case.get("timeline", []):
+        yield _emit("log", level="info",
+                    text=f"   · {step.get('agent')}: {step.get('action')}")
+    pol = case.get("policy") or {}
+    yield _emit(
+        "case",
+        phase=phase,
+        case_id=case_id,
+        classification=case.get("classification"),
+        status=case.get("status"),
+        agents=[s.get("agent") for s in case.get("timeline", [])],
+        sca_blocked=pol.get("sca_exemptions_blocked") or [],
+        eba_categories=pol.get("eba_categories") or [],
+        sar=(case.get("narrative_sar") or "").strip()[:800],
+        eba=(case.get("narrative_eba") or "").strip()[:500],
+    )
+    yield _emit("log", level="info",
+                text=f"   ✓ Agentic case {case_id} [{case.get('classification')}] — analyst-ready.")
+
 
 # --------------------------------------------------------------------------- #
 # Streaming demo runners — each yields (event_name, data_dict) tuples.
@@ -121,6 +206,8 @@ def run_score(params):
                     text=(f"decision={body['decision']} score={body['score']:.4f} "
                           f"exemption={body['psd2_exemption']} "
                           f"server={body['latency_ms']}ms rtt={elapsed:.1f}ms"))
+        if body.get("decision") == "DECLINE":
+            yield from agentic_case_events(_agentic_alert_from(tx, body), phase="score")
     else:
         yield _emit("log", level="error", text=f"score failed {status}: {str(body)[:160]}")
 
@@ -290,6 +377,18 @@ def run_scenario(params):
         yield _emit("log", level=level,
                     text=f"   → {r['decision']} (score {r['score']:.2f}, "
                          f"exemption {r['psd2_exemption']}). {sc.handling}")
+        if r["decision"] == "DECLINE":
+            yield from agentic_case_events({
+                "transaction_id": sc.key,
+                "card_id": sc.card.card_id,
+                "merchant_id": sc.merchant.merchant_id,
+                "device_id": None,
+                "amount": sc.amount,
+                "currency": sc.currency,
+                "score": r["score"],
+                "reason_codes": r["reason_codes"],
+                "raw": {"channel": sc.channel, "country": sc.country, "decision": "DECLINE"},
+            }, phase="scenario")
         # Show that a genuine customer flagged as a potential false positive clears
         # the SCA challenge and the payment is ultimately approved.
         if sc.recovers_after_sca and r["decision"] == "SCA":
@@ -729,6 +828,7 @@ class Handler(BaseHTTPRequestHandler):
         if route == "/api/config":
             return self._send_json({
                 "scoring_host": SCORING_HOST,
+                "orchestrator_host": ORCH_HOST,
                 "actions": list(RUNNERS.keys()),
             })
         if route == "/api/reset":
@@ -974,6 +1074,11 @@ INDEX_HTML = r"""<!DOCTYPE html>
       <h2>Event log</h2>
       <div id="log"></div>
     </div>
+
+    <div class="card" id="agentic-card" style="display:none">
+      <h2>🤖 Agentic case <span id="agentic-sub" class="muted"></span></h2>
+      <div id="agentic-body" style="font-size:13px;line-height:1.5"></div>
+    </div>
   </div>
 </div>
 
@@ -1095,9 +1200,25 @@ function run(action,opts){
     $('progbar').style.width=(100*d.done/d.total)+'%';
     $('phase').textContent=`● ${d.done}/${d.total} processed (${d.elapsed_s}s)`; });
   es.addEventListener('log',e=>{ const d=JSON.parse(e.data); logLine(d.level,d.text); });
+  es.addEventListener('case',e=>{ showCase(JSON.parse(e.data)); });
   es.addEventListener('ring_edge',e=>{});
   es.addEventListener('end',e=>{ finish(); });
   es.onerror=()=>{ finish(); };
+}
+
+function showCase(c){
+  const card=$('agentic-card'); card.style.display='';
+  $('agentic-sub').textContent = (c.case_id||'') + ' · ' + (c.classification||'');
+  const agents=(c.agents||[]).join(' → ');
+  const blocked=(c.sca_blocked||[]).join(', ')||'—';
+  const eba=(c.eba_categories||[]).join(', ')||'—';
+  const sar=c.sar? '<div style="margin-top:8px;white-space:pre-wrap;background:rgba(255,255,255,.03);padding:10px;border-radius:8px;max-height:220px;overflow:auto">'+esc(c.sar)+'</div>':'';
+  $('agentic-body').innerHTML =
+    '<div><b>Classification:</b> '+esc(c.classification||'')+' &nbsp; <b>Status:</b> '+esc(c.status||'')+'</div>'+
+    '<div style="margin-top:4px"><b>Agents:</b> <span class="mono">'+esc(agents)+'</span></div>'+
+    '<div style="margin-top:4px"><b>SCA exemptions blocked:</b> '+esc(blocked)+'</div>'+
+    '<div style="margin-top:4px"><b>EBA categories:</b> '+esc(eba)+'</div>'+
+    (sar? '<div style="margin-top:8px"><b>SAR narrative (gpt-4o-mini):</b>'+sar+'</div>':'');
 }
 
 function finish(){
@@ -1114,6 +1235,7 @@ $('clearBtn').addEventListener('click',()=>{
   fetch('/api/reset').catch(()=>{});   // also clears server-side /ops metrics + graph
   M=newMetrics(); rtts=[]; $('feed').innerHTML=''; $('log').innerHTML='';
   $('feedcount').textContent=''; ['h_healthz','h_readyz'].forEach(i=>$(i).className='dot idle');
+  $('agentic-card').style.display='none'; $('agentic-body').innerHTML=''; $('agentic-sub').textContent='';
   $('m_tps').textContent='0'; renderMetrics(); $('phase').textContent='Cleared (feed, metrics & /ops).';
 });
 renderMetrics();
@@ -1511,21 +1633,29 @@ refresh(true); setInterval(()=>refresh(false), 2500);
 # Entrypoint
 # --------------------------------------------------------------------------- #
 def main(argv=None) -> int:
-    global SCORING_HOST
+    global SCORING_HOST, ORCH_HOST
     p = argparse.ArgumentParser(description="Heimdall demo web console")
     p.add_argument("--host", default="127.0.0.1", help="Bind address (default 127.0.0.1)")
     p.add_argument("--port", type=int, default=8800, help="Bind port (default 8800)")
     p.add_argument("--scoring-host", default=None,
                    help="Scoring host (default: from SCORING_FRONTDOOR_HOST / .env.deployed)")
+    p.add_argument("--orchestrator-host", default=None,
+                   help="Agentic orchestrator host (default: ORCHESTRATOR_HOST env or built-in). "
+                        "Pass an empty string to disable the agentic integration.")
     args = p.parse_args(argv)
 
     SCORING_HOST = dc.load_host(args.scoring_host)
+    if args.orchestrator_host is not None:
+        ORCH_HOST = args.orchestrator_host.strip()
+    else:
+        ORCH_HOST = os.getenv("ORCHESTRATOR_HOST", _DEFAULT_ORCH_HOST).strip()
 
     httpd = ThreadingHTTPServer((args.host, args.port), Handler)
     url = f"http://{args.host}:{args.port}"
     print("=" * 64)
     print("  🛡️  Heimdall — Live Demo Console")
     print(f"     scoring API : https://{SCORING_HOST}")
+    print(f"     orchestrator: {('https://' + ORCH_HOST) if ORCH_HOST else '(disabled)'}")
     print(f"     dashboard   : {url}")
     print("     press Ctrl+C to stop")
     print("=" * 64)

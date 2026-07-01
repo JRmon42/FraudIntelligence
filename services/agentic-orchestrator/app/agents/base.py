@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from typing import Any
+import json
+import re
 
 from ..llm import BaseLLM
 from ..state import AgentMessage, AgentResult, TimelineEntry, WorkflowState
@@ -65,3 +67,35 @@ class Agent(ABC):
     @property
     def metadata(self) -> dict[str, Any]:
         return {"name": self.name, "description": self.description, "tools": self.tools}
+
+    @staticmethod
+    def parse_json(content: str | None) -> dict[str, Any]:
+        """Best-effort parse of an LLM JSON response.
+
+        Real models sometimes wrap JSON in ```json fences or add stray prose even
+        when asked for JSON. Try a strict parse first, then strip code fences and
+        finally extract the first balanced ``{...}`` object. Returns ``{}`` on
+        failure so callers can fall back to their deterministic defaults.
+        """
+        if not content:
+            return {}
+        text = content.strip()
+        try:
+            obj = json.loads(text)
+            return obj if isinstance(obj, dict) else {}
+        except json.JSONDecodeError:
+            pass
+        fenced = re.sub(r"^```(?:json)?\s*|\s*```$", "", text, flags=re.IGNORECASE).strip()
+        try:
+            obj = json.loads(fenced)
+            return obj if isinstance(obj, dict) else {}
+        except json.JSONDecodeError:
+            pass
+        start, end = fenced.find("{"), fenced.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            try:
+                obj = json.loads(fenced[start : end + 1])
+                return obj if isinstance(obj, dict) else {}
+            except json.JSONDecodeError:
+                return {}
+        return {}

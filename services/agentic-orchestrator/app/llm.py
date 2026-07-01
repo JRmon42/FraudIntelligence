@@ -101,17 +101,35 @@ class AzureOpenAILLM(BaseLLM):
     can be installed in air-gapped CI environments.
     """
 
+    # Entra ID token scope for Azure OpenAI (used when key auth is disabled).
+    _AAD_SCOPE = "https://cognitiveservices.azure.com/.default"
+
     def __init__(
         self,
         endpoint: str,
         api_key: str,
         deployment: str,
         api_version: str = "2024-06-01",
+        use_aad: bool = False,
     ) -> None:
         self.endpoint = endpoint.rstrip("/")
         self.api_key = api_key
         self.deployment = deployment
         self.api_version = api_version
+        # When the Azure OpenAI account has local (key) auth disabled we must use
+        # a managed-identity / Entra ID bearer token instead of an api-key header.
+        self.use_aad = use_aad
+        self._credential: Any = None
+
+    async def _auth_headers(self) -> dict[str, str]:
+        if not self.use_aad:
+            return {"api-key": self.api_key}
+        if self._credential is None:
+            from azure.identity.aio import DefaultAzureCredential
+
+            self._credential = DefaultAzureCredential()
+        token = await self._credential.get_token(self._AAD_SCOPE)
+        return {"Authorization": f"Bearer {token.token}"}
 
     async def chat(self, messages: list[LLMMessage], tools: list[dict] | None = None, **kwargs: Any) -> dict:
         import httpx
@@ -124,8 +142,13 @@ class AzureOpenAILLM(BaseLLM):
         if tools:
             body["tools"] = tools
             body["tool_choice"] = kwargs.get("tool_choice", "auto")
+        # Force strictly-valid JSON output when the caller asks for it, so agent
+        # parsers don't choke on Markdown/code-fence wrapping from the model.
+        response_format = kwargs.get("response_format")
+        if response_format:
+            body["response_format"] = response_format
 
-        headers = {"api-key": self.api_key, "content-type": "application/json"}
+        headers = {"content-type": "application/json", **(await self._auth_headers())}
         params = {"api-version": self.api_version}
 
         async with httpx.AsyncClient(timeout=60) as client:
@@ -149,7 +172,8 @@ def build_llm(mock: bool | None = None) -> BaseLLM:
     api_key = os.getenv("AZURE_OPENAI_API_KEY", "")
     deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4o")
     api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-06-01")
-    if not (endpoint and api_key):
+    use_aad = os.getenv("AZURE_OPENAI_USE_AAD", "false").lower() == "true"
+    if not endpoint or not (api_key or use_aad):
         # Degrade gracefully — never crash the service on missing creds.
         return MockLLM()
-    return AzureOpenAILLM(endpoint, api_key, deployment, api_version)
+    return AzureOpenAILLM(endpoint, api_key, deployment, api_version, use_aad=use_aad)

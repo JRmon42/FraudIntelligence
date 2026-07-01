@@ -44,12 +44,9 @@ class PolicyAgent(Agent):
         resp = await self.llm.chat(
             [LLMMessage("system", SYS), LLMMessage("user", json.dumps(ctx, default=str))],
             temperature=0.0,
+            response_format={"type": "json_object"},
         )
-        try:
-            parsed = json.loads(resp.get("content") or "{}")
-        except json.JSONDecodeError:
-            parsed = {}
-
+        parsed = self.parse_json(resp.get("content"))
         findings = PolicyFindings(
             sca_exemptions_applied=parsed.get("sca_exemptions_applied") or det["applied"],
             sca_exemptions_blocked=parsed.get("sca_exemptions_blocked") or det["blocked"],

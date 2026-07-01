@@ -29,10 +29,19 @@ class InMemoryCases(BaseCases):
 
 
 class CosmosCases(BaseCases):  # pragma: no cover — exercised live, not in CI
-    def __init__(self, endpoint: str, key: str, database: str, container: str) -> None:
+    def __init__(self, endpoint: str, database: str, container: str, key: str | None = None) -> None:
         from azure.cosmos.aio import CosmosClient
 
-        self._client = CosmosClient(endpoint, credential=key)
+        # Prefer a data-plane key when supplied; otherwise fall back to the
+        # container's managed identity via Entra ID (the pattern used across
+        # this deployment, where Cosmos local auth may be locked down).
+        if key:
+            credential: object = key
+        else:
+            from azure.identity.aio import DefaultAzureCredential
+
+            credential = DefaultAzureCredential()
+        self._client = CosmosClient(endpoint, credential=credential)
         self._db = self._client.get_database_client(database)
         self._container = self._db.get_container_client(container)
 
@@ -118,20 +127,24 @@ class GremlinGraph(BaseGraph):  # pragma: no cover
 def build_cases(mock: bool | None = None) -> BaseCases:
     if mock is None:
         mock = os.getenv("MOCK_COSMOS", "true").lower() == "true"
-    if mock:
+    # Degrade gracefully to the in-memory store when not explicitly real or when
+    # the Cosmos endpoint is not configured.
+    if mock or not os.getenv("COSMOS_ENDPOINT"):
         return InMemoryCases()
     return CosmosCases(
         endpoint=os.environ["COSMOS_ENDPOINT"],
-        key=os.environ["COSMOS_KEY"],
         database=os.environ.get("COSMOS_DATABASE", "fraudintel"),
         container=os.environ.get("COSMOS_CASES_CONTAINER", "cases"),
+        key=os.getenv("COSMOS_KEY") or None,
     )
 
 
 def build_graph(mock: bool | None = None) -> BaseGraph:
     if mock is None:
         mock = os.getenv("MOCK_COSMOS", "true").lower() == "true"
-    if mock:
+    # The Gremlin graph is optional; when its endpoint is absent (e.g. a SQL-API
+    # only account) fall back to the deterministic mock graph rather than crash.
+    if mock or not os.getenv("GREMLIN_ENDPOINT"):
         return MockGraph()
     return GremlinGraph(
         endpoint=os.environ["GREMLIN_ENDPOINT"],

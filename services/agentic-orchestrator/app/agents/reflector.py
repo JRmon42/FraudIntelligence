@@ -67,11 +67,9 @@ class ReflectorAgent(Agent):
         resp = await self.llm.chat(
             [LLMMessage("system", SYS), LLMMessage("user", json.dumps(ctx))],
             temperature=0.0,
+            response_format={"type": "json_object"},
         )
-        try:
-            parsed = json.loads(resp.get("content") or "{}")
-        except json.JSONDecodeError:
-            parsed = {}
+        parsed = self.parse_json(resp.get("content"))
 
         if (missing or artefact_gaps) and state.reflections_used < state.reflection_budget:
             verdict = ReflectionVerdict.REPLAN
