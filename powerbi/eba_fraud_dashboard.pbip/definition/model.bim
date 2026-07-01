@@ -178,7 +178,7 @@
           { "name": "Loss Borne by PSP (€)",    "expression": "CALCULATE(SUM(Fact_Eba[LossValueEur]), Fact_Eba[LossBearer] = \"psp\")", "formatString": "\"€\"#,0", "description": "Loss amount allocated to the PSP per EBA Annex D." },
           { "name": "Loss Borne by Payer (€)",  "expression": "CALCULATE(SUM(Fact_Eba[LossValueEur]), Fact_Eba[LossBearer] = \"payer\")", "formatString": "\"€\"#,0", "description": "Loss amount allocated to the payer per EBA Annex D." },
           { "name": "Open Cases",               "expression": "COUNTROWS(FILTER(Fact_Eba, Fact_Eba[FraudCount] > 0))", "formatString": "#,0", "description": "Distinct EBA aggregate rows that contributed at least one fraud — proxy for case workload." },
-          { "name": "Model Drift Index",        "expression": "VAR p99_today = AVERAGE(Fact_Latency[P99Ms]) VAR p99_baseline = CALCULATE(AVERAGE(Fact_Latency[P99Ms]), DATEADD(Dim_Date[Date], -30, DAY)) RETURN DIVIDE(p99_today - p99_baseline, p99_baseline)", "formatString": "0.00%", "description": "Relative drift in p99 latency vs the 30-day-prior baseline — alert at > 25%." }
+          { "name": "p99 Latency Drift (30d)", "expression": "VAR p99_today = AVERAGE(Fact_Latency[P99Ms]) VAR p99_baseline = CALCULATE(AVERAGE(Fact_Latency[P99Ms]), DATEADD(Dim_Date[Date], -30, DAY)) RETURN DIVIDE(p99_today - p99_baseline, p99_baseline)", "formatString": "0.00%", "description": "Relative drift in p99 latency vs the 30-day-prior baseline (NOT model/score drift) — alert at > 25%." }
         ]
       }
     ],

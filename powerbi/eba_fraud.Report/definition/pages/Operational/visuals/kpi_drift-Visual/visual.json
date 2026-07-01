@@ -23,11 +23,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Model Drift Index"
+                  "Property": "p99 Latency Drift (30d)"
                 }
               },
-              "queryRef": "_Measures.Model Drift Index",
-              "nativeQueryRef": "Model Drift Index"
+              "queryRef": "_Measures.p99 Latency Drift (30d)",
+              "nativeQueryRef": "p99 Latency Drift (30d)"
             }
           ]
         }

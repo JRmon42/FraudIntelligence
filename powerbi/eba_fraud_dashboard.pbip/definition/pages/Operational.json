@@ -35,8 +35,8 @@
       "name": "kpi_drift",
       "x": 274, "y": 72, "z": 2, "width": 250, "height": 120,
       "config": { "singleVisual": { "visualType": "card",
-        "projections": { "Values": [{ "queryRef": "Measures.Model Drift Index" }] },
-        "objects": { "categoryLabels": [{ "properties": { "show": true, "text": "Model drift (vs 30d)" } }] } } }
+        "projections": { "Values": [{ "queryRef": "Measures.p99 Latency Drift (30d)" }] },
+        "objects": { "categoryLabels": [{ "properties": { "show": true, "text": "p99 latency drift (30d)" } }] } } }
     },
     {
       "name": "kpi_p99_op",
@@ -75,10 +75,10 @@
       "config": { "singleVisual": { "visualType": "lineChart",
         "projections": {
           "Category": [{ "queryRef": "Dim_Date.Date" }],
-          "Y": [{ "queryRef": "Measures.Model Drift Index" }, { "queryRef": "Measures.Decline Rate %" }],
+          "Y": [{ "queryRef": "Measures.p99 Latency Drift (30d)" }, { "queryRef": "Measures.Decline Rate %" }],
           "Series": [{ "queryRef": "Fact_Latency.ModelVersion" }]
         },
-        "objects": { "title": [{ "properties": { "text": "Model drift & decline-rate trend (alert > 25%)" } }] } } }
+        "objects": { "title": [{ "properties": { "text": "p99 latency drift & decline-rate trend (alert > 25%)" } }] } } }
     }
   ]
 }

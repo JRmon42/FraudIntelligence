@@ -45,9 +45,9 @@
 [Scoring p99 (ms)] =
     AVERAGE ( Fact_Latency[P99Ms] )
 
-// Relative drift in p99 latency vs the 30-day-prior baseline.
+// Relative drift in p99 *latency* vs the 30-day-prior baseline (NOT model/score drift).
 // Triggers a Sentinel alert in the Operational page when > 25%.
-[Model Drift Index] =
+[p99 Latency Drift (30d)] =
     VAR p99_today = AVERAGE ( Fact_Latency[P99Ms] )
     VAR p99_baseline =
         CALCULATE ( AVERAGE ( Fact_Latency[P99Ms] ), DATEADD ( Dim_Date[Date], -30, DAY ) )

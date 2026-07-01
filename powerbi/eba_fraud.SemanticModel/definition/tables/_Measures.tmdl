@@ -76,8 +76,8 @@ table _Measures
 		formatString: "€"#,0
 		lineageTag: c4e9a903-3c1d-4f2f-9d8e-930566a9c3c3
 
-	/// Relative drift in p99 latency vs the 30-day-prior baseline — alert at > 25%.
-	measure 'Model Drift Index' = ```
+	/// Relative drift in p99 latency vs the 30-day-prior baseline (NOT model/score drift) — alert at > 25%.
+	measure 'p99 Latency Drift (30d)' = ```
 			VAR p99_today = AVERAGE(Fact_Latency[P99Ms])
 			VAR p99_baseline = CALCULATE(AVERAGE(Fact_Latency[P99Ms]), DATEADD(Dim_Date[Date], -30, DAY))
 			RETURN IF(ISBLANK(p99_baseline) || ISBLANK(p99_today), 0, DIVIDE(p99_today - p99_baseline, p99_baseline))
