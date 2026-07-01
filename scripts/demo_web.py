@@ -42,6 +42,11 @@ import demo_scenarios as ds  # noqa: E402  curated decision-spectrum scenarios
 # Resolved once at startup; overridable via --scoring-host / SCORING_FRONTDOOR_HOST.
 SCORING_HOST = ""
 
+# Most-recent fraud-ring injection (populated by run_inject), so the /graph view
+# reflects the cards × merchants the presenter actually injected rather than a
+# fixed illustrative ring. None until the first injection this process.
+_LAST_INJECTION: dict | None = None
+
 
 # --------------------------------------------------------------------------- #
 # Streaming demo runners — each yields (event_name, data_dict) tuples.
@@ -180,6 +185,11 @@ def run_inject(params):
                 label=f"Fraud-ring injection — {cards_n} cards x {merchants_n} merchants (circular)")
     cards = [f"ring-card-{i:02d}" for i in range(cards_n)]
     merchants = [f"ring-mer-{i:02d}" for i in range(merchants_n)]
+    # Shared device + IP bind the ring together (the topology the GNN flags).
+    device = "device-FP-RING"
+    ip = "185.220.101.7"
+    edge_pairs = []  # (card, merchant) actually injected
+    scores: dict[str, float] = {}
     for i, card in enumerate(cards):
         merchant = merchants[i % len(merchants)]
         tx = dc.make_tx(
@@ -193,11 +203,50 @@ def run_inject(params):
             channel="ECOM",
         )
         ok, status, body, elapsed = dc.post_score(SCORING_HOST, tx)
+        if ok and isinstance(body, dict) and body.get("score") is not None:
+            scores[card] = float(body["score"])
         yield _tx_event(tx, ok, status, body, elapsed, phase="inject")
         yield _emit("ring_edge", card=card, merchant=merchant)
+        edge_pairs.append((card, merchant))
+    _record_injection(cards, merchants, edge_pairs, device, ip, scores)
     yield _emit("log", level="info",
                 text="Ring injected. The closed circular value-flow is what the offline GNN on "
-                     "Fabric Spark flags as a ring; the in-line scorer sees per-tx features only.")
+                     "Fabric Spark flags as a ring; the in-line scorer sees per-tx features only. "
+                     "See the live topology at /graph.")
+
+
+def _record_injection(cards, merchants, edge_pairs, device, ip, scores) -> None:
+    """Capture the just-injected ring as a graph payload for the /graph view."""
+
+    global _LAST_INJECTION
+    country = "SE"
+    nodes = [{"id": device, "label": device, "group": "device", "risk": 0.95},
+             {"id": ip, "label": ip, "group": "ip", "risk": 0.83},
+             {"id": country, "label": country, "group": "country", "risk": 0.2}]
+    nodes += [{"id": m, "label": m, "group": "merchant", "risk": 0.86} for m in merchants]
+    nodes += [{"id": c, "label": c, "group": "card",
+               "risk": round(scores.get(c, 0.9), 2)} for c in cards]
+
+    edges = [{"from": device, "to": ip, "label": "connects_from"}]
+    for c, m in edge_pairs:
+        edges.append({"from": c, "to": device, "label": "used_on"})
+        edges.append({"from": c, "to": m, "label": "transacted_with"})
+        edges.append({"from": c, "to": country, "label": "issued_in"})
+
+    avg = round(sum(scores.values()) / len(scores), 2) if scores else 0.9
+    _LAST_INJECTION = {
+        "scenario": f"Injected card-testing ring — {len(cards)} cards × {len(merchants)} merchants",
+        "anomaly_score": avg,
+        "nodes": nodes,
+        "edges": edges,
+        "notes": [
+            f"{len(cards)} cards share device fingerprint {device}",
+            f"Cards fan out across {len(merchants)} merchants "
+            f"({', '.join(merchants)}) in a circular value-flow",
+            f"Device {device} connects from a single high-risk IP {ip}",
+            "Live injection — reflects the cards × merchants you just sent from the console.",
+        ],
+    }
 
 
 def run_scenario(params):
@@ -304,69 +353,209 @@ RUNNERS = {
 # --------------------------------------------------------------------------- #
 # Operations dashboard — management view (throughput, latency, SLOs, decisions)
 # --------------------------------------------------------------------------- #
-import math  # noqa: E402
-import random  # noqa: E402
+import threading  # noqa: E402
+from collections import Counter, deque  # noqa: E402
 
 _OPS_T0 = time.time()
 
 
-def ops_metrics() -> dict:
-    """Synthesize a live management-grade operational snapshot.
+class MetricsStore:
+    """Thread-safe rolling store of the transactions actually scored this session.
 
-    The deployed demo API is a stub, so these figures model the production
-    Heimdall SLOs and decision mix with light, deterministic-ish jitter so the
-    management dashboard feels live (auto-refresh) while staying on-message with
-    the executive briefing (p99 < 18 ms, 99.99%, decline/SCA/approve split).
+    Every ``tx`` / ``tx_agg`` event streamed to the console is recorded here, so
+    the /ops dashboard reflects the real activity the presenter drives (throughput,
+    scoring latency, decision mix, fraud caught) rather than a synthetic model.
     """
-    t = time.time() - _OPS_T0
-    wave = math.sin(t / 7.0)
-    # Throughput oscillates around a 4,900 TPS baseline with an occasional surge.
-    tps = int(4900 + wave * 380 + random.uniform(-120, 120))
-    surge = random.random() < 0.08
-    if surge:
-        tps = int(tps * random.uniform(2.4, 3.8))  # spike absorbed by autoscale
-    replicas = max(3, min(60, round(tps / 95)))
-    p99 = round(13.0 + max(0.0, (tps - 5200) / 4000.0) + abs(wave) * 1.4, 1)
-    p50 = round(p99 * 0.42, 1)
-    # Decision mix (production target): ~90 approve / ~8 SCA / ~2 decline.
-    approve = round(89.0 + wave * 0.8, 1)
-    decline = round(2.0 + random.uniform(-0.2, 0.3), 2)
-    sca = round(100.0 - approve - decline, 1)
-    scored_today = int(t * tps / 24 + 38_000_000 % 7_000_000)
+
+    def __init__(self, keep_s: float = 300.0) -> None:
+        self._lock = threading.Lock()
+        self._keep_s = keep_s
+        # each sample: (ts, latency_ms | None, decision, ok, amount)
+        self._samples: deque = deque()
+        self._decisions: Counter = Counter()
+        self._total = 0
+        self._errors = 0
+        self._fraud_eur = 0.0
+        self._sca = 0
+
+    def record(self, event: str, data: dict) -> None:
+        if event not in ("tx", "tx_agg"):
+            return
+        ts = time.time()
+        ok = bool(data.get("ok"))
+        decision = data.get("decision")
+        with self._lock:
+            self._prune(ts)
+            if not ok or decision in (None, "ERROR"):
+                self._errors += 1
+                self._samples.append((ts, None, "ERROR", False, 0.0))
+                return
+            lat = data.get("server_latency_ms")
+            if lat is None:
+                lat = data.get("client_rtt_ms")
+            amount = float(data.get("amount") or 0.0)
+            self._total += 1
+            self._decisions[decision] += 1
+            if decision == "DECLINE":
+                self._fraud_eur += amount
+            elif decision == "SCA":
+                self._sca += 1
+            self._samples.append(
+                (ts, float(lat) if lat is not None else None, decision, True, amount)
+            )
+
+    def _prune(self, now: float) -> None:
+        cut = now - self._keep_s
+        while self._samples and self._samples[0][0] < cut:
+            self._samples.popleft()
+
+    def snapshot(self) -> dict:
+        now = time.time()
+        with self._lock:
+            self._prune(now)
+            samples = list(self._samples)
+            total = self._total
+            decisions = dict(self._decisions)
+            errors = self._errors
+            fraud_eur = self._fraud_eur
+            sca = self._sca
+
+        # Throughput: trailing 5 s rate; surge = well above the trailing 60 s mean.
+        recent5 = [s for s in samples if s[0] >= now - 5.0]
+        recent60 = [s for s in samples if s[0] >= now - 60.0]
+        tps = round(len(recent5) / 5.0, 1)
+        avg60 = len(recent60) / 60.0
+        surge = tps > 50 and tps > avg60 * 1.8
+
+        # Scoring latency from the API's own reported latency (fallback: client RTT).
+        lat = sorted(s[1] for s in recent60 if s[1] is not None)
+
+        def pct(p: float):
+            if not lat:
+                return 0.0
+            i = min(len(lat) - 1, int(round((p / 100.0) * (len(lat) - 1))))
+            return round(lat[i], 1)
+
+        dec = {k: decisions.get(k, 0) for k in ("APPROVE", "SCA", "DECLINE")}
+        graded = sum(dec.values())
+        if graded:
+            mix = {
+                "approve": round(100.0 * dec["APPROVE"] / graded, 1),
+                "sca": round(100.0 * dec["SCA"] / graded, 1),
+                "decline": round(100.0 * dec["DECLINE"] / graded, 1),
+            }
+        else:
+            mix = {"approve": 0.0, "sca": 0.0, "decline": 0.0}
+
+        return {
+            "tps": tps,
+            "surge": surge,
+            "p99": pct(99),
+            "p50": pct(50),
+            "mix": mix,
+            "total": total,
+            "errors": errors,
+            "fraud_eur": round(fraud_eur),
+            "declines": dec["DECLINE"],
+            "sca": sca,
+            "active": bool(recent60),
+        }
+
+
+METRICS = MetricsStore()
+
+
+def _load_model_metrics() -> dict:
+    """Load the real back-tested ensemble metrics from ml/artifacts (best-effort)."""
+
+    path = os.path.join(os.path.dirname(__file__), "..", "ml", "artifacts", "metrics.json")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            m = json.load(fh)
+    except Exception:  # noqa: BLE001 - dashboard must render without the artifact
+        return {"roc_auc": None, "recall": None, "precision": None,
+                "fpr": None, "onnx_ms": None}
+    fpr = m.get("fpr@0.5")
+    return {
+        "roc_auc": m.get("roc_auc"),
+        "recall": m.get("tpr@0.5"),
+        # precision at the 0.5 threshold: no false positives on the eval set → ~1.0.
+        "precision": (1.0 if fpr == 0 else None) if fpr is not None else None,
+        "fpr": fpr,
+        "onnx_ms": m.get("onnx_per_row_ms"),
+    }
+
+
+_MODEL_METRICS = _load_model_metrics()
+
+
+def ops_metrics() -> dict:
+    """Live operational snapshot for the /ops management dashboard.
+
+    Throughput, scoring latency (p99/p50), decision mix, fraud caught and volume
+    are computed from the **transactions actually scored this session** (see
+    ``MetricsStore``) against the live ``v1.1.0-ensemble-gnn`` API. Model-quality
+    figures (ROC-AUC, recall, false-positive rate, ONNX inference time) are the
+    real back-tested values from ``ml/artifacts/metrics.json``. Availability and
+    the EBA cadence are reported as the platform SLO targets. Before any activity
+    the live counters read zero (``active: false``) — the dashboard is a view of
+    this session, not a synthetic feed.
+    """
+    s = METRICS.snapshot()
+    mm = _MODEL_METRICS
+
+    tps = s["tps"]
+    replicas = max(1, min(60, round(tps / 300.0))) if tps else 1
+    p99 = s["p99"]
+    onnx_ms = round(mm["onnx_ms"], 3) if mm.get("onnx_ms") is not None else None
+    auc = round(mm["roc_auc"], 3) if mm.get("roc_auc") is not None else None
+    recall = round(mm["recall"], 2) if mm.get("recall") is not None else None
+    precision = round(mm["precision"], 2) if mm.get("precision") is not None else None
+    fpr_pct = round(mm["fpr"] * 100.0, 2) if mm.get("fpr") is not None else None
+
+    slos = [
+        {"name": "Scoring p99 (session)", "value": f"{p99} ms", "target": "< 18 ms",
+         "ok": (p99 < 18) if s["active"] else True},
+    ]
+    if onnx_ms is not None:
+        slos.append({"name": "Model inference (ONNX)", "value": f"{onnx_ms} ms",
+                     "target": "< 1 ms", "ok": onnx_ms < 1})
+    if auc is not None:
+        slos.append({"name": "ROC-AUC (back-tested)", "value": f"{auc}",
+                     "target": "> 0.80", "ok": auc > 0.80})
+    slos += [
+        {"name": "Availability (SLO)", "value": "99.99%", "target": "99.99%", "ok": True},
+        {"name": "Model drift", "value": "stable", "target": "watched", "ok": True},
+    ]
+
     return {
         "ts": time.time(),
         "throughput_tps": tps,
-        "throughput_surge": surge,
+        "throughput_surge": s["surge"],
         "replicas": replicas,
         "replicas_max": 60,
         "latency_p99_ms": p99,
-        "latency_p50_ms": p50,
+        "latency_p50_ms": s["p50"],
         "slo_p99_ms": 18,
         "availability_30d": 99.99,
-        "regions_active": 2,
-        "decision_mix": {"approve": approve, "sca": sca, "decline": decline},
-        "fraud_caught_eur_today": int(280_000 + t * 9 + random.uniform(0, 4000)),
-        "cases_opened_today": int(900 + t / 3),
-        "false_positive_rate": 1.1,
+        "regions_active": 1,
+        "decision_mix": s["mix"],
+        "fraud_caught_eur_today": s["fraud_eur"],
+        "cases_opened_today": s["declines"],
+        "false_positive_rate": fpr_pct if fpr_pct is not None else 0.0,
         "false_positive_baseline": 2.8,
-        "model_auc": 0.987,
-        "precision": 0.94,
-        "recall": 0.91,
-        "hitl_queue": random.randint(8, 26),
+        "model_auc": auc if auc is not None else 0.0,
+        "precision": precision if precision is not None else 0.0,
+        "recall": recall if recall is not None else 0.0,
+        "hitl_queue": s["sca"],
         "drift_status": "stable",
         "eba_report_days": 12,
-        "scored_total": scored_today,
-        "slos": [
-            {"name": "Scoring p99", "value": f"{p99} ms", "target": "< 18 ms",
-             "ok": p99 < 18},
-            {"name": "Availability", "value": "99.99%", "target": "99.99%", "ok": True},
-            {"name": "Graph lookup", "value": f"{random.randint(28, 46)} ms",
-             "target": "< 50 ms", "ok": True},
-            {"name": "Case SLA p95", "value": f"{round(random.uniform(2.8, 4.6), 1)} s",
-             "target": "< 5 s", "ok": True},
-            {"name": "Model drift", "value": "stable", "target": "watched", "ok": True},
-        ],
+        "scored_total": s["total"],
+        "session_active": s["active"],
+        "errors_total": s["errors"],
+        "slos": slos,
     }
+
 
 
 # --------------------------------------------------------------------------- #
@@ -432,6 +621,7 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
         def write_event(name, data):
+            METRICS.record(name, data)
             payload = f"event: {name}\ndata: {json.dumps(data)}\n\n"
             self.wfile.write(payload.encode("utf-8"))
             self.wfile.flush()
@@ -941,12 +1131,19 @@ tick(); setInterval(tick, 2000);
 # Fraud-ring entity graph (Card · Merchant · Device · Country · IP)
 # --------------------------------------------------------------------------- #
 def fraud_ring_graph() -> dict:
-    """A representative coordinated card-testing ring for the demo.
+    """The fraud-ring entity graph for the /graph view.
+
+    If the presenter has run an **Inject fraud ring** step this process, return
+    that live injection (so the graph reflects the exact cards × merchants sent).
+    Otherwise fall back to a representative coordinated card-testing ring.
 
     Mirrors the shape the GraphAnalystAgent pulls from Cosmos Gremlin
     (2-hop neighbourhood), enriched with country + IP entities so the demo
     shows Card ↔ Device ↔ Merchant ↔ Country ↔ IP relationships.
     """
+    if _LAST_INJECTION is not None:
+        return _LAST_INJECTION
+
     merchant = "merch-9001"
     merchant2 = "merch-2277"
     device = "device-FP-7731"
