@@ -46,6 +46,9 @@ SCORING_HOST = ""
 # reflects the cards × merchants the presenter actually injected rather than a
 # fixed illustrative ring. None until the first injection this process.
 _LAST_INJECTION: dict | None = None
+# Set when the console Clear button resets the session, so /graph shows an empty
+# (cleared) graph instead of the static illustrative ring until the next inject.
+_GRAPH_CLEARED: bool = False
 
 
 # --------------------------------------------------------------------------- #
@@ -218,7 +221,7 @@ def run_inject(params):
 def _record_injection(cards, merchants, edge_pairs, device, ip, scores) -> None:
     """Capture the just-injected ring as a graph payload for the /graph view."""
 
-    global _LAST_INJECTION
+    global _LAST_INJECTION, _GRAPH_CLEARED
     country = "SE"
     nodes = [{"id": device, "label": device, "group": "device", "risk": 0.95},
              {"id": ip, "label": ip, "group": "ip", "risk": 0.83},
@@ -247,6 +250,7 @@ def _record_injection(cards, merchants, edge_pairs, device, ip, scores) -> None:
             "Live injection — reflects the cards × merchants you just sent from the console.",
         ],
     }
+    _GRAPH_CLEARED = False
 
 
 def run_scenario(params):
@@ -615,9 +619,10 @@ class Handler(BaseHTTPRequestHandler):
                 "actions": list(RUNNERS.keys()),
             })
         if route == "/api/reset":
-            global _LAST_INJECTION
+            global _LAST_INJECTION, _GRAPH_CLEARED
             METRICS.reset()
             _LAST_INJECTION = None
+            _GRAPH_CLEARED = True
             return self._send_json({"ok": True, "reset": True})
         if route == "/api/stream":
             return self._stream(params)
@@ -1160,6 +1165,15 @@ def fraud_ring_graph() -> dict:
     """
     if _LAST_INJECTION is not None:
         return _LAST_INJECTION
+    if _GRAPH_CLEARED:
+        return {
+            "scenario": "No fraud ring — session cleared",
+            "anomaly_score": 0.0,
+            "nodes": [],
+            "edges": [],
+            "notes": ["Session graph cleared. Run “Inject fraud ring” from the "
+                      "console to populate the live topology."],
+        }
 
     merchant = "merch-9001"
     merchant2 = "merch-2277"
@@ -1287,19 +1301,25 @@ let nodes=[],edges=[],idMap={},W=0,H=0,dragging=null;
 function size(){W=svg.clientWidth;H=svg.clientHeight;}
 window.addEventListener("resize",()=>{size();});
 
-async function load(){
-  const g=await (await fetch("/api/graph")).json();
-  document.getElementById("score").innerHTML=g.anomaly_score.toFixed(2)+"<small> / 1.00</small>";
-  document.getElementById("scenario").textContent=g.scenario;
-  document.getElementById("notes").innerHTML=g.notes.map(n=>"<li>"+n+"</li>").join("");
-  nodes=g.nodes;edges=g.edges;
+let lastSig=null, started=false;
+function applyGraph(g){
+  document.getElementById("score").innerHTML=(g.anomaly_score||0).toFixed(2)+"<small> / 1.00</small>";
+  document.getElementById("scenario").textContent=g.scenario||"";
+  document.getElementById("notes").innerHTML=(g.notes||[]).map(n=>"<li>"+n+"</li>").join("");
+  nodes=g.nodes||[];edges=g.edges||[];
   size();
-  nodes.forEach((n,i)=>{const a=2*Math.PI*i/nodes.length;n.x=W/2+Math.cos(a)*Math.min(W,H)*0.3;
+  nodes.forEach((n,i)=>{const a=2*Math.PI*i/Math.max(1,nodes.length);n.x=W/2+Math.cos(a)*Math.min(W,H)*0.3;
     n.y=H/2+Math.sin(a)*Math.min(W,H)*0.3;n.vx=0;n.vy=0;});
   idMap=Object.fromEntries(nodes.map(n=>[n.id,n]));
   build();
   for(let i=0;i<400;i++) physics();
-  loop();
+}
+async function refresh(force){
+  let g; try{ g=await (await fetch("/api/graph")).json(); }catch(e){ return; }
+  const sig=(g.scenario||"")+"|"+((g.nodes||[]).length)+"|"+((g.edges||[]).length);
+  if(!force && sig===lastSig) return;   // only rebuild when the topology changes
+  lastSig=sig; applyGraph(g);
+  if(!started){started=true;loop();}
 }
 
 let gEdges,gELabels,gNodes;
@@ -1360,7 +1380,7 @@ function render(){
   nodes.forEach(n=>{n.el.setAttribute("transform","translate("+n.x+","+n.y+")");});
 }
 function loop(){physics();render();requestAnimationFrame(loop);}
-load();
+refresh(true); setInterval(()=>refresh(false), 2500);
 </script>
 </body>
 </html>
