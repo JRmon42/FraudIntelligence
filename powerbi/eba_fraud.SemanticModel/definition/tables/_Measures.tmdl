@@ -76,11 +76,13 @@ table _Measures
 		formatString: "€"#,0
 		lineageTag: c4e9a903-3c1d-4f2f-9d8e-930566a9c3c3
 
-	/// Relative drift in p99 latency vs the 30-day-prior baseline (NOT model/score drift) — alert at > 25%.
+	/// Relative drift in p99 latency vs the ~30-day-prior baseline (NOT model/score drift). Latest data-date vs most recent data-date >=30 days earlier, so it renders per weekly date and gives a real model-level value. Alert at > 25%.
 	measure 'p99 Latency Drift (30d)' = ```
-			VAR p99_today = AVERAGE(Fact_Latency[P99Ms])
-			VAR p99_baseline = CALCULATE(AVERAGE(Fact_Latency[P99Ms]), DATEADD(Dim_Date[Date], -30, DAY))
-			RETURN IF(ISBLANK(p99_baseline) || ISBLANK(p99_today), 0, DIVIDE(p99_today - p99_baseline, p99_baseline))
+			VAR curDate = MAX(Fact_Latency[KpiDate])
+			VAR cur = CALCULATE(AVERAGE(Fact_Latency[P99Ms]), ALL(Fact_Latency), Fact_Latency[KpiDate] = curDate)
+			VAR baseDate = CALCULATE(MAX(Fact_Latency[KpiDate]), ALL(Fact_Latency), Fact_Latency[KpiDate] <= curDate - 30)
+			VAR base = CALCULATE(AVERAGE(Fact_Latency[P99Ms]), ALL(Fact_Latency), Fact_Latency[KpiDate] = baseDate)
+			RETURN IF(ISBLANK(curDate) || ISBLANK(baseDate), BLANK(), DIVIDE(cur - base, base))
 			```
 		formatString: 0.00%
 		lineageTag: 51f4efa1-924f-4a0a-8644-8db928c3d900

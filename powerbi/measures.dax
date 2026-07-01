@@ -45,14 +45,22 @@
 [Scoring p99 (ms)] =
     AVERAGE ( Fact_Latency[P99Ms] )
 
-// Relative drift in p99 *latency* vs the 30-day-prior baseline (NOT model/score drift).
+// Relative drift in p99 *latency* vs the ~30-day-prior baseline (NOT model/score drift).
+// Compares the latest latency data-date in context against the most recent data-date
+// at least 30 days earlier. This yields a value on every (weekly) Fact_Latency date so
+// the "over Time" line renders, and gives a meaningful KPI-card value at the model level
+// (instead of 0.00%) because the -30d baseline lands on an actual data-date, not a gap.
 // Triggers a Sentinel alert in the Operational page when > 25%.
 [p99 Latency Drift (30d)] =
-    VAR p99_today = AVERAGE ( Fact_Latency[P99Ms] )
-    VAR p99_baseline =
-        CALCULATE ( AVERAGE ( Fact_Latency[P99Ms] ), DATEADD ( Dim_Date[Date], -30, DAY ) )
+    VAR curDate = MAX ( Fact_Latency[KpiDate] )
+    VAR cur =
+        CALCULATE ( AVERAGE ( Fact_Latency[P99Ms] ), ALL ( Fact_Latency ), Fact_Latency[KpiDate] = curDate )
+    VAR baseDate =
+        CALCULATE ( MAX ( Fact_Latency[KpiDate] ), ALL ( Fact_Latency ), Fact_Latency[KpiDate] <= curDate - 30 )
+    VAR base =
+        CALCULATE ( AVERAGE ( Fact_Latency[P99Ms] ), ALL ( Fact_Latency ), Fact_Latency[KpiDate] = baseDate )
     RETURN
-        DIVIDE ( p99_today - p99_baseline, p99_baseline )
+        IF ( ISBLANK ( curDate ) || ISBLANK ( baseDate ), BLANK (), DIVIDE ( cur - base, base ) )
 
 // ---------------------------------------------------------------------------
 // PSD2 / SCA (Fact_Exemption)
