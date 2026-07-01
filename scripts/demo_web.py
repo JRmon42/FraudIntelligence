@@ -409,6 +409,17 @@ class MetricsStore:
         while self._samples and self._samples[0][0] < cut:
             self._samples.popleft()
 
+    def reset(self) -> None:
+        """Clear all recorded session activity (used by the console Clear button)."""
+
+        with self._lock:
+            self._samples.clear()
+            self._decisions.clear()
+            self._total = 0
+            self._errors = 0
+            self._fraud_eur = 0.0
+            self._sca = 0
+
     def snapshot(self) -> dict:
         now = time.time()
         with self._lock:
@@ -603,6 +614,11 @@ class Handler(BaseHTTPRequestHandler):
                 "scoring_host": SCORING_HOST,
                 "actions": list(RUNNERS.keys()),
             })
+        if route == "/api/reset":
+            global _LAST_INJECTION
+            METRICS.reset()
+            _LAST_INJECTION = None
+            return self._send_json({"ok": True, "reset": True})
         if route == "/api/stream":
             return self._stream(params)
         return self._send_json({"error": "not found", "path": route}, status=404)
@@ -970,9 +986,10 @@ document.querySelectorAll('.btn[data-action]').forEach(b=>{
   b.addEventListener('click',()=>run(b.dataset.action,{profile:b.dataset.profile}));
 });
 $('clearBtn').addEventListener('click',()=>{
+  fetch('/api/reset').catch(()=>{});   // also clears server-side /ops metrics + graph
   M=newMetrics(); rtts=[]; $('feed').innerHTML=''; $('log').innerHTML='';
   $('feedcount').textContent=''; ['h_healthz','h_readyz'].forEach(i=>$(i).className='dot idle');
-  $('m_tps').textContent='0'; renderMetrics(); $('phase').textContent='Cleared.';
+  $('m_tps').textContent='0'; renderMetrics(); $('phase').textContent='Cleared (feed, metrics & /ops).';
 });
 renderMetrics();
 </script>
