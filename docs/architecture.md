@@ -74,7 +74,7 @@ flowchart LR
   COS <-.multi-master.-> COS2
 ```
 
-> **Diagram note.** Nodes **APIM/APIM2**, **ARC (Redis)**, **SBQ (Service Bus)** and **FUNC (Azure Functions enforcement)** are 📘 *reference targets* — see the **Status** column in §3 for what is actually provisioned in `infra/`. In the deployed system, AFD routes directly to Container Apps and the scoring path uses the seeded feature store + Cosmos point-reads (no Redis / APIM hop).
+> **Diagram note.** Nodes **APIM/APIM2**, **ARC (Redis)**, **SBQ (Service Bus)** and **FUNC (Azure Functions enforcement)** are now **✅ deployed** at cost-optimised SKUs (APIM Developer, Azure Managed Redis `Balanced_B0`, Service Bus Standard, Function Flex Consumption) — see the **Status** column in §3. The **default request path** still routes AFD → Container Apps directly (the APIM/Redis hops are provisioned and available but not yet inserted into the hot 18 ms path).
 
 ### 2.2 Control plane (security, governance, MLOps)
 
@@ -124,13 +124,13 @@ flowchart TB
 | Layer | Azure service / SKU | Role | SLA | Cost class | Status |
 |---|---|---|---|---|---|
 | Edge | **Front Door Premium** | TLS, WAF, anycast, AFD rules, bot-protection | 99.99 % | M | ✅ Deployed (`frontdoor.bicep`) |
-| API gateway | **APIM Premium** (2 units × 2 regions) | OAuth2, mTLS to ACA, throttling, regional failover | 99.99 % | M-H | 📘 Reference — no `apim` module; AFD routes straight to ACA today |
+| API gateway | **APIM Premium** (2 units × 2 regions) | OAuth2, mTLS to ACA, throttling, regional failover | 99.99 % | M-H | ✅ Deployed (`apim.bicep`; **Developer** SKU, single unit — `scoring` API `POST /v1/score` + `GET /healthz`, rate-limit policy, App Insights diagnostics) |
 | Compute | **Container Apps** — Consumption + **Dedicated D8 workload profile**, min replicas 3/region, max 60, scale rule = `concurrent-requests=80` | FastAPI scorer + ONNX in-proc | 99.95 % | H | ✅ Deployed (`containerapps.bicep`; Consumption tier, autoscale to 60) |
-| Cache | **Redis Enterprise E10**, zone-redundant | Feature cache, hot keys < 2 ms | 99.99 % | M | 📘 Reference — no `redis` module; scoring-api uses the seeded feature store + Cosmos point-reads |
+| Cache | **Redis Enterprise E10**, zone-redundant | Feature cache, hot keys < 2 ms | 99.99 % | M | ✅ Deployed (`redis.bicep`; **Azure Managed Redis `Balanced_B0`** — classic Basic is retired for new creates — with Entra key-less access policies for the scoring identity) |
 | Stream | **Event Hubs Dedicated CU=2**, geo-DR paired | Ingestion `tx.raw`, fan-out `tx.scored` | 99.99 % | H | ◐ Partial — `eventhubs.bicep` deployed at **Standard** tier (not Dedicated CU) |
 | Stream proc | **Stream Analytics** SU=12, dedicated cluster | Tumbling windows, anomaly UDF, Cosmos sink | 99.9 % | M | ✅ Deployed (`streamanalytics.bicep`) |
-| Eventing | **Service Bus** Premium, zone-redundant namespace | High-risk **alert queue** → async enforcement & case creation (out of the 18 ms path) | 99.9 % | S | 📘 Reference — no `servicebus` module; async enforcement path is a documented target |
-| Action | **Azure Functions** (Flex Consumption) | `feature-builder` rolling aggregates + **enforcement** consumer (block / step-up / notify / open case) | 99.95 % | S | ◐ Partial — `feature-builder` Function **code** implemented (`services/feature-builder/`), no IaC module yet; enforcement Function is a 📘 reference target |
+| Eventing | **Service Bus** Premium, zone-redundant namespace | High-risk **alert queue** → async enforcement & case creation (out of the 18 ms path) | 99.9 % | S | ✅ Deployed (`servicebus.bicep`; **Standard** tier, `disableLocalAuth`, queue `highrisk-alerts`, Entra Data Sender/Receiver RBAC, diagnostics) |
+| Action | **Azure Functions** (Flex Consumption) | `feature-builder` rolling aggregates + **enforcement** consumer (block / step-up / notify / open case) | 99.95 % | S | ✅ Deployed (`functions.bicep`; **Flex Consumption FC1**, fully identity-based storage — enforcement consumer `services/enforcement-function/` on the `highrisk-alerts` queue). ◐ `feature-builder` code (`services/feature-builder/`) still has no IaC module |
 | State / Graph | **Cosmos DB** multi-master, Gremlin + SQL APIs, autoscale 50k–400k RU/s | Feature store + transaction graph | 99.999 % (multi-region writes) | H | ✅ Deployed (`cosmos.bicep`; single-region autoscale in the cost-optimised env) |
 | ML platform | **Azure ML** (compute clusters: STANDARD_NC24ads_A100_v4 for GNN train; STANDARD_F32s_v2 for ensemble) + Model Registry | Training, registry, online endpoints (fallback) | 99.9 % | M | ✅ Deployed (`aml.bicep`; jobs under `ml/aml_jobs/`) |
 | Lakehouse | **Microsoft Fabric F64** capacity, OneLake | Bronze/Silver/Gold, Spark + KQL | 99.9 % | H | ✅ Deployed (`fabric.bicep`; smaller capacity SKU, suspended when idle) |
@@ -138,13 +138,13 @@ flowchart TB
 | GenAI | **Azure OpenAI** — `gpt-4o-mini` (narratives) + `gpt-4o` (complex reasoning), data zone = EU | Agentic narratives & SAR drafts | 99.9 % | M | ◐ Partial — `openai.bicep` deployed with **`gpt-4o-mini`** (the only chat model live; `gpt-4o` is a 📘 reference target) |
 | Identity | **Entra ID P2 + PIM**, workload identities | AuthN/Z, JIT admin | 99.99 % | S | 📘 Reference — tenant-level config; managed identities are used by deployed services |
 | Secrets | **Key Vault Premium HSM** per region | Keys, certs, BYOK for Cosmos & Storage | 99.99 % | S | ◐ Partial — `keyvault.bicep` deployed (RBAC + soft-delete + purge-protection); **Standard** tier, no BYOK |
-| Security | **Defender for Cloud P2** + **Sentinel** | CSPM, CWPP, SIEM/SOAR | n/a | M | ◐ Partial — Defender deployed (`defender.bicep`); **Sentinel** is a 📘 reference target |
+| Security | **Defender for Cloud P2** + **Sentinel** | CSPM, CWPP, SIEM/SOAR | n/a | M | ✅ Deployed — Defender (`defender.bicep`) + **Sentinel** (`sentinel.bicep`; onboarded on `log-heimdall-prod-swc`) |
 | Governance | **Purview** + **Azure Policy** (initiative `NordicSovereignty v3`) | Catalog, lineage, sovereignty enforcement | n/a | S | ✅ Deployed (`purview.bicep`, `policy.bicep`) |
 | Observability | **Log Analytics** + **App Insights** + **Managed Grafana** | Logs/metrics/traces, SLO dashboards | 99.9 % | S | ✅ Deployed (`loganalytics.bicep`, `monitor.bicep`, `grafana.bicep`) |
 
 Cost classes: S < €2k/mo, M €2–15k/mo, H > €15k/mo (per region, prod baseline).
 
-> **Implementation status.** This is the **target** logical architecture; the **Status** column above is the source of truth for what is provisioned. Deployed modules live under `infra/modules/`. Currently **📘 reference (target) only**: APIM Premium, Redis Enterprise, Service Bus (async enforcement path), the enforcement Azure Function, Entra ID P2/PIM and Sentinel. **◐ Partial** (deployed at a simplified tier or code-only): Event Hubs (Standard, not Dedicated), the `feature-builder` Function (code implemented, no IaC), Azure OpenAI (`gpt-4o-mini` only), Key Vault (Standard, no BYOK) and Defender (no Sentinel). Everything else is **✅ deployed**. **Managed Grafana is deployed** (`infra/modules/grafana.bicep`) with its "Scoring API SLO" dashboard in `dashboards/grafana/` (imported via `scripts/import-grafana-dashboard.sh`).
+> **Implementation status.** This is the **target** logical architecture; the **Status** column above is the source of truth for what is provisioned. Deployed modules live under `infra/modules/`. The former reference tiers — **APIM** (Developer SKU), **Azure Managed Redis** (`Balanced_B0`), **Service Bus** (Standard, async enforcement queue) and the **enforcement Azure Function** (Flex Consumption) — plus **Sentinel** are now **✅ deployed** at cost-optimised SKUs via `apim.bicep` / `redis.bicep` / `servicebus.bicep` / `functions.bicep` / `sentinel.bicep` (wired in `infra/platform.bicep`; live-deployed via `infra/addons.bicep`). Still **📘 reference (target) only**: **Entra ID P2 / PIM** (tenant-level licensing, not IaC-deployable). Still **◐ Partial** (deployed at a simplified tier or code-only): Event Hubs (Standard, not Dedicated), the `feature-builder` Function (code implemented, no IaC), Azure OpenAI (`gpt-4o-mini` only) and Key Vault (Standard, no BYOK). Everything else is **✅ deployed**. **Managed Grafana is deployed** (`infra/modules/grafana.bicep`) with its "Scoring API SLO" dashboard in `dashboards/grafana/` (imported via `scripts/import-grafana-dashboard.sh`).
 
 ---
 
@@ -257,6 +257,6 @@ Triggered **after** the synchronous decision; never on the 18 ms path.
 
 ## TL;DR
 
-> Describes the **target** design. For the reference-vs-deployed breakdown (APIM, Redis, Service Bus and the enforcement Function are 📘 reference targets), see the **Status** column in §3.
+> Describes the **target** design. APIM, Redis, Service Bus and the enforcement Function are now **✅ deployed** at cost-optimised SKUs; see the **Status** column in §3 for the reference-vs-deployed breakdown.
 
 A two-region (Sweden Central + North Europe) active/active platform: AFD → APIM → **Container Apps Dedicated D8** running an **ONNX in-proc ensemble** (GBDT + NN + meta-learner + GNN embeddings) against a **Cosmos multi-master graph + Redis** feature store delivers p99 < 18 ms at 5 k TPS sustained / 20 k peak, returning `approve|decline|step_up|manual_review` synchronously. **Event Hubs → Stream Analytics → OneLake (Bronze/Silver/Gold) → Power BI** powers EBA reporting; high-risk transactions trigger an **async Service Bus → Azure Functions** enforcement + case-management path, with analyst review (SHAP reason codes + OpenAI narratives) feeding model retraining. **Semantic Kernel agents on Azure OpenAI** automate triage, graph analysis, policy and SAR narratives. **Defender + Purview + Azure Policy** enforce GDPR, EU AI Act (fraud carve-out + **voluntary** high-risk-grade governance) and Nordic sovereignty.

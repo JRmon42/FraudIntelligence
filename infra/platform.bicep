@@ -285,6 +285,74 @@ module mon 'modules/monitor.bicep' = if (isPrimary) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Previously "reference-only" tiers, now provisioned (cost-optimised SKUs).
+// APIM Developer, Redis Basic C0, Service Bus Standard, enforcement Function
+// (Consumption) and Microsoft Sentinel. Override SKUs via the module params
+// for a production deployment.
+// ---------------------------------------------------------------------------
+var serviceBusFqdn = 'sbns-heimdall-${env}-${regionCode}.servicebus.windows.net'
+
+module redis 'modules/redis.bicep' = if (isPrimary) {
+  name: 'redis-${regionCode}'
+  params: {
+    env: env
+    regionCode: regionCode
+    location: location
+    tags: tags
+    logAnalyticsWorkspaceId: logs.outputs.workspaceId
+    dataPrincipalIds: [ aca.outputs.scoringPrincipalId ]
+  }
+}
+
+// Enforcement Function first — its identity is needed for the Service Bus
+// receiver role assignment; it only needs the deterministic SB FQDN.
+module fn 'modules/functions.bicep' = if (isPrimary) {
+  name: 'fn-${regionCode}'
+  params: {
+    env: env
+    regionCode: regionCode
+    location: location
+    tags: tags
+    appInsightsConnectionString: logs.outputs.appInsightsConnectionString
+    serviceBusFqdn: serviceBusFqdn
+  }
+}
+
+module sb 'modules/servicebus.bicep' = if (isPrimary) {
+  name: 'sb-${regionCode}'
+  params: {
+    env: env
+    regionCode: regionCode
+    location: location
+    tags: tags
+    logAnalyticsWorkspaceId: logs.outputs.workspaceId
+    senderPrincipalIds: [ aca.outputs.scoringPrincipalId, aca.outputs.orchestratorPrincipalId ]
+    receiverPrincipalIds: [ fn.outputs.functionPrincipalId ]
+  }
+}
+
+module apim 'modules/apim.bicep' = if (isPrimary) {
+  name: 'apim-${regionCode}'
+  params: {
+    env: env
+    regionCode: regionCode
+    location: location
+    tags: tags
+    logAnalyticsWorkspaceId: logs.outputs.workspaceId
+    scoringBackendUrl: 'https://${aca.outputs.scoringFqdn}'
+  }
+}
+
+module sentinel 'modules/sentinel.bicep' = if (isPrimary) {
+  name: 'sentinel-${regionCode}'
+  params: {
+    location: location
+    tags: tags
+    workspaceName: logs.outputs.workspaceName
+  }
+}
+
 // Outputs (best-effort — some are null in DR region)
 output logAnalyticsId string = logs.outputs.workspaceId
 output keyVaultName string = kv.outputs.keyVaultName
@@ -303,3 +371,7 @@ output frontDoorConsoleHost string = isPrimary ? afd.outputs.consoleEndpointHost
 output synapseServerlessEndpoint string = isPrimary ? syn.outputs.synapseServerlessEndpoint : ''
 output fabricCapacityName string = isPrimary ? fab.outputs.capacityName : ''
 output purviewName string = isPrimary ? pv.outputs.purviewName : ''
+output apimGatewayUrl string = isPrimary ? apim.outputs.apimGatewayUrl : ''
+output redisHostName string = isPrimary ? redis.outputs.redisHostName : ''
+output serviceBusNamespace string = isPrimary ? sb.outputs.namespaceName : ''
+output enforcementFunctionName string = isPrimary ? fn.outputs.functionName : ''

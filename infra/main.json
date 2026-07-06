@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.44.1.10279",
-      "templateHash": "13657552759139677307"
+      "templateHash": "12298602089631068192"
     }
   },
   "parameters": {
@@ -466,7 +466,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.44.1.10279",
-              "templateHash": "12811482527251258484"
+              "templateHash": "1607267422309983955"
             }
           },
           "parameters": {
@@ -579,7 +579,8 @@
             "oaiDnsZoneId": "[resourceId(parameters('dnsZoneResourceGroupName'), 'Microsoft.Network/privateDnsZones', 'privatelink.openai.azure.com')]",
             "acrDnsZoneId": "[resourceId(parameters('dnsZoneResourceGroupName'), 'Microsoft.Network/privateDnsZones', 'privatelink.azurecr.io')]",
             "amlApiDnsZoneId": "[resourceId(parameters('dnsZoneResourceGroupName'), 'Microsoft.Network/privateDnsZones', 'privatelink.api.azureml.ms')]",
-            "amlNbDnsZoneId": "[resourceId(parameters('dnsZoneResourceGroupName'), 'Microsoft.Network/privateDnsZones', 'privatelink.notebooks.azure.net')]"
+            "amlNbDnsZoneId": "[resourceId(parameters('dnsZoneResourceGroupName'), 'Microsoft.Network/privateDnsZones', 'privatelink.notebooks.azure.net')]",
+            "serviceBusFqdn": "[format('sbns-heimdall-{0}-{1}.servicebus.windows.net', parameters('env'), parameters('regionCode'))]"
           },
           "resources": {
             "logs": {
@@ -4770,6 +4771,931 @@
                 "eh",
                 "logs"
               ]
+            },
+            "redis": {
+              "condition": "[parameters('isPrimary')]",
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2025-04-01",
+              "name": "[format('redis-{0}', parameters('regionCode'))]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "env": {
+                    "value": "[parameters('env')]"
+                  },
+                  "regionCode": {
+                    "value": "[parameters('regionCode')]"
+                  },
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "tags": {
+                    "value": "[parameters('tags')]"
+                  },
+                  "logAnalyticsWorkspaceId": {
+                    "value": "[reference('logs').outputs.workspaceId.value]"
+                  },
+                  "dataPrincipalIds": {
+                    "value": [
+                      "[reference('aca').outputs.scoringPrincipalId.value]"
+                    ]
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.44.1.10279",
+                      "templateHash": "16686364246282614075"
+                    }
+                  },
+                  "parameters": {
+                    "env": {
+                      "type": "string"
+                    },
+                    "regionCode": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string",
+                      "defaultValue": "[resourceGroup().location]"
+                    },
+                    "tags": {
+                      "type": "object"
+                    },
+                    "logAnalyticsWorkspaceId": {
+                      "type": "string"
+                    },
+                    "skuName": {
+                      "type": "string",
+                      "defaultValue": "Basic",
+                      "allowedValues": [
+                        "Basic",
+                        "Standard",
+                        "Premium"
+                      ],
+                      "metadata": {
+                        "description": "Redis SKU tier."
+                      }
+                    },
+                    "skuFamily": {
+                      "type": "string",
+                      "defaultValue": "C",
+                      "allowedValues": [
+                        "C",
+                        "P"
+                      ],
+                      "metadata": {
+                        "description": "SKU family: C (Basic/Standard) or P (Premium)."
+                      }
+                    },
+                    "skuCapacity": {
+                      "type": "int",
+                      "defaultValue": 0,
+                      "metadata": {
+                        "description": "SKU capacity (C0..C6 / P1..P5)."
+                      }
+                    },
+                    "dataPrincipalIds": {
+                      "type": "array",
+                      "defaultValue": [],
+                      "metadata": {
+                        "description": "Object IDs granted the Redis Data Owner access policy (e.g. scoring-api MI)."
+                      }
+                    }
+                  },
+                  "variables": {
+                    "redisName": "[format('redis-heimdall-{0}-{1}', parameters('env'), parameters('regionCode'))]"
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.Cache/redis",
+                      "apiVersion": "2024-11-01",
+                      "name": "[variables('redisName')]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "properties": {
+                        "sku": {
+                          "name": "[parameters('skuName')]",
+                          "family": "[parameters('skuFamily')]",
+                          "capacity": "[parameters('skuCapacity')]"
+                        },
+                        "minimumTlsVersion": "1.2",
+                        "enableNonSslPort": false,
+                        "publicNetworkAccess": "Enabled",
+                        "redisConfiguration": {
+                          "aad-enabled": "true"
+                        }
+                      }
+                    },
+                    {
+                      "copy": {
+                        "name": "redisAccess",
+                        "count": "[length(parameters('dataPrincipalIds'))]"
+                      },
+                      "type": "Microsoft.Cache/redis/accessPolicyAssignments",
+                      "apiVersion": "2024-11-01",
+                      "name": "[format('{0}/{1}', variables('redisName'), guid(resourceId('Microsoft.Cache/redis', variables('redisName')), parameters('dataPrincipalIds')[copyIndex()], 'Data Owner'))]",
+                      "properties": {
+                        "accessPolicyName": "Data Owner",
+                        "objectId": "[parameters('dataPrincipalIds')[copyIndex()]]",
+                        "objectIdAlias": "[parameters('dataPrincipalIds')[copyIndex()]]"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Cache/redis', variables('redisName'))]"
+                      ]
+                    },
+                    {
+                      "type": "Microsoft.Insights/diagnosticSettings",
+                      "apiVersion": "2021-05-01-preview",
+                      "scope": "[resourceId('Microsoft.Cache/redis', variables('redisName'))]",
+                      "name": "[format('diag-{0}', variables('redisName'))]",
+                      "properties": {
+                        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                        "metrics": [
+                          {
+                            "category": "AllMetrics",
+                            "enabled": true
+                          }
+                        ]
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Cache/redis', variables('redisName'))]"
+                      ]
+                    }
+                  ],
+                  "outputs": {
+                    "redisId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.Cache/redis', variables('redisName'))]"
+                    },
+                    "redisName": {
+                      "type": "string",
+                      "value": "[variables('redisName')]"
+                    },
+                    "redisHostName": {
+                      "type": "string",
+                      "value": "[reference(resourceId('Microsoft.Cache/redis', variables('redisName')), '2024-11-01').hostName]"
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "aca",
+                "logs"
+              ]
+            },
+            "fn": {
+              "condition": "[parameters('isPrimary')]",
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2025-04-01",
+              "name": "[format('fn-{0}', parameters('regionCode'))]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "env": {
+                    "value": "[parameters('env')]"
+                  },
+                  "regionCode": {
+                    "value": "[parameters('regionCode')]"
+                  },
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "tags": {
+                    "value": "[parameters('tags')]"
+                  },
+                  "appInsightsConnectionString": {
+                    "value": "[reference('logs').outputs.appInsightsConnectionString.value]"
+                  },
+                  "serviceBusFqdn": {
+                    "value": "[variables('serviceBusFqdn')]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.44.1.10279",
+                      "templateHash": "16441848482859711073"
+                    }
+                  },
+                  "parameters": {
+                    "env": {
+                      "type": "string"
+                    },
+                    "regionCode": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string",
+                      "defaultValue": "[resourceGroup().location]"
+                    },
+                    "tags": {
+                      "type": "object"
+                    },
+                    "appInsightsConnectionString": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "App Insights connection string for Function telemetry."
+                      }
+                    },
+                    "serviceBusFqdn": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Fully-qualified Service Bus namespace host (e.g. sbns-...servicebus.windows.net) for the identity-based trigger."
+                      }
+                    },
+                    "queueName": {
+                      "type": "string",
+                      "defaultValue": "highrisk-alerts",
+                      "metadata": {
+                        "description": "Name of the high-risk queue the enforcement consumer binds to."
+                      }
+                    }
+                  },
+                  "variables": {
+                    "funcName": "[format('func-heimdall-enforce-{0}-{1}', parameters('env'), parameters('regionCode'))]",
+                    "planName": "[format('plan-func-heimdall-{0}-{1}', parameters('env'), parameters('regionCode'))]",
+                    "stName": "[format('stfn{0}heimdall{1}', parameters('env'), parameters('regionCode'))]"
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.Storage/storageAccounts",
+                      "apiVersion": "2023-05-01",
+                      "name": "[variables('stName')]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "sku": {
+                        "name": "Standard_LRS"
+                      },
+                      "kind": "StorageV2",
+                      "properties": {
+                        "minimumTlsVersion": "TLS1_2",
+                        "allowBlobPublicAccess": false,
+                        "supportsHttpsTrafficOnly": true
+                      }
+                    },
+                    {
+                      "type": "Microsoft.Web/serverfarms",
+                      "apiVersion": "2023-12-01",
+                      "name": "[variables('planName')]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "sku": {
+                        "name": "Y1",
+                        "tier": "Dynamic"
+                      },
+                      "kind": "functionapp",
+                      "properties": {
+                        "reserved": true
+                      }
+                    },
+                    {
+                      "type": "Microsoft.Web/sites",
+                      "apiVersion": "2023-12-01",
+                      "name": "[variables('funcName')]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "kind": "functionapp,linux",
+                      "identity": {
+                        "type": "SystemAssigned"
+                      },
+                      "properties": {
+                        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('planName'))]",
+                        "httpsOnly": true,
+                        "siteConfig": {
+                          "linuxFxVersion": "PYTHON|3.11",
+                          "ftpsState": "Disabled",
+                          "minTlsVersion": "1.2",
+                          "appSettings": [
+                            {
+                              "name": "AzureWebJobsStorage",
+                              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', variables('stName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('stName')), '2023-05-01').keys[0].value)]"
+                            },
+                            {
+                              "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+                              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', variables('stName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('stName')), '2023-05-01').keys[0].value)]"
+                            },
+                            {
+                              "name": "WEBSITE_CONTENTSHARE",
+                              "value": "[toLower(variables('funcName'))]"
+                            },
+                            {
+                              "name": "FUNCTIONS_EXTENSION_VERSION",
+                              "value": "~4"
+                            },
+                            {
+                              "name": "FUNCTIONS_WORKER_RUNTIME",
+                              "value": "python"
+                            },
+                            {
+                              "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                              "value": "[parameters('appInsightsConnectionString')]"
+                            },
+                            {
+                              "name": "ENFORCEMENT_QUEUE",
+                              "value": "[parameters('queueName')]"
+                            },
+                            {
+                              "name": "ServiceBusConnection__fullyQualifiedNamespace",
+                              "value": "[parameters('serviceBusFqdn')]"
+                            },
+                            {
+                              "name": "ServiceBusConnection__credential",
+                              "value": "managedidentity"
+                            }
+                          ]
+                        }
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Web/serverfarms', variables('planName'))]",
+                        "[resourceId('Microsoft.Storage/storageAccounts', variables('stName'))]"
+                      ]
+                    }
+                  ],
+                  "outputs": {
+                    "functionName": {
+                      "type": "string",
+                      "value": "[variables('funcName')]"
+                    },
+                    "functionId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.Web/sites', variables('funcName'))]"
+                    },
+                    "functionPrincipalId": {
+                      "type": "string",
+                      "value": "[reference(resourceId('Microsoft.Web/sites', variables('funcName')), '2023-12-01', 'full').identity.principalId]"
+                    },
+                    "functionDefaultHostName": {
+                      "type": "string",
+                      "value": "[reference(resourceId('Microsoft.Web/sites', variables('funcName')), '2023-12-01').defaultHostName]"
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "logs"
+              ]
+            },
+            "sb": {
+              "condition": "[parameters('isPrimary')]",
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2025-04-01",
+              "name": "[format('sb-{0}', parameters('regionCode'))]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "env": {
+                    "value": "[parameters('env')]"
+                  },
+                  "regionCode": {
+                    "value": "[parameters('regionCode')]"
+                  },
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "tags": {
+                    "value": "[parameters('tags')]"
+                  },
+                  "logAnalyticsWorkspaceId": {
+                    "value": "[reference('logs').outputs.workspaceId.value]"
+                  },
+                  "senderPrincipalIds": {
+                    "value": [
+                      "[reference('aca').outputs.scoringPrincipalId.value]",
+                      "[reference('aca').outputs.orchestratorPrincipalId.value]"
+                    ]
+                  },
+                  "receiverPrincipalIds": {
+                    "value": [
+                      "[reference('fn').outputs.functionPrincipalId.value]"
+                    ]
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.44.1.10279",
+                      "templateHash": "9678581017995988868"
+                    }
+                  },
+                  "parameters": {
+                    "env": {
+                      "type": "string"
+                    },
+                    "regionCode": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string",
+                      "defaultValue": "[resourceGroup().location]"
+                    },
+                    "tags": {
+                      "type": "object"
+                    },
+                    "logAnalyticsWorkspaceId": {
+                      "type": "string"
+                    },
+                    "skuName": {
+                      "type": "string",
+                      "defaultValue": "Standard",
+                      "allowedValues": [
+                        "Standard",
+                        "Premium"
+                      ],
+                      "metadata": {
+                        "description": "Service Bus SKU. Premium is required for private endpoints & zone redundancy."
+                      }
+                    },
+                    "senderPrincipalIds": {
+                      "type": "array",
+                      "defaultValue": [],
+                      "metadata": {
+                        "description": "Object IDs granted Azure Service Bus Data Sender on the namespace (scoring-api, orchestrator, ASA)."
+                      }
+                    },
+                    "receiverPrincipalIds": {
+                      "type": "array",
+                      "defaultValue": [],
+                      "metadata": {
+                        "description": "Object IDs granted Azure Service Bus Data Receiver on the namespace (enforcement Function)."
+                      }
+                    }
+                  },
+                  "variables": {
+                    "sbName": "[format('sbns-heimdall-{0}-{1}', parameters('env'), parameters('regionCode'))]",
+                    "queueName": "highrisk-alerts",
+                    "dataSenderRoleId": "69a216fc-b8fb-44d8-bc22-1f3c2cd27a39",
+                    "dataReceiverRoleId": "4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0"
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.ServiceBus/namespaces",
+                      "apiVersion": "2022-10-01-preview",
+                      "name": "[variables('sbName')]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "sku": {
+                        "name": "[parameters('skuName')]",
+                        "tier": "[parameters('skuName')]"
+                      },
+                      "identity": {
+                        "type": "SystemAssigned"
+                      },
+                      "properties": {
+                        "minimumTlsVersion": "1.2",
+                        "disableLocalAuth": true,
+                        "publicNetworkAccess": "Enabled",
+                        "zoneRedundant": "[equals(parameters('skuName'), 'Premium')]"
+                      }
+                    },
+                    {
+                      "type": "Microsoft.ServiceBus/namespaces/queues",
+                      "apiVersion": "2022-10-01-preview",
+                      "name": "[format('{0}/{1}', variables('sbName'), variables('queueName'))]",
+                      "properties": {
+                        "lockDuration": "PT1M",
+                        "maxDeliveryCount": 10,
+                        "deadLetteringOnMessageExpiration": true,
+                        "defaultMessageTimeToLive": "P7D",
+                        "enablePartitioning": "[equals(parameters('skuName'), 'Standard')]"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.ServiceBus/namespaces', variables('sbName'))]"
+                      ]
+                    },
+                    {
+                      "copy": {
+                        "name": "senders",
+                        "count": "[length(parameters('senderPrincipalIds'))]"
+                      },
+                      "type": "Microsoft.Authorization/roleAssignments",
+                      "apiVersion": "2022-04-01",
+                      "scope": "[resourceId('Microsoft.ServiceBus/namespaces', variables('sbName'))]",
+                      "name": "[guid(resourceId('Microsoft.ServiceBus/namespaces', variables('sbName')), parameters('senderPrincipalIds')[copyIndex()], variables('dataSenderRoleId'))]",
+                      "properties": {
+                        "principalId": "[parameters('senderPrincipalIds')[copyIndex()]]",
+                        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('dataSenderRoleId'))]",
+                        "principalType": "ServicePrincipal"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.ServiceBus/namespaces', variables('sbName'))]"
+                      ]
+                    },
+                    {
+                      "copy": {
+                        "name": "receivers",
+                        "count": "[length(parameters('receiverPrincipalIds'))]"
+                      },
+                      "type": "Microsoft.Authorization/roleAssignments",
+                      "apiVersion": "2022-04-01",
+                      "scope": "[resourceId('Microsoft.ServiceBus/namespaces', variables('sbName'))]",
+                      "name": "[guid(resourceId('Microsoft.ServiceBus/namespaces', variables('sbName')), parameters('receiverPrincipalIds')[copyIndex()], variables('dataReceiverRoleId'))]",
+                      "properties": {
+                        "principalId": "[parameters('receiverPrincipalIds')[copyIndex()]]",
+                        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('dataReceiverRoleId'))]",
+                        "principalType": "ServicePrincipal"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.ServiceBus/namespaces', variables('sbName'))]"
+                      ]
+                    },
+                    {
+                      "type": "Microsoft.Insights/diagnosticSettings",
+                      "apiVersion": "2021-05-01-preview",
+                      "scope": "[resourceId('Microsoft.ServiceBus/namespaces', variables('sbName'))]",
+                      "name": "[format('diag-{0}', variables('sbName'))]",
+                      "properties": {
+                        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                        "logs": [
+                          {
+                            "categoryGroup": "allLogs",
+                            "enabled": true
+                          }
+                        ],
+                        "metrics": [
+                          {
+                            "category": "AllMetrics",
+                            "enabled": true
+                          }
+                        ]
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.ServiceBus/namespaces', variables('sbName'))]"
+                      ]
+                    }
+                  ],
+                  "outputs": {
+                    "namespaceId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.ServiceBus/namespaces', variables('sbName'))]"
+                    },
+                    "namespaceName": {
+                      "type": "string",
+                      "value": "[variables('sbName')]"
+                    },
+                    "namespaceFqdn": {
+                      "type": "string",
+                      "value": "[format('{0}.servicebus.windows.net', variables('sbName'))]"
+                    },
+                    "queueName": {
+                      "type": "string",
+                      "value": "[variables('queueName')]"
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "aca",
+                "fn",
+                "logs"
+              ]
+            },
+            "apim": {
+              "condition": "[parameters('isPrimary')]",
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2025-04-01",
+              "name": "[format('apim-{0}', parameters('regionCode'))]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "env": {
+                    "value": "[parameters('env')]"
+                  },
+                  "regionCode": {
+                    "value": "[parameters('regionCode')]"
+                  },
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "tags": {
+                    "value": "[parameters('tags')]"
+                  },
+                  "logAnalyticsWorkspaceId": {
+                    "value": "[reference('logs').outputs.workspaceId.value]"
+                  },
+                  "scoringBackendUrl": {
+                    "value": "[format('https://{0}', reference('aca').outputs.scoringFqdn.value)]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.44.1.10279",
+                      "templateHash": "2715980739425335928"
+                    }
+                  },
+                  "parameters": {
+                    "env": {
+                      "type": "string"
+                    },
+                    "regionCode": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string",
+                      "defaultValue": "[resourceGroup().location]"
+                    },
+                    "tags": {
+                      "type": "object"
+                    },
+                    "logAnalyticsWorkspaceId": {
+                      "type": "string"
+                    },
+                    "skuName": {
+                      "type": "string",
+                      "defaultValue": "Developer",
+                      "allowedValues": [
+                        "Developer",
+                        "Basic",
+                        "Standard",
+                        "StandardV2",
+                        "Premium"
+                      ],
+                      "metadata": {
+                        "description": "APIM SKU. Developer (default) has no SLA; use StandardV2/Premium for production."
+                      }
+                    },
+                    "skuCapacity": {
+                      "type": "int",
+                      "defaultValue": 1,
+                      "metadata": {
+                        "description": "Scale units (Developer supports 1)."
+                      }
+                    },
+                    "publisherEmail": {
+                      "type": "string",
+                      "defaultValue": "jpontvianne@microsoft.com",
+                      "metadata": {
+                        "description": "Publisher email shown on the developer portal / notifications."
+                      }
+                    },
+                    "publisherName": {
+                      "type": "string",
+                      "defaultValue": "Heimdall Fraud Intelligence",
+                      "metadata": {
+                        "description": "Publisher / organisation name."
+                      }
+                    },
+                    "scoringBackendUrl": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Backend base URL for the scoring API (https, no trailing slash)."
+                      }
+                    }
+                  },
+                  "variables": {
+                    "apimName": "[format('apim-heimdall-{0}-{1}', parameters('env'), parameters('regionCode'))]"
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.ApiManagement/service",
+                      "apiVersion": "2023-05-01-preview",
+                      "name": "[variables('apimName')]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "sku": {
+                        "name": "[parameters('skuName')]",
+                        "capacity": "[parameters('skuCapacity')]"
+                      },
+                      "identity": {
+                        "type": "SystemAssigned"
+                      },
+                      "properties": {
+                        "publisherEmail": "[parameters('publisherEmail')]",
+                        "publisherName": "[parameters('publisherName')]"
+                      }
+                    },
+                    {
+                      "type": "Microsoft.ApiManagement/service/backends",
+                      "apiVersion": "2023-05-01-preview",
+                      "name": "[format('{0}/{1}', variables('apimName'), 'scoring-api')]",
+                      "properties": {
+                        "protocol": "http",
+                        "url": "[parameters('scoringBackendUrl')]",
+                        "tls": {
+                          "validateCertificateChain": true,
+                          "validateCertificateName": true
+                        }
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.ApiManagement/service', variables('apimName'))]"
+                      ]
+                    },
+                    {
+                      "type": "Microsoft.ApiManagement/service/apis",
+                      "apiVersion": "2023-05-01-preview",
+                      "name": "[format('{0}/{1}', variables('apimName'), 'scoring')]",
+                      "properties": {
+                        "displayName": "Fraud Scoring API",
+                        "path": "scoring",
+                        "protocols": [
+                          "https"
+                        ],
+                        "serviceUrl": "[parameters('scoringBackendUrl')]",
+                        "subscriptionRequired": true
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.ApiManagement/service', variables('apimName'))]"
+                      ]
+                    },
+                    {
+                      "type": "Microsoft.ApiManagement/service/apis/operations",
+                      "apiVersion": "2023-05-01-preview",
+                      "name": "[format('{0}/{1}/{2}', variables('apimName'), 'scoring', 'score')]",
+                      "properties": {
+                        "displayName": "Score transaction",
+                        "method": "POST",
+                        "urlTemplate": "/v1/score"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.ApiManagement/service/apis', variables('apimName'), 'scoring')]"
+                      ]
+                    },
+                    {
+                      "type": "Microsoft.ApiManagement/service/apis/operations",
+                      "apiVersion": "2023-05-01-preview",
+                      "name": "[format('{0}/{1}/{2}', variables('apimName'), 'scoring', 'healthz')]",
+                      "properties": {
+                        "displayName": "Health",
+                        "method": "GET",
+                        "urlTemplate": "/healthz"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.ApiManagement/service/apis', variables('apimName'), 'scoring')]"
+                      ]
+                    },
+                    {
+                      "type": "Microsoft.ApiManagement/service/apis/policies",
+                      "apiVersion": "2023-05-01-preview",
+                      "name": "[format('{0}/{1}/{2}', variables('apimName'), 'scoring', 'policy')]",
+                      "properties": {
+                        "format": "xml",
+                        "value": "<policies><inbound><base /><set-backend-service backend-id=\"scoring-api\" /><rate-limit calls=\"6000\" renewal-period=\"60\" /></inbound><backend><base /></backend><outbound><base /></outbound><on-error><base /></on-error></policies>"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.ApiManagement/service/apis', variables('apimName'), 'scoring')]",
+                        "[resourceId('Microsoft.ApiManagement/service/backends', variables('apimName'), 'scoring-api')]"
+                      ]
+                    },
+                    {
+                      "type": "Microsoft.Insights/diagnosticSettings",
+                      "apiVersion": "2021-05-01-preview",
+                      "scope": "[resourceId('Microsoft.ApiManagement/service', variables('apimName'))]",
+                      "name": "[format('diag-{0}', variables('apimName'))]",
+                      "properties": {
+                        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                        "logs": [
+                          {
+                            "categoryGroup": "allLogs",
+                            "enabled": true
+                          }
+                        ],
+                        "metrics": [
+                          {
+                            "category": "AllMetrics",
+                            "enabled": true
+                          }
+                        ]
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.ApiManagement/service', variables('apimName'))]"
+                      ]
+                    }
+                  ],
+                  "outputs": {
+                    "apimId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.ApiManagement/service', variables('apimName'))]"
+                    },
+                    "apimName": {
+                      "type": "string",
+                      "value": "[variables('apimName')]"
+                    },
+                    "apimGatewayUrl": {
+                      "type": "string",
+                      "value": "[reference(resourceId('Microsoft.ApiManagement/service', variables('apimName')), '2023-05-01-preview').gatewayUrl]"
+                    },
+                    "apimPrincipalId": {
+                      "type": "string",
+                      "value": "[reference(resourceId('Microsoft.ApiManagement/service', variables('apimName')), '2023-05-01-preview', 'full').identity.principalId]"
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "aca",
+                "logs"
+              ]
+            },
+            "sentinel": {
+              "condition": "[parameters('isPrimary')]",
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2025-04-01",
+              "name": "[format('sentinel-{0}', parameters('regionCode'))]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "tags": {
+                    "value": "[parameters('tags')]"
+                  },
+                  "workspaceName": {
+                    "value": "[reference('logs').outputs.workspaceName.value]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.44.1.10279",
+                      "templateHash": "12447867749820589477"
+                    }
+                  },
+                  "parameters": {
+                    "location": {
+                      "type": "string",
+                      "defaultValue": "[resourceGroup().location]"
+                    },
+                    "tags": {
+                      "type": "object"
+                    },
+                    "workspaceName": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Name of the existing Log Analytics workspace to onboard."
+                      }
+                    }
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.SecurityInsights/onboardingStates",
+                      "apiVersion": "2024-03-01",
+                      "scope": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]",
+                      "name": "default",
+                      "properties": {}
+                    },
+                    {
+                      "type": "Microsoft.OperationsManagement/solutions",
+                      "apiVersion": "2015-11-01-preview",
+                      "name": "[format('SecurityInsights({0})', parameters('workspaceName'))]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "plan": {
+                        "name": "[format('SecurityInsights({0})', parameters('workspaceName'))]",
+                        "product": "OMSGallery/SecurityInsights",
+                        "publisher": "Microsoft",
+                        "promotionCode": ""
+                      },
+                      "properties": {
+                        "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+                      },
+                      "dependsOn": [
+                        "[extensionResourceId(resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName')), 'Microsoft.SecurityInsights/onboardingStates', 'default')]"
+                      ]
+                    }
+                  ],
+                  "outputs": {
+                    "sentinelWorkspaceId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "logs"
+              ]
             }
           },
           "outputs": {
@@ -4840,6 +5766,22 @@
             "purviewName": {
               "type": "string",
               "value": "[if(parameters('isPrimary'), reference('pv').outputs.purviewName.value, '')]"
+            },
+            "apimGatewayUrl": {
+              "type": "string",
+              "value": "[if(parameters('isPrimary'), reference('apim').outputs.apimGatewayUrl.value, '')]"
+            },
+            "redisHostName": {
+              "type": "string",
+              "value": "[if(parameters('isPrimary'), reference('redis').outputs.redisHostName.value, '')]"
+            },
+            "serviceBusNamespace": {
+              "type": "string",
+              "value": "[if(parameters('isPrimary'), reference('sb').outputs.namespaceName.value, '')]"
+            },
+            "enforcementFunctionName": {
+              "type": "string",
+              "value": "[if(parameters('isPrimary'), reference('fn').outputs.functionName.value, '')]"
             }
           }
         }
@@ -4923,7 +5865,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.44.1.10279",
-              "templateHash": "12811482527251258484"
+              "templateHash": "1607267422309983955"
             }
           },
           "parameters": {
@@ -5036,7 +5978,8 @@
             "oaiDnsZoneId": "[resourceId(parameters('dnsZoneResourceGroupName'), 'Microsoft.Network/privateDnsZones', 'privatelink.openai.azure.com')]",
             "acrDnsZoneId": "[resourceId(parameters('dnsZoneResourceGroupName'), 'Microsoft.Network/privateDnsZones', 'privatelink.azurecr.io')]",
             "amlApiDnsZoneId": "[resourceId(parameters('dnsZoneResourceGroupName'), 'Microsoft.Network/privateDnsZones', 'privatelink.api.azureml.ms')]",
-            "amlNbDnsZoneId": "[resourceId(parameters('dnsZoneResourceGroupName'), 'Microsoft.Network/privateDnsZones', 'privatelink.notebooks.azure.net')]"
+            "amlNbDnsZoneId": "[resourceId(parameters('dnsZoneResourceGroupName'), 'Microsoft.Network/privateDnsZones', 'privatelink.notebooks.azure.net')]",
+            "serviceBusFqdn": "[format('sbns-heimdall-{0}-{1}.servicebus.windows.net', parameters('env'), parameters('regionCode'))]"
           },
           "resources": {
             "logs": {
@@ -9227,6 +10170,931 @@
                 "eh",
                 "logs"
               ]
+            },
+            "redis": {
+              "condition": "[parameters('isPrimary')]",
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2025-04-01",
+              "name": "[format('redis-{0}', parameters('regionCode'))]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "env": {
+                    "value": "[parameters('env')]"
+                  },
+                  "regionCode": {
+                    "value": "[parameters('regionCode')]"
+                  },
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "tags": {
+                    "value": "[parameters('tags')]"
+                  },
+                  "logAnalyticsWorkspaceId": {
+                    "value": "[reference('logs').outputs.workspaceId.value]"
+                  },
+                  "dataPrincipalIds": {
+                    "value": [
+                      "[reference('aca').outputs.scoringPrincipalId.value]"
+                    ]
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.44.1.10279",
+                      "templateHash": "16686364246282614075"
+                    }
+                  },
+                  "parameters": {
+                    "env": {
+                      "type": "string"
+                    },
+                    "regionCode": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string",
+                      "defaultValue": "[resourceGroup().location]"
+                    },
+                    "tags": {
+                      "type": "object"
+                    },
+                    "logAnalyticsWorkspaceId": {
+                      "type": "string"
+                    },
+                    "skuName": {
+                      "type": "string",
+                      "defaultValue": "Basic",
+                      "allowedValues": [
+                        "Basic",
+                        "Standard",
+                        "Premium"
+                      ],
+                      "metadata": {
+                        "description": "Redis SKU tier."
+                      }
+                    },
+                    "skuFamily": {
+                      "type": "string",
+                      "defaultValue": "C",
+                      "allowedValues": [
+                        "C",
+                        "P"
+                      ],
+                      "metadata": {
+                        "description": "SKU family: C (Basic/Standard) or P (Premium)."
+                      }
+                    },
+                    "skuCapacity": {
+                      "type": "int",
+                      "defaultValue": 0,
+                      "metadata": {
+                        "description": "SKU capacity (C0..C6 / P1..P5)."
+                      }
+                    },
+                    "dataPrincipalIds": {
+                      "type": "array",
+                      "defaultValue": [],
+                      "metadata": {
+                        "description": "Object IDs granted the Redis Data Owner access policy (e.g. scoring-api MI)."
+                      }
+                    }
+                  },
+                  "variables": {
+                    "redisName": "[format('redis-heimdall-{0}-{1}', parameters('env'), parameters('regionCode'))]"
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.Cache/redis",
+                      "apiVersion": "2024-11-01",
+                      "name": "[variables('redisName')]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "properties": {
+                        "sku": {
+                          "name": "[parameters('skuName')]",
+                          "family": "[parameters('skuFamily')]",
+                          "capacity": "[parameters('skuCapacity')]"
+                        },
+                        "minimumTlsVersion": "1.2",
+                        "enableNonSslPort": false,
+                        "publicNetworkAccess": "Enabled",
+                        "redisConfiguration": {
+                          "aad-enabled": "true"
+                        }
+                      }
+                    },
+                    {
+                      "copy": {
+                        "name": "redisAccess",
+                        "count": "[length(parameters('dataPrincipalIds'))]"
+                      },
+                      "type": "Microsoft.Cache/redis/accessPolicyAssignments",
+                      "apiVersion": "2024-11-01",
+                      "name": "[format('{0}/{1}', variables('redisName'), guid(resourceId('Microsoft.Cache/redis', variables('redisName')), parameters('dataPrincipalIds')[copyIndex()], 'Data Owner'))]",
+                      "properties": {
+                        "accessPolicyName": "Data Owner",
+                        "objectId": "[parameters('dataPrincipalIds')[copyIndex()]]",
+                        "objectIdAlias": "[parameters('dataPrincipalIds')[copyIndex()]]"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Cache/redis', variables('redisName'))]"
+                      ]
+                    },
+                    {
+                      "type": "Microsoft.Insights/diagnosticSettings",
+                      "apiVersion": "2021-05-01-preview",
+                      "scope": "[resourceId('Microsoft.Cache/redis', variables('redisName'))]",
+                      "name": "[format('diag-{0}', variables('redisName'))]",
+                      "properties": {
+                        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                        "metrics": [
+                          {
+                            "category": "AllMetrics",
+                            "enabled": true
+                          }
+                        ]
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Cache/redis', variables('redisName'))]"
+                      ]
+                    }
+                  ],
+                  "outputs": {
+                    "redisId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.Cache/redis', variables('redisName'))]"
+                    },
+                    "redisName": {
+                      "type": "string",
+                      "value": "[variables('redisName')]"
+                    },
+                    "redisHostName": {
+                      "type": "string",
+                      "value": "[reference(resourceId('Microsoft.Cache/redis', variables('redisName')), '2024-11-01').hostName]"
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "aca",
+                "logs"
+              ]
+            },
+            "fn": {
+              "condition": "[parameters('isPrimary')]",
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2025-04-01",
+              "name": "[format('fn-{0}', parameters('regionCode'))]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "env": {
+                    "value": "[parameters('env')]"
+                  },
+                  "regionCode": {
+                    "value": "[parameters('regionCode')]"
+                  },
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "tags": {
+                    "value": "[parameters('tags')]"
+                  },
+                  "appInsightsConnectionString": {
+                    "value": "[reference('logs').outputs.appInsightsConnectionString.value]"
+                  },
+                  "serviceBusFqdn": {
+                    "value": "[variables('serviceBusFqdn')]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.44.1.10279",
+                      "templateHash": "16441848482859711073"
+                    }
+                  },
+                  "parameters": {
+                    "env": {
+                      "type": "string"
+                    },
+                    "regionCode": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string",
+                      "defaultValue": "[resourceGroup().location]"
+                    },
+                    "tags": {
+                      "type": "object"
+                    },
+                    "appInsightsConnectionString": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "App Insights connection string for Function telemetry."
+                      }
+                    },
+                    "serviceBusFqdn": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Fully-qualified Service Bus namespace host (e.g. sbns-...servicebus.windows.net) for the identity-based trigger."
+                      }
+                    },
+                    "queueName": {
+                      "type": "string",
+                      "defaultValue": "highrisk-alerts",
+                      "metadata": {
+                        "description": "Name of the high-risk queue the enforcement consumer binds to."
+                      }
+                    }
+                  },
+                  "variables": {
+                    "funcName": "[format('func-heimdall-enforce-{0}-{1}', parameters('env'), parameters('regionCode'))]",
+                    "planName": "[format('plan-func-heimdall-{0}-{1}', parameters('env'), parameters('regionCode'))]",
+                    "stName": "[format('stfn{0}heimdall{1}', parameters('env'), parameters('regionCode'))]"
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.Storage/storageAccounts",
+                      "apiVersion": "2023-05-01",
+                      "name": "[variables('stName')]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "sku": {
+                        "name": "Standard_LRS"
+                      },
+                      "kind": "StorageV2",
+                      "properties": {
+                        "minimumTlsVersion": "TLS1_2",
+                        "allowBlobPublicAccess": false,
+                        "supportsHttpsTrafficOnly": true
+                      }
+                    },
+                    {
+                      "type": "Microsoft.Web/serverfarms",
+                      "apiVersion": "2023-12-01",
+                      "name": "[variables('planName')]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "sku": {
+                        "name": "Y1",
+                        "tier": "Dynamic"
+                      },
+                      "kind": "functionapp",
+                      "properties": {
+                        "reserved": true
+                      }
+                    },
+                    {
+                      "type": "Microsoft.Web/sites",
+                      "apiVersion": "2023-12-01",
+                      "name": "[variables('funcName')]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "kind": "functionapp,linux",
+                      "identity": {
+                        "type": "SystemAssigned"
+                      },
+                      "properties": {
+                        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('planName'))]",
+                        "httpsOnly": true,
+                        "siteConfig": {
+                          "linuxFxVersion": "PYTHON|3.11",
+                          "ftpsState": "Disabled",
+                          "minTlsVersion": "1.2",
+                          "appSettings": [
+                            {
+                              "name": "AzureWebJobsStorage",
+                              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', variables('stName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('stName')), '2023-05-01').keys[0].value)]"
+                            },
+                            {
+                              "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+                              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', variables('stName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('stName')), '2023-05-01').keys[0].value)]"
+                            },
+                            {
+                              "name": "WEBSITE_CONTENTSHARE",
+                              "value": "[toLower(variables('funcName'))]"
+                            },
+                            {
+                              "name": "FUNCTIONS_EXTENSION_VERSION",
+                              "value": "~4"
+                            },
+                            {
+                              "name": "FUNCTIONS_WORKER_RUNTIME",
+                              "value": "python"
+                            },
+                            {
+                              "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                              "value": "[parameters('appInsightsConnectionString')]"
+                            },
+                            {
+                              "name": "ENFORCEMENT_QUEUE",
+                              "value": "[parameters('queueName')]"
+                            },
+                            {
+                              "name": "ServiceBusConnection__fullyQualifiedNamespace",
+                              "value": "[parameters('serviceBusFqdn')]"
+                            },
+                            {
+                              "name": "ServiceBusConnection__credential",
+                              "value": "managedidentity"
+                            }
+                          ]
+                        }
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Web/serverfarms', variables('planName'))]",
+                        "[resourceId('Microsoft.Storage/storageAccounts', variables('stName'))]"
+                      ]
+                    }
+                  ],
+                  "outputs": {
+                    "functionName": {
+                      "type": "string",
+                      "value": "[variables('funcName')]"
+                    },
+                    "functionId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.Web/sites', variables('funcName'))]"
+                    },
+                    "functionPrincipalId": {
+                      "type": "string",
+                      "value": "[reference(resourceId('Microsoft.Web/sites', variables('funcName')), '2023-12-01', 'full').identity.principalId]"
+                    },
+                    "functionDefaultHostName": {
+                      "type": "string",
+                      "value": "[reference(resourceId('Microsoft.Web/sites', variables('funcName')), '2023-12-01').defaultHostName]"
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "logs"
+              ]
+            },
+            "sb": {
+              "condition": "[parameters('isPrimary')]",
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2025-04-01",
+              "name": "[format('sb-{0}', parameters('regionCode'))]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "env": {
+                    "value": "[parameters('env')]"
+                  },
+                  "regionCode": {
+                    "value": "[parameters('regionCode')]"
+                  },
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "tags": {
+                    "value": "[parameters('tags')]"
+                  },
+                  "logAnalyticsWorkspaceId": {
+                    "value": "[reference('logs').outputs.workspaceId.value]"
+                  },
+                  "senderPrincipalIds": {
+                    "value": [
+                      "[reference('aca').outputs.scoringPrincipalId.value]",
+                      "[reference('aca').outputs.orchestratorPrincipalId.value]"
+                    ]
+                  },
+                  "receiverPrincipalIds": {
+                    "value": [
+                      "[reference('fn').outputs.functionPrincipalId.value]"
+                    ]
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.44.1.10279",
+                      "templateHash": "9678581017995988868"
+                    }
+                  },
+                  "parameters": {
+                    "env": {
+                      "type": "string"
+                    },
+                    "regionCode": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string",
+                      "defaultValue": "[resourceGroup().location]"
+                    },
+                    "tags": {
+                      "type": "object"
+                    },
+                    "logAnalyticsWorkspaceId": {
+                      "type": "string"
+                    },
+                    "skuName": {
+                      "type": "string",
+                      "defaultValue": "Standard",
+                      "allowedValues": [
+                        "Standard",
+                        "Premium"
+                      ],
+                      "metadata": {
+                        "description": "Service Bus SKU. Premium is required for private endpoints & zone redundancy."
+                      }
+                    },
+                    "senderPrincipalIds": {
+                      "type": "array",
+                      "defaultValue": [],
+                      "metadata": {
+                        "description": "Object IDs granted Azure Service Bus Data Sender on the namespace (scoring-api, orchestrator, ASA)."
+                      }
+                    },
+                    "receiverPrincipalIds": {
+                      "type": "array",
+                      "defaultValue": [],
+                      "metadata": {
+                        "description": "Object IDs granted Azure Service Bus Data Receiver on the namespace (enforcement Function)."
+                      }
+                    }
+                  },
+                  "variables": {
+                    "sbName": "[format('sbns-heimdall-{0}-{1}', parameters('env'), parameters('regionCode'))]",
+                    "queueName": "highrisk-alerts",
+                    "dataSenderRoleId": "69a216fc-b8fb-44d8-bc22-1f3c2cd27a39",
+                    "dataReceiverRoleId": "4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0"
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.ServiceBus/namespaces",
+                      "apiVersion": "2022-10-01-preview",
+                      "name": "[variables('sbName')]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "sku": {
+                        "name": "[parameters('skuName')]",
+                        "tier": "[parameters('skuName')]"
+                      },
+                      "identity": {
+                        "type": "SystemAssigned"
+                      },
+                      "properties": {
+                        "minimumTlsVersion": "1.2",
+                        "disableLocalAuth": true,
+                        "publicNetworkAccess": "Enabled",
+                        "zoneRedundant": "[equals(parameters('skuName'), 'Premium')]"
+                      }
+                    },
+                    {
+                      "type": "Microsoft.ServiceBus/namespaces/queues",
+                      "apiVersion": "2022-10-01-preview",
+                      "name": "[format('{0}/{1}', variables('sbName'), variables('queueName'))]",
+                      "properties": {
+                        "lockDuration": "PT1M",
+                        "maxDeliveryCount": 10,
+                        "deadLetteringOnMessageExpiration": true,
+                        "defaultMessageTimeToLive": "P7D",
+                        "enablePartitioning": "[equals(parameters('skuName'), 'Standard')]"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.ServiceBus/namespaces', variables('sbName'))]"
+                      ]
+                    },
+                    {
+                      "copy": {
+                        "name": "senders",
+                        "count": "[length(parameters('senderPrincipalIds'))]"
+                      },
+                      "type": "Microsoft.Authorization/roleAssignments",
+                      "apiVersion": "2022-04-01",
+                      "scope": "[resourceId('Microsoft.ServiceBus/namespaces', variables('sbName'))]",
+                      "name": "[guid(resourceId('Microsoft.ServiceBus/namespaces', variables('sbName')), parameters('senderPrincipalIds')[copyIndex()], variables('dataSenderRoleId'))]",
+                      "properties": {
+                        "principalId": "[parameters('senderPrincipalIds')[copyIndex()]]",
+                        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('dataSenderRoleId'))]",
+                        "principalType": "ServicePrincipal"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.ServiceBus/namespaces', variables('sbName'))]"
+                      ]
+                    },
+                    {
+                      "copy": {
+                        "name": "receivers",
+                        "count": "[length(parameters('receiverPrincipalIds'))]"
+                      },
+                      "type": "Microsoft.Authorization/roleAssignments",
+                      "apiVersion": "2022-04-01",
+                      "scope": "[resourceId('Microsoft.ServiceBus/namespaces', variables('sbName'))]",
+                      "name": "[guid(resourceId('Microsoft.ServiceBus/namespaces', variables('sbName')), parameters('receiverPrincipalIds')[copyIndex()], variables('dataReceiverRoleId'))]",
+                      "properties": {
+                        "principalId": "[parameters('receiverPrincipalIds')[copyIndex()]]",
+                        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('dataReceiverRoleId'))]",
+                        "principalType": "ServicePrincipal"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.ServiceBus/namespaces', variables('sbName'))]"
+                      ]
+                    },
+                    {
+                      "type": "Microsoft.Insights/diagnosticSettings",
+                      "apiVersion": "2021-05-01-preview",
+                      "scope": "[resourceId('Microsoft.ServiceBus/namespaces', variables('sbName'))]",
+                      "name": "[format('diag-{0}', variables('sbName'))]",
+                      "properties": {
+                        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                        "logs": [
+                          {
+                            "categoryGroup": "allLogs",
+                            "enabled": true
+                          }
+                        ],
+                        "metrics": [
+                          {
+                            "category": "AllMetrics",
+                            "enabled": true
+                          }
+                        ]
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.ServiceBus/namespaces', variables('sbName'))]"
+                      ]
+                    }
+                  ],
+                  "outputs": {
+                    "namespaceId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.ServiceBus/namespaces', variables('sbName'))]"
+                    },
+                    "namespaceName": {
+                      "type": "string",
+                      "value": "[variables('sbName')]"
+                    },
+                    "namespaceFqdn": {
+                      "type": "string",
+                      "value": "[format('{0}.servicebus.windows.net', variables('sbName'))]"
+                    },
+                    "queueName": {
+                      "type": "string",
+                      "value": "[variables('queueName')]"
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "aca",
+                "fn",
+                "logs"
+              ]
+            },
+            "apim": {
+              "condition": "[parameters('isPrimary')]",
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2025-04-01",
+              "name": "[format('apim-{0}', parameters('regionCode'))]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "env": {
+                    "value": "[parameters('env')]"
+                  },
+                  "regionCode": {
+                    "value": "[parameters('regionCode')]"
+                  },
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "tags": {
+                    "value": "[parameters('tags')]"
+                  },
+                  "logAnalyticsWorkspaceId": {
+                    "value": "[reference('logs').outputs.workspaceId.value]"
+                  },
+                  "scoringBackendUrl": {
+                    "value": "[format('https://{0}', reference('aca').outputs.scoringFqdn.value)]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.44.1.10279",
+                      "templateHash": "2715980739425335928"
+                    }
+                  },
+                  "parameters": {
+                    "env": {
+                      "type": "string"
+                    },
+                    "regionCode": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string",
+                      "defaultValue": "[resourceGroup().location]"
+                    },
+                    "tags": {
+                      "type": "object"
+                    },
+                    "logAnalyticsWorkspaceId": {
+                      "type": "string"
+                    },
+                    "skuName": {
+                      "type": "string",
+                      "defaultValue": "Developer",
+                      "allowedValues": [
+                        "Developer",
+                        "Basic",
+                        "Standard",
+                        "StandardV2",
+                        "Premium"
+                      ],
+                      "metadata": {
+                        "description": "APIM SKU. Developer (default) has no SLA; use StandardV2/Premium for production."
+                      }
+                    },
+                    "skuCapacity": {
+                      "type": "int",
+                      "defaultValue": 1,
+                      "metadata": {
+                        "description": "Scale units (Developer supports 1)."
+                      }
+                    },
+                    "publisherEmail": {
+                      "type": "string",
+                      "defaultValue": "jpontvianne@microsoft.com",
+                      "metadata": {
+                        "description": "Publisher email shown on the developer portal / notifications."
+                      }
+                    },
+                    "publisherName": {
+                      "type": "string",
+                      "defaultValue": "Heimdall Fraud Intelligence",
+                      "metadata": {
+                        "description": "Publisher / organisation name."
+                      }
+                    },
+                    "scoringBackendUrl": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Backend base URL for the scoring API (https, no trailing slash)."
+                      }
+                    }
+                  },
+                  "variables": {
+                    "apimName": "[format('apim-heimdall-{0}-{1}', parameters('env'), parameters('regionCode'))]"
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.ApiManagement/service",
+                      "apiVersion": "2023-05-01-preview",
+                      "name": "[variables('apimName')]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "sku": {
+                        "name": "[parameters('skuName')]",
+                        "capacity": "[parameters('skuCapacity')]"
+                      },
+                      "identity": {
+                        "type": "SystemAssigned"
+                      },
+                      "properties": {
+                        "publisherEmail": "[parameters('publisherEmail')]",
+                        "publisherName": "[parameters('publisherName')]"
+                      }
+                    },
+                    {
+                      "type": "Microsoft.ApiManagement/service/backends",
+                      "apiVersion": "2023-05-01-preview",
+                      "name": "[format('{0}/{1}', variables('apimName'), 'scoring-api')]",
+                      "properties": {
+                        "protocol": "http",
+                        "url": "[parameters('scoringBackendUrl')]",
+                        "tls": {
+                          "validateCertificateChain": true,
+                          "validateCertificateName": true
+                        }
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.ApiManagement/service', variables('apimName'))]"
+                      ]
+                    },
+                    {
+                      "type": "Microsoft.ApiManagement/service/apis",
+                      "apiVersion": "2023-05-01-preview",
+                      "name": "[format('{0}/{1}', variables('apimName'), 'scoring')]",
+                      "properties": {
+                        "displayName": "Fraud Scoring API",
+                        "path": "scoring",
+                        "protocols": [
+                          "https"
+                        ],
+                        "serviceUrl": "[parameters('scoringBackendUrl')]",
+                        "subscriptionRequired": true
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.ApiManagement/service', variables('apimName'))]"
+                      ]
+                    },
+                    {
+                      "type": "Microsoft.ApiManagement/service/apis/operations",
+                      "apiVersion": "2023-05-01-preview",
+                      "name": "[format('{0}/{1}/{2}', variables('apimName'), 'scoring', 'score')]",
+                      "properties": {
+                        "displayName": "Score transaction",
+                        "method": "POST",
+                        "urlTemplate": "/v1/score"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.ApiManagement/service/apis', variables('apimName'), 'scoring')]"
+                      ]
+                    },
+                    {
+                      "type": "Microsoft.ApiManagement/service/apis/operations",
+                      "apiVersion": "2023-05-01-preview",
+                      "name": "[format('{0}/{1}/{2}', variables('apimName'), 'scoring', 'healthz')]",
+                      "properties": {
+                        "displayName": "Health",
+                        "method": "GET",
+                        "urlTemplate": "/healthz"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.ApiManagement/service/apis', variables('apimName'), 'scoring')]"
+                      ]
+                    },
+                    {
+                      "type": "Microsoft.ApiManagement/service/apis/policies",
+                      "apiVersion": "2023-05-01-preview",
+                      "name": "[format('{0}/{1}/{2}', variables('apimName'), 'scoring', 'policy')]",
+                      "properties": {
+                        "format": "xml",
+                        "value": "<policies><inbound><base /><set-backend-service backend-id=\"scoring-api\" /><rate-limit calls=\"6000\" renewal-period=\"60\" /></inbound><backend><base /></backend><outbound><base /></outbound><on-error><base /></on-error></policies>"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.ApiManagement/service/apis', variables('apimName'), 'scoring')]",
+                        "[resourceId('Microsoft.ApiManagement/service/backends', variables('apimName'), 'scoring-api')]"
+                      ]
+                    },
+                    {
+                      "type": "Microsoft.Insights/diagnosticSettings",
+                      "apiVersion": "2021-05-01-preview",
+                      "scope": "[resourceId('Microsoft.ApiManagement/service', variables('apimName'))]",
+                      "name": "[format('diag-{0}', variables('apimName'))]",
+                      "properties": {
+                        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                        "logs": [
+                          {
+                            "categoryGroup": "allLogs",
+                            "enabled": true
+                          }
+                        ],
+                        "metrics": [
+                          {
+                            "category": "AllMetrics",
+                            "enabled": true
+                          }
+                        ]
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.ApiManagement/service', variables('apimName'))]"
+                      ]
+                    }
+                  ],
+                  "outputs": {
+                    "apimId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.ApiManagement/service', variables('apimName'))]"
+                    },
+                    "apimName": {
+                      "type": "string",
+                      "value": "[variables('apimName')]"
+                    },
+                    "apimGatewayUrl": {
+                      "type": "string",
+                      "value": "[reference(resourceId('Microsoft.ApiManagement/service', variables('apimName')), '2023-05-01-preview').gatewayUrl]"
+                    },
+                    "apimPrincipalId": {
+                      "type": "string",
+                      "value": "[reference(resourceId('Microsoft.ApiManagement/service', variables('apimName')), '2023-05-01-preview', 'full').identity.principalId]"
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "aca",
+                "logs"
+              ]
+            },
+            "sentinel": {
+              "condition": "[parameters('isPrimary')]",
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2025-04-01",
+              "name": "[format('sentinel-{0}', parameters('regionCode'))]",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "tags": {
+                    "value": "[parameters('tags')]"
+                  },
+                  "workspaceName": {
+                    "value": "[reference('logs').outputs.workspaceName.value]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.44.1.10279",
+                      "templateHash": "12447867749820589477"
+                    }
+                  },
+                  "parameters": {
+                    "location": {
+                      "type": "string",
+                      "defaultValue": "[resourceGroup().location]"
+                    },
+                    "tags": {
+                      "type": "object"
+                    },
+                    "workspaceName": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Name of the existing Log Analytics workspace to onboard."
+                      }
+                    }
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.SecurityInsights/onboardingStates",
+                      "apiVersion": "2024-03-01",
+                      "scope": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]",
+                      "name": "default",
+                      "properties": {}
+                    },
+                    {
+                      "type": "Microsoft.OperationsManagement/solutions",
+                      "apiVersion": "2015-11-01-preview",
+                      "name": "[format('SecurityInsights({0})', parameters('workspaceName'))]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "plan": {
+                        "name": "[format('SecurityInsights({0})', parameters('workspaceName'))]",
+                        "product": "OMSGallery/SecurityInsights",
+                        "publisher": "Microsoft",
+                        "promotionCode": ""
+                      },
+                      "properties": {
+                        "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+                      },
+                      "dependsOn": [
+                        "[extensionResourceId(resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName')), 'Microsoft.SecurityInsights/onboardingStates', 'default')]"
+                      ]
+                    }
+                  ],
+                  "outputs": {
+                    "sentinelWorkspaceId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "logs"
+              ]
             }
           },
           "outputs": {
@@ -9297,6 +11165,22 @@
             "purviewName": {
               "type": "string",
               "value": "[if(parameters('isPrimary'), reference('pv').outputs.purviewName.value, '')]"
+            },
+            "apimGatewayUrl": {
+              "type": "string",
+              "value": "[if(parameters('isPrimary'), reference('apim').outputs.apimGatewayUrl.value, '')]"
+            },
+            "redisHostName": {
+              "type": "string",
+              "value": "[if(parameters('isPrimary'), reference('redis').outputs.redisHostName.value, '')]"
+            },
+            "serviceBusNamespace": {
+              "type": "string",
+              "value": "[if(parameters('isPrimary'), reference('sb').outputs.namespaceName.value, '')]"
+            },
+            "enforcementFunctionName": {
+              "type": "string",
+              "value": "[if(parameters('isPrimary'), reference('fn').outputs.functionName.value, '')]"
             }
           }
         }

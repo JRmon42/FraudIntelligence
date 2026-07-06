@@ -1,0 +1,133 @@
+// ============================================================================
+// functions.bicep — Enforcement Azure Function (async action path)
+//
+// Flex Consumption (Linux, Python) Function app consuming the Service Bus
+// `highrisk-alerts` queue and taking durable action (block / step-up / notify /
+// open case). Cost-optimised: FC1 (pay-per-execution, ~€0 idle).
+//
+// Fully key-less to satisfy the org "no shared-key storage" policy:
+//   * deployment package -> blob container via the app's managed identity
+//   * AzureWebJobsStorage -> identity-based (Storage Blob Data Owner granted)
+//   * Service Bus trigger -> identity-based (Data Receiver granted by servicebus.bicep)
+// App code is published separately (services/enforcement-function/).
+// ============================================================================
+targetScope = 'resourceGroup'
+
+param env string
+param regionCode string
+param location string = resourceGroup().location
+param tags object
+
+@description('App Insights connection string for Function telemetry.')
+param appInsightsConnectionString string
+
+@description('Fully-qualified Service Bus namespace host for the identity-based trigger.')
+param serviceBusFqdn string
+
+@description('Name of the high-risk queue the enforcement consumer binds to.')
+param queueName string = 'highrisk-alerts'
+
+var funcName = 'func-heimdall-enforce-${env}-${regionCode}'
+var planName = 'plan-func-heimdall-${env}-${regionCode}'
+var stName = 'stfn${env}heimdall${regionCode}'
+var deployContainerName = 'deployment'
+
+// Built-in role: Storage Blob Data Owner
+var blobDataOwnerRoleId = 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b'
+
+resource st 'Microsoft.Storage/storageAccounts@2023-05-01' = {
+  name: stName
+  location: location
+  tags: tags
+  sku: { name: 'Standard_LRS' }
+  kind: 'StorageV2'
+  properties: {
+    minimumTlsVersion: 'TLS1_2'
+    allowBlobPublicAccess: false
+    supportsHttpsTrafficOnly: true
+  }
+}
+
+resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-05-01' = {
+  parent: st
+  name: 'default'
+}
+
+resource deployContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+  parent: blobService
+  name: deployContainerName
+}
+
+resource plan 'Microsoft.Web/serverfarms@2023-12-01' = {
+  name: planName
+  location: location
+  tags: tags
+  sku: {
+    name: 'FC1'
+    tier: 'FlexConsumption'
+  }
+  kind: 'functionapp'
+  properties: {
+    reserved: true // Linux
+  }
+}
+
+resource func 'Microsoft.Web/sites@2023-12-01' = {
+  name: funcName
+  location: location
+  tags: tags
+  kind: 'functionapp,linux'
+  identity: { type: 'SystemAssigned' }
+  properties: {
+    serverFarmId: plan.id
+    httpsOnly: true
+    functionAppConfig: {
+      deployment: {
+        storage: {
+          type: 'blobContainer'
+          value: '${st.properties.primaryEndpoints.blob}${deployContainerName}'
+          authentication: {
+            type: 'SystemAssignedIdentity'
+          }
+        }
+      }
+      runtime: {
+        name: 'python'
+        version: '3.11'
+      }
+      scaleAndConcurrency: {
+        instanceMemoryMB: 2048
+        maximumInstanceCount: 40
+      }
+    }
+    siteConfig: {
+      ftpsState: 'Disabled'
+      minTlsVersion: '1.2'
+      appSettings: [
+        // Identity-based host storage (no shared keys).
+        { name: 'AzureWebJobsStorage__accountName', value: st.name }
+        { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsightsConnectionString }
+        { name: 'ENFORCEMENT_QUEUE', value: queueName }
+        // Identity-based Service Bus trigger connection.
+        { name: 'ServiceBusConnection__fullyQualifiedNamespace', value: serviceBusFqdn }
+        { name: 'ServiceBusConnection__credential', value: 'managedidentity' }
+      ]
+    }
+  }
+}
+
+// The app's identity needs blob data access for deployment + AzureWebJobsStorage.
+resource stRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: st
+  name: guid(st.id, func.id, blobDataOwnerRoleId)
+  properties: {
+    principalId: func.identity.principalId
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', blobDataOwnerRoleId)
+    principalType: 'ServicePrincipal'
+  }
+}
+
+output functionName string = func.name
+output functionId string = func.id
+output functionPrincipalId string = func.identity.principalId
+output functionDefaultHostName string = func.properties.defaultHostName
