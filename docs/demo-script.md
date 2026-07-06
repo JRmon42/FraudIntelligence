@@ -86,20 +86,34 @@ Server-Sent Events. It reuses the exact same scoring code path as `demo.sh`.
 
 From the dashboard you can:
 - **1 · Health & readiness** — live `/healthz` + `/readyz` indicators.
-- **2 · Score normal** / **3 · Score high-risk** — single transactions with per-stage timings.
+- **2 · Score normal (APPROVE)** / **3 · Score GNN ring-linked card (SCA step-up)** / **4 · Score GNN ring-linked card (DECLINE)** — single transactions with per-stage timings, driven by the **real stacked ensemble + fraud-ring GNN** (see the note above).
 - **4 · Load burst** — adjustable TPS / duration / max / workers; watch the feed + metrics fill live.
-- **5 · Inject fraud ring** — adjustable cards × merchants circular value-flow.
+- **5 · Inject fraud ring** — adjustable cards × merchants circular value-flow; the injected ring is rendered on the **🕸️ Fraud-ring graph** (`/graph`) view.
+- **6 · Simulate scale test (synthetic → /ops)** — a clearly-labelled **synthetic** burst (default 18 000 TPS for 8 s, no live API calls) that drives `/ops` to show the surge and autoscale to the **60-replica** ceiling. Because these samples carry no latency, the modelled scoring p99 stays honest.
 - **6 · Decision scenarios** — the full **APPROVE / SCA step-up (false-positive handling) / DECLINE** spectrum, with the handling explained per transaction (uses the production decision rules — see the note above).
 - **🚀 Run full demo** — the whole `health → baseline → scenarios → load → ring` sequence end-to-end.
+- **🧹 Clear feed & metrics** — resets the live feed **and** the server-side `/ops` metrics, the `/graph` view and the agentic case panel.
 
-The header also links to **📊 Ops dashboard** (`/ops`) — a management-grade
-operational view that auto-refreshes every 2 s: throughput (TPS) with live
-replica count and surge detection, scoring p99 vs. the < 18 ms SLO, 30-day
-availability, decision mix (approve / SCA / decline), fraud caught today,
-false-positive rate, detection quality (AUC / precision / recall), the HITL
-queue, drift status and the next EBA report. It mirrors the Power BI executive
-dashboard and is the same view summarised on the "Operations dashboard" briefing
-slide. JSON is available at `/api/ops` for embedding elsewhere.
+**🤖 Agentic case panel.** On any **DECLINE** (a single score or the scenario
+walk-through), the console opens a *real* fraud case on the deployed **6-agent
+Semantic-Kernel orchestrator** — Triage → GraphAnalyst → Policy → Narrative →
+CaseManager → Reflector, running on **live Azure OpenAI `gpt-4o-mini`**
+(managed-identity auth) with **Cosmos** case persistence — and streams each
+agent step plus the generated SAR narrative into a dedicated panel. Best-effort:
+if the orchestrator is unreachable the demo continues uninterrupted.
+
+The header also links to **📊 Ops dashboard** (`/ops`) and the **🕸️ Fraud-ring
+graph** (`/graph`). `/ops` is a management-grade operational view that
+auto-refreshes every 2 s: throughput (TPS) with live replica count and surge
+detection, scoring p99 vs. the < 18 ms SLO, 30-day availability, decision mix
+(approve / SCA / decline), fraud caught today, false-positive rate, detection
+quality (AUC / precision / recall), the HITL queue, drift status and the next
+EBA report — all reflecting the **real session activity** (the scale-test button
+is the only synthetic feed). It mirrors the Power BI executive dashboard and is
+the same view summarised on the "Operations dashboard" briefing slide. JSON is
+available at `/api/ops` for embedding elsewhere. `/graph` renders the most
+recent injected fraud ring (Card · Merchant · Device · Country · IP
+neighbourhood) and auto-refreshes; JSON at `/api/graph`.
 
 > WSL host: `/bin/bash scripts/demo-web.sh`. The console binds to `127.0.0.1` by default;
 > use `--host 0.0.0.0` only on a trusted network. Stop with `Ctrl+C`.
@@ -118,8 +132,8 @@ and are **not** reproduced by the CLI demo above (which exercises the live scori
 - Demo timer visible.
 
 **Verified live URLs (Sweden Central, prod):**
-- **Scoring API** (Phases 1–3, via Front Door): `https://scoring-prod-dpbebwgrfud2egd2.b01.azurefd.net` — `/healthz` + `/readyz` return 200. The scorer runs the **stub** model over a **seeded feature store** (`SEED_DEMO_FEATURES=true`), so live requests return real APPROVE / SCA / DECLINE decisions (see the `score`/`load` profiles above).
-- **Agentic console** (Phase 4): `https://ca-orchestrator-prod-swc.purpleforest-f993111a.swedencentral.azurecontainerapps.io` — direct Container Apps FQDN (external ingress); `/healthz` 200, `/v1/agents` lists the 5 agents. Use this URL on stage. _Note: the Front Door console endpoint (`console-prod-…b01.azurefd.net`) currently returns an AFD 404 (edge route not serving) — use the direct FQDN above instead._
+- **Scoring API** (Phases 1–3, via Front Door): `https://scoring-prod-dpbebwgrfud2egd2.b01.azurefd.net` — `/healthz` + `/readyz` return 200. The scorer runs the **real trained stacked ensemble** (XGBoost + LightGBM + Logistic regression exported to ONNX, `model_version = v1.1.0-ensemble-gnn`) consuming the **fraud-ring GNN** features (`ring_score` + 16-dim GraphSAGE embedding) over a **seeded feature store** (`SEED_DEMO_FEATURES=true`), so live requests return real APPROVE / SCA / DECLINE decisions (see the `score`/`load` profiles above).
+- **Agentic orchestrator** (Phase 4): `https://ca-orchestrator-prod-swc.purpleforest-f993111a.swedencentral.azurecontainerapps.io` — direct Container Apps FQDN (external ingress); `/healthz` 200, `/v1/agents` lists the **6 agents**. It runs the **real** multi-agent workflow on **live Azure OpenAI `gpt-4o-mini`** (managed-identity auth, key auth disabled) with **Cosmos** case persistence, and is now invoked **automatically by the web demo console on every DECLINE** (see the 🤖 agentic case panel above). Use this URL on stage. _Note: the Front Door console endpoint (`console-prod-…b01.azurefd.net`) currently returns an AFD 404 (edge route not serving) — use the direct FQDN above instead._
 
 ---
 
@@ -170,20 +184,26 @@ Talk track:
 
 ---
 
-## Phase 4 — Agentic console (7:00 → 9:00)
+## Phase 4 — Agentic case (7:00 → 9:00)
 
-**Show**: agentic console UI (browser tab 3) — the new case is at the top.
+**Show**: the agentic case — either directly in the **web demo console's 🤖 panel**
+(it opens automatically on the DECLINE from Phase 3 / the scenario step) or on the
+standalone orchestrator UI (browser tab 3). The new case is at the top.
 
-Click into the case. The Semantic Kernel Process Framework state graph animates each agent transition:
+The Semantic Kernel state-graph planner routes the alert through the **6-agent
+workflow**, animating each transition. All reasoning agents run on **live Azure
+OpenAI `gpt-4o-mini`** (the deployed chat model; key auth is disabled, so the
+orchestrator authenticates with its managed identity):
 
-1. **TriageAgent** (gpt-4o-mini) — "Severity: HIGH. Pattern: circular merchant ring. 10 cards involved."
-2. **GraphAnalystAgent** (gpt-4o) — "Confirmed circular flow, depth 3, value €47 200, time-window 6 min. Merchant cluster previously associated with case CR-2024-0918."
-3. **PolicyAgent** (gpt-4o) — "PSD2 SCA: TRA was applied on 7/10. Within rolling-fraud guard. AML threshold for SAR met (FATF + national). Recommend: SAR draft + freeze + EBA tagging."
-4. **CaseManagerAgent** — opens case `CR-2025-Q3-00412`; freezes all 10 PAN-tokens; notifies issuer.
-5. **NarrativeAgent** (gpt-4o-mini) — produces a SAR narrative pre-filled with the graph evidence.
+1. **TriageAgent** (gpt-4o-mini) — "Severity: HIGH. Pattern: circular merchant ring. 10 cards involved." → routes to the graph analyst.
+2. **GraphAnalystAgent** (gpt-4o-mini) — pulls the 2-hop card/merchant/device neighbourhood from Cosmos: "Confirmed circular flow, depth 3, value €47 200, time-window 6 min. Merchant cluster previously associated with case CR-2024-0918."
+3. **PolicyAgent** (gpt-4o-mini) — "PSD2 SCA: TRA was applied on 7/10. Within rolling-fraud guard. AML threshold for SAR met (FATF + national). Recommend: SAR draft + freeze + EBA tagging."
+4. **NarrativeAgent** (gpt-4o-mini) — produces a SAR narrative pre-filled with the graph evidence (real generated text, ~800 chars).
+5. **CaseManagerAgent** — opens/persists the case in **Cosmos** (`fraud`/`cases`); freezes all 10 PAN-tokens; notifies issuer.
+6. **ReflectorAgent** (gpt-4o-mini) — reflects on case completeness/consistency and may request another agent pass before it is handed to a human analyst.
 
 Talk track:
-> "Every agent step is logged to an append-only Cosmos container plus immutable Storage — that's our **EU AI Act Article 12** record. The PolicyAgent has a hard rule that any decline of significant amount needs human review — that's our **Article 22 GDPR** safeguard. The reviewer signs the SAR; the agent never submits unilaterally."
+> "Every agent step is logged to an append-only Cosmos container plus immutable Storage — that's our **EU AI Act Article 12** record. The PolicyAgent has a hard rule that any decline of significant amount needs human review — that's our **Article 22 GDPR** safeguard. The reviewer signs the SAR; the agent never submits unilaterally. And this isn't scripted — the narrative you're reading was just generated by gpt-4o-mini from the real graph evidence."
 
 ---
 

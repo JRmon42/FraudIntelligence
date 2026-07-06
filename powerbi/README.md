@@ -66,9 +66,18 @@ See [`dataset_schema.md`](./dataset_schema.md) for column-level detail.
 |---|---|---|
 | 1 | Executive overview | Fraud loss €, decline rate, scoring p99, PSD2 mix, by country |
 | 2 | EBA quarterly report | Annexes A–D, **filterable by instrument type** + quarter |
-| 3 | Operational | Alerts, cases, agent performance, model drift |
+| 3 | Operational | Alerts, cases, agent performance, **p99 latency drift (30d)** |
 
 Every page carries a **country filter** pre-scoped to SE/NO/DK/FI/EE.
+
+> **Operational-page drift tile.** The measure formerly called *Model Drift
+> Index* is now **`p99 Latency Drift (30d)`** — it tracks the relative change in
+> p99 scoring **latency** versus the most recent data-date at least 30 days
+> earlier (it is *not* a statistical model/score-drift metric; the old name was a
+> misnomer). It is defined over the weekly `Fact_Latency` seed data, so it renders
+> a value on the "p99 Latency Drift & Decline Rate over Time" line and a real
+> model-level KPI (rather than a flat 0.00%). The Sentinel alert fires when the
+> latency drift exceeds **25%**.
 
 ## Refresh
 
