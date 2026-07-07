@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.44.1.10279",
-      "templateHash": "12298602089631068192"
+      "templateHash": "1125716795778306887"
     }
   },
   "parameters": {
@@ -466,7 +466,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.44.1.10279",
-              "templateHash": "1607267422309983955"
+              "templateHash": "9451948479382328955"
             }
           },
           "parameters": {
@@ -580,7 +580,8 @@
             "acrDnsZoneId": "[resourceId(parameters('dnsZoneResourceGroupName'), 'Microsoft.Network/privateDnsZones', 'privatelink.azurecr.io')]",
             "amlApiDnsZoneId": "[resourceId(parameters('dnsZoneResourceGroupName'), 'Microsoft.Network/privateDnsZones', 'privatelink.api.azureml.ms')]",
             "amlNbDnsZoneId": "[resourceId(parameters('dnsZoneResourceGroupName'), 'Microsoft.Network/privateDnsZones', 'privatelink.notebooks.azure.net')]",
-            "serviceBusFqdn": "[format('sbns-heimdall-{0}-{1}.servicebus.windows.net', parameters('env'), parameters('regionCode'))]"
+            "serviceBusFqdn": "[format('sbns-heimdall-{0}-{1}.servicebus.windows.net', parameters('env'), parameters('regionCode'))]",
+            "redisHost": "[format('redis-heimdall-{0}-{1}.{2}.redis.azure.net', parameters('env'), parameters('regionCode'), parameters('location'))]"
           },
           "resources": {
             "logs": {
@@ -761,7 +762,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.44.1.10279",
-                      "templateHash": "12295806923850325147"
+                      "templateHash": "545553569843255957"
                     }
                   },
                   "parameters": {
@@ -797,7 +798,8 @@
                         "aca": "10.50.0.0/21",
                         "pe": "10.50.8.0/24",
                         "agw": "10.50.9.0/24",
-                        "mgmt": "10.50.10.0/24"
+                        "mgmt": "10.50.10.0/24",
+                        "func": "10.50.11.0/24"
                       },
                       "metadata": {
                         "description": "Subnet CIDRs"
@@ -981,6 +983,20 @@
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', format('nsg-mgmt-{0}-{1}', parameters('env'), parameters('regionCode')))]"
                               }
                             }
+                          },
+                          {
+                            "name": "snet-func",
+                            "properties": {
+                              "addressPrefix": "[parameters('subnetCidrs').func]",
+                              "delegations": [
+                                {
+                                  "name": "func-delegation",
+                                  "properties": {
+                                    "serviceName": "Microsoft.App/environments"
+                                  }
+                                }
+                              ]
+                            }
                           }
                         ]
                       },
@@ -1066,6 +1082,10 @@
                     "subnetMgmtId": {
                       "type": "string",
                       "value": "[format('{0}/subnets/snet-mgmt', resourceId('Microsoft.Network/virtualNetworks', variables('vnetName')))]"
+                    },
+                    "subnetFuncId": {
+                      "type": "string",
+                      "value": "[format('{0}/subnets/snet-func', resourceId('Microsoft.Network/virtualNetworks', variables('vnetName')))]"
                     },
                     "dnsZoneNames": {
                       "type": "array",
@@ -3227,7 +3247,12 @@
                   },
                   "seedDemoFeatures": {
                     "value": "[parameters('seedDemoFeatures')]"
-                  }
+                  },
+                  "redisHost": "[if(parameters('isPrimary'), createObject('value', variables('redisHost')), createObject('value', ''))]",
+                  "redisSeedAggregates": {
+                    "value": "[parameters('seedDemoFeatures')]"
+                  },
+                  "serviceBusFqdn": "[if(parameters('isPrimary'), createObject('value', variables('serviceBusFqdn')), createObject('value', ''))]"
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -3236,7 +3261,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.44.1.10279",
-                      "templateHash": "4710350443021163097"
+                      "templateHash": "14786347313172278930"
                     }
                   },
                   "parameters": {
@@ -3300,6 +3325,34 @@
                       "defaultValue": false,
                       "metadata": {
                         "description": "Seed the scoring API in-memory feature store with curated demo entities (APPROVE/SCA/DECLINE)."
+                      }
+                    },
+                    "redisHost": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Azure Managed Redis hostname for the scoring aggregates cache (key-less Entra auth). Empty disables Redis."
+                      }
+                    },
+                    "redisSeedAggregates": {
+                      "type": "bool",
+                      "defaultValue": false,
+                      "metadata": {
+                        "description": "Seed curated demo rolling-aggregates into Redis at startup."
+                      }
+                    },
+                    "serviceBusFqdn": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Service Bus namespace FQDN for the enforcement alert loop. Empty disables Service Bus publishing."
+                      }
+                    },
+                    "serviceBusQueue": {
+                      "type": "string",
+                      "defaultValue": "highrisk-alerts",
+                      "metadata": {
+                        "description": "Service Bus queue for high-risk enforcement alerts."
                       }
                     }
                   },
@@ -3482,6 +3535,38 @@
                                 {
                                   "name": "SEED_DEMO_FEATURES",
                                   "value": "[string(parameters('seedDemoFeatures'))]"
+                                },
+                                {
+                                  "name": "REDIS_USE_AAD",
+                                  "value": "[string(not(empty(parameters('redisHost'))))]"
+                                },
+                                {
+                                  "name": "REDIS_HOST",
+                                  "value": "[parameters('redisHost')]"
+                                },
+                                {
+                                  "name": "REDIS_PORT",
+                                  "value": "10000"
+                                },
+                                {
+                                  "name": "REDIS_SSL",
+                                  "value": "true"
+                                },
+                                {
+                                  "name": "REDIS_SEED_AGGREGATES",
+                                  "value": "[string(parameters('redisSeedAggregates'))]"
+                                },
+                                {
+                                  "name": "SERVICEBUS_FQDN",
+                                  "value": "[parameters('serviceBusFqdn')]"
+                                },
+                                {
+                                  "name": "SERVICEBUS_QUEUE",
+                                  "value": "[parameters('serviceBusQueue')]"
+                                },
+                                {
+                                  "name": "SERVICEBUS_ALERT_DECISIONS",
+                                  "value": "DECLINE"
                                 }
                               ],
                               "probes": [
@@ -4811,7 +4896,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.44.1.10279",
-                      "templateHash": "16686364246282614075"
+                      "templateHash": "8416356902084685734"
                     }
                   },
                   "parameters": {
@@ -4833,39 +4918,16 @@
                     },
                     "skuName": {
                       "type": "string",
-                      "defaultValue": "Basic",
-                      "allowedValues": [
-                        "Basic",
-                        "Standard",
-                        "Premium"
-                      ],
+                      "defaultValue": "Balanced_B0",
                       "metadata": {
-                        "description": "Redis SKU tier."
-                      }
-                    },
-                    "skuFamily": {
-                      "type": "string",
-                      "defaultValue": "C",
-                      "allowedValues": [
-                        "C",
-                        "P"
-                      ],
-                      "metadata": {
-                        "description": "SKU family: C (Basic/Standard) or P (Premium)."
-                      }
-                    },
-                    "skuCapacity": {
-                      "type": "int",
-                      "defaultValue": 0,
-                      "metadata": {
-                        "description": "SKU capacity (C0..C6 / P1..P5)."
+                        "description": "Azure Managed Redis SKU. Balanced_B0 is the entry tier."
                       }
                     },
                     "dataPrincipalIds": {
                       "type": "array",
                       "defaultValue": [],
                       "metadata": {
-                        "description": "Object IDs granted the Redis Data Owner access policy (e.g. scoring-api MI)."
+                        "description": "Object IDs granted the default Entra data access policy (e.g. scoring-api MI)."
                       }
                     }
                   },
@@ -4874,46 +4936,57 @@
                   },
                   "resources": [
                     {
-                      "type": "Microsoft.Cache/redis",
-                      "apiVersion": "2024-11-01",
+                      "type": "Microsoft.Cache/redisEnterprise",
+                      "apiVersion": "2024-10-01",
                       "name": "[variables('redisName')]",
                       "location": "[parameters('location')]",
                       "tags": "[parameters('tags')]",
+                      "sku": {
+                        "name": "[parameters('skuName')]"
+                      },
+                      "identity": {
+                        "type": "SystemAssigned"
+                      },
                       "properties": {
-                        "sku": {
-                          "name": "[parameters('skuName')]",
-                          "family": "[parameters('skuFamily')]",
-                          "capacity": "[parameters('skuCapacity')]"
-                        },
-                        "minimumTlsVersion": "1.2",
-                        "enableNonSslPort": false,
-                        "publicNetworkAccess": "Enabled",
-                        "redisConfiguration": {
-                          "aad-enabled": "true"
-                        }
+                        "minimumTlsVersion": "1.2"
                       }
+                    },
+                    {
+                      "type": "Microsoft.Cache/redisEnterprise/databases",
+                      "apiVersion": "2024-10-01",
+                      "name": "[format('{0}/{1}', variables('redisName'), 'default')]",
+                      "properties": {
+                        "clientProtocol": "Encrypted",
+                        "port": 10000,
+                        "clusteringPolicy": "EnterpriseCluster",
+                        "evictionPolicy": "VolatileLRU"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Cache/redisEnterprise', variables('redisName'))]"
+                      ]
                     },
                     {
                       "copy": {
                         "name": "redisAccess",
                         "count": "[length(parameters('dataPrincipalIds'))]"
                       },
-                      "type": "Microsoft.Cache/redis/accessPolicyAssignments",
-                      "apiVersion": "2024-11-01",
-                      "name": "[format('{0}/{1}', variables('redisName'), guid(resourceId('Microsoft.Cache/redis', variables('redisName')), parameters('dataPrincipalIds')[copyIndex()], 'Data Owner'))]",
+                      "type": "Microsoft.Cache/redisEnterprise/databases/accessPolicyAssignments",
+                      "apiVersion": "2024-10-01",
+                      "name": "[format('{0}/{1}/{2}', variables('redisName'), 'default', guid(resourceId('Microsoft.Cache/redisEnterprise/databases', variables('redisName'), 'default'), parameters('dataPrincipalIds')[copyIndex()]))]",
                       "properties": {
-                        "accessPolicyName": "Data Owner",
-                        "objectId": "[parameters('dataPrincipalIds')[copyIndex()]]",
-                        "objectIdAlias": "[parameters('dataPrincipalIds')[copyIndex()]]"
+                        "accessPolicyName": "default",
+                        "user": {
+                          "objectId": "[parameters('dataPrincipalIds')[copyIndex()]]"
+                        }
                       },
                       "dependsOn": [
-                        "[resourceId('Microsoft.Cache/redis', variables('redisName'))]"
+                        "[resourceId('Microsoft.Cache/redisEnterprise/databases', variables('redisName'), 'default')]"
                       ]
                     },
                     {
                       "type": "Microsoft.Insights/diagnosticSettings",
                       "apiVersion": "2021-05-01-preview",
-                      "scope": "[resourceId('Microsoft.Cache/redis', variables('redisName'))]",
+                      "scope": "[resourceId('Microsoft.Cache/redisEnterprise', variables('redisName'))]",
                       "name": "[format('diag-{0}', variables('redisName'))]",
                       "properties": {
                         "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
@@ -4925,14 +4998,14 @@
                         ]
                       },
                       "dependsOn": [
-                        "[resourceId('Microsoft.Cache/redis', variables('redisName'))]"
+                        "[resourceId('Microsoft.Cache/redisEnterprise', variables('redisName'))]"
                       ]
                     }
                   ],
                   "outputs": {
                     "redisId": {
                       "type": "string",
-                      "value": "[resourceId('Microsoft.Cache/redis', variables('redisName'))]"
+                      "value": "[resourceId('Microsoft.Cache/redisEnterprise', variables('redisName'))]"
                     },
                     "redisName": {
                       "type": "string",
@@ -4940,7 +5013,7 @@
                     },
                     "redisHostName": {
                       "type": "string",
-                      "value": "[reference(resourceId('Microsoft.Cache/redis', variables('redisName')), '2024-11-01').hostName]"
+                      "value": "[reference(resourceId('Microsoft.Cache/redisEnterprise', variables('redisName')), '2024-10-01').hostName]"
                     }
                   }
                 }
@@ -4978,6 +5051,15 @@
                   },
                   "serviceBusFqdn": {
                     "value": "[variables('serviceBusFqdn')]"
+                  },
+                  "functionSubnetId": {
+                    "value": "[reference('net').outputs.subnetFuncId.value]"
+                  },
+                  "cosmosAccountName": {
+                    "value": "[reference('cosmos').outputs.cosmosName.value]"
+                  },
+                  "cosmosEndpoint": {
+                    "value": "[reference('cosmos').outputs.cosmosEndpoint.value]"
                   }
                 },
                 "template": {
@@ -4987,7 +5069,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.44.1.10279",
-                      "templateHash": "16441848482859711073"
+                      "templateHash": "10902029782644240251"
                     }
                   },
                   "parameters": {
@@ -5013,7 +5095,7 @@
                     "serviceBusFqdn": {
                       "type": "string",
                       "metadata": {
-                        "description": "Fully-qualified Service Bus namespace host (e.g. sbns-...servicebus.windows.net) for the identity-based trigger."
+                        "description": "Fully-qualified Service Bus namespace host for the identity-based trigger."
                       }
                     },
                     "queueName": {
@@ -5022,12 +5104,46 @@
                       "metadata": {
                         "description": "Name of the high-risk queue the enforcement consumer binds to."
                       }
+                    },
+                    "functionSubnetId": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Subnet resource id (delegated to Microsoft.App/environments) for outbound VNet integration so the Function reaches the Cosmos private endpoint. Empty disables VNet integration."
+                      }
+                    },
+                    "cosmosAccountName": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Cosmos DB account name the enforcement consumer opens cases in. Empty disables case persistence + RBAC."
+                      }
+                    },
+                    "cosmosEndpoint": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Cosmos endpoint (documentEndpoint) for case persistence."
+                      }
+                    },
+                    "cosmosDatabase": {
+                      "type": "string",
+                      "defaultValue": "fraud",
+                      "metadata": {
+                        "description": "Cosmos database + container for enforcement cases."
+                      }
+                    },
+                    "cosmosCasesContainer": {
+                      "type": "string",
+                      "defaultValue": "cases"
                     }
                   },
                   "variables": {
                     "funcName": "[format('func-heimdall-enforce-{0}-{1}', parameters('env'), parameters('regionCode'))]",
                     "planName": "[format('plan-func-heimdall-{0}-{1}', parameters('env'), parameters('regionCode'))]",
-                    "stName": "[format('stfn{0}heimdall{1}', parameters('env'), parameters('regionCode'))]"
+                    "stName": "[format('stfn{0}heimdall{1}', parameters('env'), parameters('regionCode'))]",
+                    "deployContainerName": "deployment",
+                    "blobDataOwnerRoleId": "b7e6dc6d-f1e8-4753-8033-0f276bb0955b"
                   },
                   "resources": [
                     {
@@ -5047,14 +5163,30 @@
                       }
                     },
                     {
+                      "type": "Microsoft.Storage/storageAccounts/blobServices",
+                      "apiVersion": "2023-05-01",
+                      "name": "[format('{0}/{1}', variables('stName'), 'default')]",
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Storage/storageAccounts', variables('stName'))]"
+                      ]
+                    },
+                    {
+                      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+                      "apiVersion": "2023-05-01",
+                      "name": "[format('{0}/{1}/{2}', variables('stName'), 'default', variables('deployContainerName'))]",
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', variables('stName'), 'default')]"
+                      ]
+                    },
+                    {
                       "type": "Microsoft.Web/serverfarms",
                       "apiVersion": "2023-12-01",
                       "name": "[variables('planName')]",
                       "location": "[parameters('location')]",
                       "tags": "[parameters('tags')]",
                       "sku": {
-                        "name": "Y1",
-                        "tier": "Dynamic"
+                        "name": "FC1",
+                        "tier": "FlexConsumption"
                       },
                       "kind": "functionapp",
                       "properties": {
@@ -5074,30 +5206,33 @@
                       "properties": {
                         "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('planName'))]",
                         "httpsOnly": true,
+                        "virtualNetworkSubnetId": "[if(empty(parameters('functionSubnetId')), null(), parameters('functionSubnetId'))]",
+                        "functionAppConfig": {
+                          "deployment": {
+                            "storage": {
+                              "type": "blobContainer",
+                              "value": "[format('{0}{1}', reference(resourceId('Microsoft.Storage/storageAccounts', variables('stName')), '2023-05-01').primaryEndpoints.blob, variables('deployContainerName'))]",
+                              "authentication": {
+                                "type": "SystemAssignedIdentity"
+                              }
+                            }
+                          },
+                          "runtime": {
+                            "name": "python",
+                            "version": "3.11"
+                          },
+                          "scaleAndConcurrency": {
+                            "instanceMemoryMB": 2048,
+                            "maximumInstanceCount": 40
+                          }
+                        },
                         "siteConfig": {
-                          "linuxFxVersion": "PYTHON|3.11",
                           "ftpsState": "Disabled",
                           "minTlsVersion": "1.2",
                           "appSettings": [
                             {
-                              "name": "AzureWebJobsStorage",
-                              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', variables('stName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('stName')), '2023-05-01').keys[0].value)]"
-                            },
-                            {
-                              "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
-                              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', variables('stName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('stName')), '2023-05-01').keys[0].value)]"
-                            },
-                            {
-                              "name": "WEBSITE_CONTENTSHARE",
-                              "value": "[toLower(variables('funcName'))]"
-                            },
-                            {
-                              "name": "FUNCTIONS_EXTENSION_VERSION",
-                              "value": "~4"
-                            },
-                            {
-                              "name": "FUNCTIONS_WORKER_RUNTIME",
-                              "value": "python"
+                              "name": "AzureWebJobsStorage__accountName",
+                              "value": "[variables('stName')]"
                             },
                             {
                               "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
@@ -5114,6 +5249,18 @@
                             {
                               "name": "ServiceBusConnection__credential",
                               "value": "managedidentity"
+                            },
+                            {
+                              "name": "COSMOS_ENDPOINT",
+                              "value": "[parameters('cosmosEndpoint')]"
+                            },
+                            {
+                              "name": "COSMOS_DATABASE",
+                              "value": "[parameters('cosmosDatabase')]"
+                            },
+                            {
+                              "name": "COSMOS_CASES_CONTAINER",
+                              "value": "[parameters('cosmosCasesContainer')]"
                             }
                           ]
                         }
@@ -5121,6 +5268,35 @@
                       "dependsOn": [
                         "[resourceId('Microsoft.Web/serverfarms', variables('planName'))]",
                         "[resourceId('Microsoft.Storage/storageAccounts', variables('stName'))]"
+                      ]
+                    },
+                    {
+                      "type": "Microsoft.Authorization/roleAssignments",
+                      "apiVersion": "2022-04-01",
+                      "scope": "[resourceId('Microsoft.Storage/storageAccounts', variables('stName'))]",
+                      "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', variables('stName')), resourceId('Microsoft.Web/sites', variables('funcName')), variables('blobDataOwnerRoleId'))]",
+                      "properties": {
+                        "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('funcName')), '2023-12-01', 'full').identity.principalId]",
+                        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('blobDataOwnerRoleId'))]",
+                        "principalType": "ServicePrincipal"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Web/sites', variables('funcName'))]",
+                        "[resourceId('Microsoft.Storage/storageAccounts', variables('stName'))]"
+                      ]
+                    },
+                    {
+                      "condition": "[not(empty(parameters('cosmosAccountName')))]",
+                      "type": "Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments",
+                      "apiVersion": "2024-05-15",
+                      "name": "[format('{0}/{1}', parameters('cosmosAccountName'), guid(parameters('cosmosAccountName'), resourceId('Microsoft.Web/sites', variables('funcName')), 'data-contributor'))]",
+                      "properties": {
+                        "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('funcName')), '2023-12-01', 'full').identity.principalId]",
+                        "roleDefinitionId": "[format('{0}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002', resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosAccountName')))]",
+                        "scope": "[resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosAccountName'))]"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Web/sites', variables('funcName'))]"
                       ]
                     }
                   ],
@@ -5145,7 +5321,9 @@
                 }
               },
               "dependsOn": [
-                "logs"
+                "cosmos",
+                "logs",
+                "net"
               ]
             },
             "sb": {
@@ -5865,7 +6043,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.44.1.10279",
-              "templateHash": "1607267422309983955"
+              "templateHash": "9451948479382328955"
             }
           },
           "parameters": {
@@ -5979,7 +6157,8 @@
             "acrDnsZoneId": "[resourceId(parameters('dnsZoneResourceGroupName'), 'Microsoft.Network/privateDnsZones', 'privatelink.azurecr.io')]",
             "amlApiDnsZoneId": "[resourceId(parameters('dnsZoneResourceGroupName'), 'Microsoft.Network/privateDnsZones', 'privatelink.api.azureml.ms')]",
             "amlNbDnsZoneId": "[resourceId(parameters('dnsZoneResourceGroupName'), 'Microsoft.Network/privateDnsZones', 'privatelink.notebooks.azure.net')]",
-            "serviceBusFqdn": "[format('sbns-heimdall-{0}-{1}.servicebus.windows.net', parameters('env'), parameters('regionCode'))]"
+            "serviceBusFqdn": "[format('sbns-heimdall-{0}-{1}.servicebus.windows.net', parameters('env'), parameters('regionCode'))]",
+            "redisHost": "[format('redis-heimdall-{0}-{1}.{2}.redis.azure.net', parameters('env'), parameters('regionCode'), parameters('location'))]"
           },
           "resources": {
             "logs": {
@@ -6160,7 +6339,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.44.1.10279",
-                      "templateHash": "12295806923850325147"
+                      "templateHash": "545553569843255957"
                     }
                   },
                   "parameters": {
@@ -6196,7 +6375,8 @@
                         "aca": "10.50.0.0/21",
                         "pe": "10.50.8.0/24",
                         "agw": "10.50.9.0/24",
-                        "mgmt": "10.50.10.0/24"
+                        "mgmt": "10.50.10.0/24",
+                        "func": "10.50.11.0/24"
                       },
                       "metadata": {
                         "description": "Subnet CIDRs"
@@ -6380,6 +6560,20 @@
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', format('nsg-mgmt-{0}-{1}', parameters('env'), parameters('regionCode')))]"
                               }
                             }
+                          },
+                          {
+                            "name": "snet-func",
+                            "properties": {
+                              "addressPrefix": "[parameters('subnetCidrs').func]",
+                              "delegations": [
+                                {
+                                  "name": "func-delegation",
+                                  "properties": {
+                                    "serviceName": "Microsoft.App/environments"
+                                  }
+                                }
+                              ]
+                            }
                           }
                         ]
                       },
@@ -6465,6 +6659,10 @@
                     "subnetMgmtId": {
                       "type": "string",
                       "value": "[format('{0}/subnets/snet-mgmt', resourceId('Microsoft.Network/virtualNetworks', variables('vnetName')))]"
+                    },
+                    "subnetFuncId": {
+                      "type": "string",
+                      "value": "[format('{0}/subnets/snet-func', resourceId('Microsoft.Network/virtualNetworks', variables('vnetName')))]"
                     },
                     "dnsZoneNames": {
                       "type": "array",
@@ -8626,7 +8824,12 @@
                   },
                   "seedDemoFeatures": {
                     "value": "[parameters('seedDemoFeatures')]"
-                  }
+                  },
+                  "redisHost": "[if(parameters('isPrimary'), createObject('value', variables('redisHost')), createObject('value', ''))]",
+                  "redisSeedAggregates": {
+                    "value": "[parameters('seedDemoFeatures')]"
+                  },
+                  "serviceBusFqdn": "[if(parameters('isPrimary'), createObject('value', variables('serviceBusFqdn')), createObject('value', ''))]"
                 },
                 "template": {
                   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
@@ -8635,7 +8838,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.44.1.10279",
-                      "templateHash": "4710350443021163097"
+                      "templateHash": "14786347313172278930"
                     }
                   },
                   "parameters": {
@@ -8699,6 +8902,34 @@
                       "defaultValue": false,
                       "metadata": {
                         "description": "Seed the scoring API in-memory feature store with curated demo entities (APPROVE/SCA/DECLINE)."
+                      }
+                    },
+                    "redisHost": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Azure Managed Redis hostname for the scoring aggregates cache (key-less Entra auth). Empty disables Redis."
+                      }
+                    },
+                    "redisSeedAggregates": {
+                      "type": "bool",
+                      "defaultValue": false,
+                      "metadata": {
+                        "description": "Seed curated demo rolling-aggregates into Redis at startup."
+                      }
+                    },
+                    "serviceBusFqdn": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Service Bus namespace FQDN for the enforcement alert loop. Empty disables Service Bus publishing."
+                      }
+                    },
+                    "serviceBusQueue": {
+                      "type": "string",
+                      "defaultValue": "highrisk-alerts",
+                      "metadata": {
+                        "description": "Service Bus queue for high-risk enforcement alerts."
                       }
                     }
                   },
@@ -8881,6 +9112,38 @@
                                 {
                                   "name": "SEED_DEMO_FEATURES",
                                   "value": "[string(parameters('seedDemoFeatures'))]"
+                                },
+                                {
+                                  "name": "REDIS_USE_AAD",
+                                  "value": "[string(not(empty(parameters('redisHost'))))]"
+                                },
+                                {
+                                  "name": "REDIS_HOST",
+                                  "value": "[parameters('redisHost')]"
+                                },
+                                {
+                                  "name": "REDIS_PORT",
+                                  "value": "10000"
+                                },
+                                {
+                                  "name": "REDIS_SSL",
+                                  "value": "true"
+                                },
+                                {
+                                  "name": "REDIS_SEED_AGGREGATES",
+                                  "value": "[string(parameters('redisSeedAggregates'))]"
+                                },
+                                {
+                                  "name": "SERVICEBUS_FQDN",
+                                  "value": "[parameters('serviceBusFqdn')]"
+                                },
+                                {
+                                  "name": "SERVICEBUS_QUEUE",
+                                  "value": "[parameters('serviceBusQueue')]"
+                                },
+                                {
+                                  "name": "SERVICEBUS_ALERT_DECISIONS",
+                                  "value": "DECLINE"
                                 }
                               ],
                               "probes": [
@@ -10210,7 +10473,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.44.1.10279",
-                      "templateHash": "16686364246282614075"
+                      "templateHash": "8416356902084685734"
                     }
                   },
                   "parameters": {
@@ -10232,39 +10495,16 @@
                     },
                     "skuName": {
                       "type": "string",
-                      "defaultValue": "Basic",
-                      "allowedValues": [
-                        "Basic",
-                        "Standard",
-                        "Premium"
-                      ],
+                      "defaultValue": "Balanced_B0",
                       "metadata": {
-                        "description": "Redis SKU tier."
-                      }
-                    },
-                    "skuFamily": {
-                      "type": "string",
-                      "defaultValue": "C",
-                      "allowedValues": [
-                        "C",
-                        "P"
-                      ],
-                      "metadata": {
-                        "description": "SKU family: C (Basic/Standard) or P (Premium)."
-                      }
-                    },
-                    "skuCapacity": {
-                      "type": "int",
-                      "defaultValue": 0,
-                      "metadata": {
-                        "description": "SKU capacity (C0..C6 / P1..P5)."
+                        "description": "Azure Managed Redis SKU. Balanced_B0 is the entry tier."
                       }
                     },
                     "dataPrincipalIds": {
                       "type": "array",
                       "defaultValue": [],
                       "metadata": {
-                        "description": "Object IDs granted the Redis Data Owner access policy (e.g. scoring-api MI)."
+                        "description": "Object IDs granted the default Entra data access policy (e.g. scoring-api MI)."
                       }
                     }
                   },
@@ -10273,46 +10513,57 @@
                   },
                   "resources": [
                     {
-                      "type": "Microsoft.Cache/redis",
-                      "apiVersion": "2024-11-01",
+                      "type": "Microsoft.Cache/redisEnterprise",
+                      "apiVersion": "2024-10-01",
                       "name": "[variables('redisName')]",
                       "location": "[parameters('location')]",
                       "tags": "[parameters('tags')]",
+                      "sku": {
+                        "name": "[parameters('skuName')]"
+                      },
+                      "identity": {
+                        "type": "SystemAssigned"
+                      },
                       "properties": {
-                        "sku": {
-                          "name": "[parameters('skuName')]",
-                          "family": "[parameters('skuFamily')]",
-                          "capacity": "[parameters('skuCapacity')]"
-                        },
-                        "minimumTlsVersion": "1.2",
-                        "enableNonSslPort": false,
-                        "publicNetworkAccess": "Enabled",
-                        "redisConfiguration": {
-                          "aad-enabled": "true"
-                        }
+                        "minimumTlsVersion": "1.2"
                       }
+                    },
+                    {
+                      "type": "Microsoft.Cache/redisEnterprise/databases",
+                      "apiVersion": "2024-10-01",
+                      "name": "[format('{0}/{1}', variables('redisName'), 'default')]",
+                      "properties": {
+                        "clientProtocol": "Encrypted",
+                        "port": 10000,
+                        "clusteringPolicy": "EnterpriseCluster",
+                        "evictionPolicy": "VolatileLRU"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Cache/redisEnterprise', variables('redisName'))]"
+                      ]
                     },
                     {
                       "copy": {
                         "name": "redisAccess",
                         "count": "[length(parameters('dataPrincipalIds'))]"
                       },
-                      "type": "Microsoft.Cache/redis/accessPolicyAssignments",
-                      "apiVersion": "2024-11-01",
-                      "name": "[format('{0}/{1}', variables('redisName'), guid(resourceId('Microsoft.Cache/redis', variables('redisName')), parameters('dataPrincipalIds')[copyIndex()], 'Data Owner'))]",
+                      "type": "Microsoft.Cache/redisEnterprise/databases/accessPolicyAssignments",
+                      "apiVersion": "2024-10-01",
+                      "name": "[format('{0}/{1}/{2}', variables('redisName'), 'default', guid(resourceId('Microsoft.Cache/redisEnterprise/databases', variables('redisName'), 'default'), parameters('dataPrincipalIds')[copyIndex()]))]",
                       "properties": {
-                        "accessPolicyName": "Data Owner",
-                        "objectId": "[parameters('dataPrincipalIds')[copyIndex()]]",
-                        "objectIdAlias": "[parameters('dataPrincipalIds')[copyIndex()]]"
+                        "accessPolicyName": "default",
+                        "user": {
+                          "objectId": "[parameters('dataPrincipalIds')[copyIndex()]]"
+                        }
                       },
                       "dependsOn": [
-                        "[resourceId('Microsoft.Cache/redis', variables('redisName'))]"
+                        "[resourceId('Microsoft.Cache/redisEnterprise/databases', variables('redisName'), 'default')]"
                       ]
                     },
                     {
                       "type": "Microsoft.Insights/diagnosticSettings",
                       "apiVersion": "2021-05-01-preview",
-                      "scope": "[resourceId('Microsoft.Cache/redis', variables('redisName'))]",
+                      "scope": "[resourceId('Microsoft.Cache/redisEnterprise', variables('redisName'))]",
                       "name": "[format('diag-{0}', variables('redisName'))]",
                       "properties": {
                         "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
@@ -10324,14 +10575,14 @@
                         ]
                       },
                       "dependsOn": [
-                        "[resourceId('Microsoft.Cache/redis', variables('redisName'))]"
+                        "[resourceId('Microsoft.Cache/redisEnterprise', variables('redisName'))]"
                       ]
                     }
                   ],
                   "outputs": {
                     "redisId": {
                       "type": "string",
-                      "value": "[resourceId('Microsoft.Cache/redis', variables('redisName'))]"
+                      "value": "[resourceId('Microsoft.Cache/redisEnterprise', variables('redisName'))]"
                     },
                     "redisName": {
                       "type": "string",
@@ -10339,7 +10590,7 @@
                     },
                     "redisHostName": {
                       "type": "string",
-                      "value": "[reference(resourceId('Microsoft.Cache/redis', variables('redisName')), '2024-11-01').hostName]"
+                      "value": "[reference(resourceId('Microsoft.Cache/redisEnterprise', variables('redisName')), '2024-10-01').hostName]"
                     }
                   }
                 }
@@ -10377,6 +10628,15 @@
                   },
                   "serviceBusFqdn": {
                     "value": "[variables('serviceBusFqdn')]"
+                  },
+                  "functionSubnetId": {
+                    "value": "[reference('net').outputs.subnetFuncId.value]"
+                  },
+                  "cosmosAccountName": {
+                    "value": "[reference('cosmos').outputs.cosmosName.value]"
+                  },
+                  "cosmosEndpoint": {
+                    "value": "[reference('cosmos').outputs.cosmosEndpoint.value]"
                   }
                 },
                 "template": {
@@ -10386,7 +10646,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.44.1.10279",
-                      "templateHash": "16441848482859711073"
+                      "templateHash": "10902029782644240251"
                     }
                   },
                   "parameters": {
@@ -10412,7 +10672,7 @@
                     "serviceBusFqdn": {
                       "type": "string",
                       "metadata": {
-                        "description": "Fully-qualified Service Bus namespace host (e.g. sbns-...servicebus.windows.net) for the identity-based trigger."
+                        "description": "Fully-qualified Service Bus namespace host for the identity-based trigger."
                       }
                     },
                     "queueName": {
@@ -10421,12 +10681,46 @@
                       "metadata": {
                         "description": "Name of the high-risk queue the enforcement consumer binds to."
                       }
+                    },
+                    "functionSubnetId": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Subnet resource id (delegated to Microsoft.App/environments) for outbound VNet integration so the Function reaches the Cosmos private endpoint. Empty disables VNet integration."
+                      }
+                    },
+                    "cosmosAccountName": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Cosmos DB account name the enforcement consumer opens cases in. Empty disables case persistence + RBAC."
+                      }
+                    },
+                    "cosmosEndpoint": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Cosmos endpoint (documentEndpoint) for case persistence."
+                      }
+                    },
+                    "cosmosDatabase": {
+                      "type": "string",
+                      "defaultValue": "fraud",
+                      "metadata": {
+                        "description": "Cosmos database + container for enforcement cases."
+                      }
+                    },
+                    "cosmosCasesContainer": {
+                      "type": "string",
+                      "defaultValue": "cases"
                     }
                   },
                   "variables": {
                     "funcName": "[format('func-heimdall-enforce-{0}-{1}', parameters('env'), parameters('regionCode'))]",
                     "planName": "[format('plan-func-heimdall-{0}-{1}', parameters('env'), parameters('regionCode'))]",
-                    "stName": "[format('stfn{0}heimdall{1}', parameters('env'), parameters('regionCode'))]"
+                    "stName": "[format('stfn{0}heimdall{1}', parameters('env'), parameters('regionCode'))]",
+                    "deployContainerName": "deployment",
+                    "blobDataOwnerRoleId": "b7e6dc6d-f1e8-4753-8033-0f276bb0955b"
                   },
                   "resources": [
                     {
@@ -10446,14 +10740,30 @@
                       }
                     },
                     {
+                      "type": "Microsoft.Storage/storageAccounts/blobServices",
+                      "apiVersion": "2023-05-01",
+                      "name": "[format('{0}/{1}', variables('stName'), 'default')]",
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Storage/storageAccounts', variables('stName'))]"
+                      ]
+                    },
+                    {
+                      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+                      "apiVersion": "2023-05-01",
+                      "name": "[format('{0}/{1}/{2}', variables('stName'), 'default', variables('deployContainerName'))]",
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', variables('stName'), 'default')]"
+                      ]
+                    },
+                    {
                       "type": "Microsoft.Web/serverfarms",
                       "apiVersion": "2023-12-01",
                       "name": "[variables('planName')]",
                       "location": "[parameters('location')]",
                       "tags": "[parameters('tags')]",
                       "sku": {
-                        "name": "Y1",
-                        "tier": "Dynamic"
+                        "name": "FC1",
+                        "tier": "FlexConsumption"
                       },
                       "kind": "functionapp",
                       "properties": {
@@ -10473,30 +10783,33 @@
                       "properties": {
                         "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('planName'))]",
                         "httpsOnly": true,
+                        "virtualNetworkSubnetId": "[if(empty(parameters('functionSubnetId')), null(), parameters('functionSubnetId'))]",
+                        "functionAppConfig": {
+                          "deployment": {
+                            "storage": {
+                              "type": "blobContainer",
+                              "value": "[format('{0}{1}', reference(resourceId('Microsoft.Storage/storageAccounts', variables('stName')), '2023-05-01').primaryEndpoints.blob, variables('deployContainerName'))]",
+                              "authentication": {
+                                "type": "SystemAssignedIdentity"
+                              }
+                            }
+                          },
+                          "runtime": {
+                            "name": "python",
+                            "version": "3.11"
+                          },
+                          "scaleAndConcurrency": {
+                            "instanceMemoryMB": 2048,
+                            "maximumInstanceCount": 40
+                          }
+                        },
                         "siteConfig": {
-                          "linuxFxVersion": "PYTHON|3.11",
                           "ftpsState": "Disabled",
                           "minTlsVersion": "1.2",
                           "appSettings": [
                             {
-                              "name": "AzureWebJobsStorage",
-                              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', variables('stName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('stName')), '2023-05-01').keys[0].value)]"
-                            },
-                            {
-                              "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
-                              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', variables('stName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('stName')), '2023-05-01').keys[0].value)]"
-                            },
-                            {
-                              "name": "WEBSITE_CONTENTSHARE",
-                              "value": "[toLower(variables('funcName'))]"
-                            },
-                            {
-                              "name": "FUNCTIONS_EXTENSION_VERSION",
-                              "value": "~4"
-                            },
-                            {
-                              "name": "FUNCTIONS_WORKER_RUNTIME",
-                              "value": "python"
+                              "name": "AzureWebJobsStorage__accountName",
+                              "value": "[variables('stName')]"
                             },
                             {
                               "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
@@ -10513,6 +10826,18 @@
                             {
                               "name": "ServiceBusConnection__credential",
                               "value": "managedidentity"
+                            },
+                            {
+                              "name": "COSMOS_ENDPOINT",
+                              "value": "[parameters('cosmosEndpoint')]"
+                            },
+                            {
+                              "name": "COSMOS_DATABASE",
+                              "value": "[parameters('cosmosDatabase')]"
+                            },
+                            {
+                              "name": "COSMOS_CASES_CONTAINER",
+                              "value": "[parameters('cosmosCasesContainer')]"
                             }
                           ]
                         }
@@ -10520,6 +10845,35 @@
                       "dependsOn": [
                         "[resourceId('Microsoft.Web/serverfarms', variables('planName'))]",
                         "[resourceId('Microsoft.Storage/storageAccounts', variables('stName'))]"
+                      ]
+                    },
+                    {
+                      "type": "Microsoft.Authorization/roleAssignments",
+                      "apiVersion": "2022-04-01",
+                      "scope": "[resourceId('Microsoft.Storage/storageAccounts', variables('stName'))]",
+                      "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', variables('stName')), resourceId('Microsoft.Web/sites', variables('funcName')), variables('blobDataOwnerRoleId'))]",
+                      "properties": {
+                        "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('funcName')), '2023-12-01', 'full').identity.principalId]",
+                        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('blobDataOwnerRoleId'))]",
+                        "principalType": "ServicePrincipal"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Web/sites', variables('funcName'))]",
+                        "[resourceId('Microsoft.Storage/storageAccounts', variables('stName'))]"
+                      ]
+                    },
+                    {
+                      "condition": "[not(empty(parameters('cosmosAccountName')))]",
+                      "type": "Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments",
+                      "apiVersion": "2024-05-15",
+                      "name": "[format('{0}/{1}', parameters('cosmosAccountName'), guid(parameters('cosmosAccountName'), resourceId('Microsoft.Web/sites', variables('funcName')), 'data-contributor'))]",
+                      "properties": {
+                        "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('funcName')), '2023-12-01', 'full').identity.principalId]",
+                        "roleDefinitionId": "[format('{0}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002', resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosAccountName')))]",
+                        "scope": "[resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosAccountName'))]"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Web/sites', variables('funcName'))]"
                       ]
                     }
                   ],
@@ -10544,7 +10898,9 @@
                 }
               },
               "dependsOn": [
-                "logs"
+                "cosmos",
+                "logs",
+                "net"
               ]
             },
             "sb": {

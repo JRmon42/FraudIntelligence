@@ -30,6 +30,18 @@ param scoringImage string = 'mcr.microsoft.com/k8se/quickstart:latest'
 @description('Seed the scoring API in-memory feature store with curated demo entities (APPROVE/SCA/DECLINE).')
 param seedDemoFeatures bool = false
 
+@description('Azure Managed Redis hostname for the scoring aggregates cache (key-less Entra auth). Empty disables Redis.')
+param redisHost string = ''
+
+@description('Seed curated demo rolling-aggregates into Redis at startup.')
+param redisSeedAggregates bool = false
+
+@description('Service Bus namespace FQDN for the enforcement alert loop. Empty disables Service Bus publishing.')
+param serviceBusFqdn string = ''
+
+@description('Service Bus queue for high-risk enforcement alerts.')
+param serviceBusQueue string = 'highrisk-alerts'
+
 var envName = 'cae-heimdall-${env}-${regionCode}'
 
 resource acaEnv 'Microsoft.App/managedEnvironments@2024-03-01' = {
@@ -176,6 +188,18 @@ resource scoring 'Microsoft.App/containerApps@2024-03-01' = {
             // so live scoring returns a realistic APPROVE/SCA/DECLINE mix while no
             // Cosmos feature store is wired in. See services/scoring-api/app/seed_data.py.
             { name: 'SEED_DEMO_FEATURES', value: string(seedDemoFeatures) }
+            // Azure Managed Redis (key-less Entra auth) on the live hot path:
+            // every transaction reads rolling card aggregates from the cache.
+            { name: 'REDIS_USE_AAD', value: string(!empty(redisHost)) }
+            { name: 'REDIS_HOST', value: redisHost }
+            { name: 'REDIS_PORT', value: '10000' }
+            { name: 'REDIS_SSL', value: 'true' }
+            { name: 'REDIS_SEED_AGGREGATES', value: string(redisSeedAggregates) }
+            // Service Bus enforcement loop: DECLINE decisions are published to
+            // the highrisk-alerts queue, consumed by the enforcement Function.
+            { name: 'SERVICEBUS_FQDN', value: serviceBusFqdn }
+            { name: 'SERVICEBUS_QUEUE', value: serviceBusQueue }
+            { name: 'SERVICEBUS_ALERT_DECISIONS', value: 'DECLINE' }
           ]
           // Health probes drive zero-downtime rolling updates and automatic
           // eviction of a degraded replica. /readyz reports Cosmos+Redis+model.

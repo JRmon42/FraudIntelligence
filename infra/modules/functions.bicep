@@ -27,6 +27,19 @@ param serviceBusFqdn string
 @description('Name of the high-risk queue the enforcement consumer binds to.')
 param queueName string = 'highrisk-alerts'
 
+@description('Subnet resource id (delegated to Microsoft.App/environments) for outbound VNet integration so the Function reaches the Cosmos private endpoint. Empty disables VNet integration.')
+param functionSubnetId string = ''
+
+@description('Cosmos DB account name the enforcement consumer opens cases in. Empty disables case persistence + RBAC.')
+param cosmosAccountName string = ''
+
+@description('Cosmos endpoint (documentEndpoint) for case persistence.')
+param cosmosEndpoint string = ''
+
+@description('Cosmos database + container for enforcement cases.')
+param cosmosDatabase string = 'fraud'
+param cosmosCasesContainer string = 'cases'
+
 var funcName = 'func-heimdall-enforce-${env}-${regionCode}'
 var planName = 'plan-func-heimdall-${env}-${regionCode}'
 var stName = 'stfn${env}heimdall${regionCode}'
@@ -81,6 +94,9 @@ resource func 'Microsoft.Web/sites@2023-12-01' = {
   properties: {
     serverFarmId: plan.id
     httpsOnly: true
+    // Outbound VNet integration: the enforcement consumer reaches the Cosmos
+    // private endpoint to open cases (Cosmos is public-network-access Disabled).
+    virtualNetworkSubnetId: empty(functionSubnetId) ? null : functionSubnetId
     functionAppConfig: {
       deployment: {
         storage: {
@@ -111,6 +127,10 @@ resource func 'Microsoft.Web/sites@2023-12-01' = {
         // Identity-based Service Bus trigger connection.
         { name: 'ServiceBusConnection__fullyQualifiedNamespace', value: serviceBusFqdn }
         { name: 'ServiceBusConnection__credential', value: 'managedidentity' }
+        // Cosmos case persistence (identity-based; reached via VNet + private endpoint).
+        { name: 'COSMOS_ENDPOINT', value: cosmosEndpoint }
+        { name: 'COSMOS_DATABASE', value: cosmosDatabase }
+        { name: 'COSMOS_CASES_CONTAINER', value: cosmosCasesContainer }
       ]
     }
   }
@@ -124,6 +144,23 @@ resource stRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
     principalId: func.identity.principalId
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', blobDataOwnerRoleId)
     principalType: 'ServicePrincipal'
+  }
+}
+
+// Cosmos DB data-plane RBAC (Built-in Data Contributor) so the enforcement
+// consumer can upsert case documents. Skipped when no Cosmos account is supplied.
+resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' existing = if (!empty(cosmosAccountName)) {
+  name: cosmosAccountName
+}
+
+resource cosmosDataRole 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2024-05-15' = if (!empty(cosmosAccountName)) {
+  parent: cosmos
+  name: guid(cosmosAccountName, func.id, 'data-contributor')
+  properties: {
+    principalId: func.identity.principalId
+    // Built-in Cosmos DB Data Contributor.
+    roleDefinitionId: '${cosmos.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002'
+    scope: cosmos.id
   }
 }
 

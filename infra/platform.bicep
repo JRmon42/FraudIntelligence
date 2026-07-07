@@ -215,6 +215,9 @@ module aca 'modules/containerapps.bicep' = {
     acaSubnetId: net.outputs.subnetAcaId
     appInsightsConnectionString: logs.outputs.appInsightsConnectionString
     seedDemoFeatures: seedDemoFeatures
+    redisHost: isPrimary ? redisHost : ''
+    redisSeedAggregates: seedDemoFeatures
+    serviceBusFqdn: isPrimary ? serviceBusFqdn : ''
   }
 }
 
@@ -292,6 +295,8 @@ module mon 'modules/monitor.bicep' = if (isPrimary) {
 // for a production deployment.
 // ---------------------------------------------------------------------------
 var serviceBusFqdn = 'sbns-heimdall-${env}-${regionCode}.servicebus.windows.net'
+// Deterministic Managed Redis hostname (avoids a redis<->aca output cycle).
+var redisHost = 'redis-heimdall-${env}-${regionCode}.${location}.redis.azure.net'
 
 module redis 'modules/redis.bicep' = if (isPrimary) {
   name: 'redis-${regionCode}'
@@ -316,6 +321,9 @@ module fn 'modules/functions.bicep' = if (isPrimary) {
     tags: tags
     appInsightsConnectionString: logs.outputs.appInsightsConnectionString
     serviceBusFqdn: serviceBusFqdn
+    functionSubnetId: net.outputs.subnetFuncId
+    cosmosAccountName: cosmos.outputs.cosmosName
+    cosmosEndpoint: cosmos.outputs.cosmosEndpoint
   }
 }
 

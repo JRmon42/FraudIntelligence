@@ -142,22 +142,26 @@ and are **not** reproduced by the CLI demo above (which exercises the live scori
 > - **APIM** `apim-heimdall-prod-swc` (Developer SKU) — gateway
 >   `https://apim-heimdall-prod-swc.azure-api.net`, `scoring` API (`POST /v1/score`,
 >   `GET /healthz`) with a rate-limit policy and App Insights diagnostics.
-> - **Azure Managed Redis** `redis-heimdall-prod-swc` (`Balanced_B0`, key-less Entra
->   access) — classic Basic is retired for new creates.
+> - **Azure Managed Redis** `redis-heimdall-prod-swc` (`Balanced_B0`, `EnterpriseCluster`,
+>   key-less Entra access) — **read on every `POST /v1/score`** for rolling card
+>   aggregates (see `explain.aggregates_ms` in the response, typically < 1 ms).
 > - **Service Bus** `sbns-heimdall-prod-swc` (Standard) — `highrisk-alerts` queue for
->   the async enforcement path (Entra-only, `disableLocalAuth`).
+>   the async enforcement path (Entra-only, `disableLocalAuth`); the scoring API
+>   **publishes every DECLINE** to it (key-less send).
 > - **Enforcement Function** `func-heimdall-enforce-prod-swc` (Flex Consumption FC1,
->   identity-based storage) — Service-Bus-triggered block / step-up / notify / open-case
->   consumer (`services/enforcement-function/`).
+>   identity-based storage, **VNet-integrated** to reach the Cosmos private endpoint) —
+>   Service-Bus-triggered block / step-up / notify / **open-case** consumer
+>   (`services/enforcement-function/`); each DECLINE persists a Cosmos case in `cases`.
 > - **Microsoft Sentinel** — onboarded on `log-heimdall-prod-swc` (SIEM/SOAR).
 >
-> **On-stage honesty note:** these tiers are **provisioned and available** but the
-> **default demo request path is unchanged** — the console/`demo.sh` still call the
-> scoring API directly via Front Door → Container Apps (the APIM and Redis hops are
-> not yet inserted into the hot 18 ms path), and the enforcement Function **shell** is
-> deployed but its code is not yet zip-published. Present them as *deployed platform
-> capability*, not as steps the live demo exercises. See the Status column in
-> `docs/architecture.md §3`.
+> **On-stage honesty note:** **Redis and the Service Bus → enforcement Function loop
+> are now genuinely wired into the live path** — every score reads Redis aggregates,
+> and each DECLINE flows DECLINE → `highrisk-alerts` → Function → Cosmos case
+> (async, out of the 18 ms budget; the case appears shortly after the decision). The
+> **synchronous request path** is still AFD → Container Apps directly (the **APIM** hop
+> is provisioned but not yet inserted into the hot 18 ms path) — present APIM as
+> *deployed platform capability*, not a step the live demo exercises. See the Status
+> column in `docs/architecture.md §3`.
 
 ---
 

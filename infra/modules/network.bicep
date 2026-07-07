@@ -21,6 +21,7 @@ param subnetCidrs object = {
   pe:   '10.50.8.0/24'   // Private Endpoints
   agw:  '10.50.9.0/24'   // App Gateway / FD origin (reserved)
   mgmt: '10.50.10.0/24'  // Mgmt / jumpbox / build agents
+  func: '10.50.11.0/24'  // Enforcement Function VNet integration (delegated to Microsoft.App/environments)
 }
 
 @description('Common tags')
@@ -157,6 +158,20 @@ resource vnet 'Microsoft.Network/virtualNetworks@2023-11-01' = {
           networkSecurityGroup: { id: nsgMgmt.id }
         }
       }
+      {
+        // Outbound VNet integration for the enforcement Function so it can
+        // reach the Cosmos private endpoint (Cosmos public access Disabled).
+        name: 'snet-func'
+        properties: {
+          addressPrefix: subnetCidrs.func
+          delegations: [
+            {
+              name: 'func-delegation'
+              properties: { serviceName: 'Microsoft.App/environments' }
+            }
+          ]
+        }
+      }
     ]
   }
 }
@@ -234,4 +249,5 @@ output subnetAcaId string = '${vnet.id}/subnets/snet-aca'
 output subnetPeId string = '${vnet.id}/subnets/snet-pe'
 output subnetAgwId string = '${vnet.id}/subnets/snet-agw'
 output subnetMgmtId string = '${vnet.id}/subnets/snet-mgmt'
+output subnetFuncId string = '${vnet.id}/subnets/snet-func'
 output dnsZoneNames array = dnsZoneNames
