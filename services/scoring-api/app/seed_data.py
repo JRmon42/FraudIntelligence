@@ -100,6 +100,26 @@ def demo_cards() -> dict[str, CardFeatures]:
     }
 
 
+def demo_aggregates() -> dict[str, dict[str, float]]:
+    """Rolling 1-hour aggregates seeded into Redis for the demo cards.
+
+    With Azure Managed Redis now in the live path, ``AggregatesStore`` reads
+    real velocity signals from the cache. Seeding a curated set makes those
+    reads meaningful for the demo: the ring / hot / blocked cards show elevated
+    velocity and recent declines, reinforcing the SCA / DECLINE decisions while
+    ordinary cards keep their empty (near-zero) aggregates.
+    """
+
+    agg = {
+        DEMO_HOT_CARD: {"amount_1h": 1180.0, "count_1h": 5, "declined_1h": 3},
+        DEMO_BLOCKED_CARD: {"amount_1h": 520.0, "count_1h": 2, "declined_1h": 1},
+    }
+    # Ring cards: fast cash-out velocity within the hour.
+    for cid in DEMO_RING_CARDS:
+        agg[cid] = {"amount_1h": 2840.0, "count_1h": 9, "declined_1h": 2}
+    return agg
+
+
 def demo_merchants() -> dict[str, MerchantFeatures]:
     """Curated merchant feature records keyed by ``merchant_id``."""
 

@@ -48,6 +48,11 @@ async def _build_hot_path(settings: Settings) -> tuple[HotPath, list[object]]:
     features = FeatureLookup(source, settings)
     aggregates = await AggregatesStore.create(settings)
     closeables.append(aggregates)
+    if settings.redis_seed_aggregates:
+        try:
+            await aggregates.seed_demo()
+        except Exception as exc:  # noqa: BLE001
+            log.warning("aggregates_seed_skipped", err=str(exc))
 
     emitter: DecisionEmitter
     if settings.eventhub_fqdn or settings.eventhub_conn_str:

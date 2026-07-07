@@ -38,6 +38,18 @@ class Settings(BaseSettings):
     # Redis (real-time aggregates)
     redis_url: str = "redis://localhost:6379/0"
     redis_fake: bool = False
+    # Azure Managed Redis via Entra ID (key-less). When ``redis_use_aad`` is set
+    # the client connects to ``redis_host:redis_port`` over TLS and authenticates
+    # with a Managed Identity token (no access keys), matching the platform's
+    # "no standing secrets" posture. ``redis_host`` empty falls back to redis_url.
+    redis_use_aad: bool = False
+    redis_host: str = ""
+    redis_port: int = 10000
+    redis_ssl: bool = True
+    redis_aad_scope: str = "https://redis.azure.com/.default"
+    # Seed a small set of demo rolling-aggregates into Redis at startup so the
+    # (now real) cache tier returns non-empty velocity signals for the demo cards.
+    redis_seed_aggregates: bool = False
 
     # Event Hubs
     eventhub_fqdn: str = ""

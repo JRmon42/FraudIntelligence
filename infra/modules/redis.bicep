@@ -44,7 +44,10 @@ resource redisDb 'Microsoft.Cache/redisEnterprise/databases@2024-10-01' = {
   properties: {
     clientProtocol: 'Encrypted'
     port: 10000
-    clusteringPolicy: 'OSSCluster'
+    // EnterpriseCluster exposes a single TLS endpoint (no OSS MOVED redirects to
+    // node IPs), so standard clients connect over the hostname with valid TLS —
+    // required for the key-less Entra client on the scoring hot path.
+    clusteringPolicy: 'EnterpriseCluster'
     evictionPolicy: 'VolatileLRU'
   }
 }
