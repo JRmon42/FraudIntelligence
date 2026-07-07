@@ -135,6 +135,30 @@ and are **not** reproduced by the CLI demo above (which exercises the live scori
 - **Scoring API** (Phases 1–3, via Front Door): `https://scoring-prod-dpbebwgrfud2egd2.b01.azurefd.net` — `/healthz` + `/readyz` return 200. The scorer runs the **real trained stacked ensemble** (XGBoost + LightGBM + Logistic regression exported to ONNX, `model_version = v1.1.0-ensemble-gnn`) consuming the **fraud-ring GNN** features (`ring_score` + 16-dim GraphSAGE embedding) over a **seeded feature store** (`SEED_DEMO_FEATURES=true`), so live requests return real APPROVE / SCA / DECLINE decisions (see the `score`/`load` profiles above).
 - **Agentic orchestrator** (Phase 4): `https://ca-orchestrator-prod-swc.purpleforest-f993111a.swedencentral.azurecontainerapps.io` — direct Container Apps FQDN (external ingress); `/healthz` 200, `/v1/agents` lists the **6 agents**. It runs the **real** multi-agent workflow on **live Azure OpenAI `gpt-4o-mini`** (managed-identity auth, key auth disabled) with **Cosmos** case persistence, and is now invoked **automatically by the web demo console on every DECLINE** (see the 🤖 agentic case panel above). Use this URL on stage. _Note: the Front Door console endpoint (`console-prod-…b01.azurefd.net`) currently returns an AFD 404 (edge route not serving) — use the direct FQDN above instead._
 
+> **Newly-deployed platform tiers (formerly 📘 reference, now live in `heimdall_rg`).**
+> The six components that used to be documented-only are now provisioned by IaC
+> (`infra/modules/{apim,redis,servicebus,functions,sentinel}.bicep`, wired in
+> `platform.bicep`, live-deployed via `infra/addons.bicep`):
+> - **APIM** `apim-heimdall-prod-swc` (Developer SKU) — gateway
+>   `https://apim-heimdall-prod-swc.azure-api.net`, `scoring` API (`POST /v1/score`,
+>   `GET /healthz`) with a rate-limit policy and App Insights diagnostics.
+> - **Azure Managed Redis** `redis-heimdall-prod-swc` (`Balanced_B0`, key-less Entra
+>   access) — classic Basic is retired for new creates.
+> - **Service Bus** `sbns-heimdall-prod-swc` (Standard) — `highrisk-alerts` queue for
+>   the async enforcement path (Entra-only, `disableLocalAuth`).
+> - **Enforcement Function** `func-heimdall-enforce-prod-swc` (Flex Consumption FC1,
+>   identity-based storage) — Service-Bus-triggered block / step-up / notify / open-case
+>   consumer (`services/enforcement-function/`).
+> - **Microsoft Sentinel** — onboarded on `log-heimdall-prod-swc` (SIEM/SOAR).
+>
+> **On-stage honesty note:** these tiers are **provisioned and available** but the
+> **default demo request path is unchanged** — the console/`demo.sh` still call the
+> scoring API directly via Front Door → Container Apps (the APIM and Redis hops are
+> not yet inserted into the hot 18 ms path), and the enforcement Function **shell** is
+> deployed but its code is not yet zip-published. Present them as *deployed platform
+> capability*, not as steps the live demo exercises. See the Status column in
+> `docs/architecture.md §3`.
+
 ---
 
 ## Phase 1 — Idle dashboard (0:00 → 2:00)
