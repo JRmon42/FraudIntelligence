@@ -98,3 +98,30 @@ async def test_score_eventhub_failure_does_not_break_response(client: AsyncClien
     hot.emitter.fail()
     r = await client.post("/v1/score", json=make_payload(transaction_id="txn_eh_fail"))
     assert r.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_decline_publishes_enforcement_alert(client: AsyncClient, hot) -> None:  # type: ignore[no-untyped-def]
+    payload = make_payload(card_id="card_blocked", transaction_id="txn_alert")
+    r = await client.post("/v1/score", json=payload)
+    assert r.status_code == 200
+    assert r.json()["decision"] == "DECLINE"
+    # NullAlertPublisher records the enforcement alert for DECLINE.
+    assert any(a["transaction_id"] == "txn_alert" for a in hot.alerts.alerts)
+
+
+@pytest.mark.asyncio
+async def test_approve_does_not_publish_alert(client: AsyncClient, hot) -> None:  # type: ignore[no-untyped-def]
+    r = await client.post("/v1/score", json=make_payload(transaction_id="txn_noalert"))
+    assert r.status_code == 200
+    assert r.json()["decision"] == "APPROVE"
+    assert not any(a["transaction_id"] == "txn_noalert" for a in hot.alerts.alerts)
+
+
+@pytest.mark.asyncio
+async def test_alert_publish_failure_does_not_break_response(client: AsyncClient, hot) -> None:  # type: ignore[no-untyped-def]
+    hot.alerts.fail()
+    payload = make_payload(card_id="card_blocked", transaction_id="txn_alert_fail")
+    r = await client.post("/v1/score", json=payload)
+    assert r.status_code == 200
+    assert r.json()["decision"] == "DECLINE"

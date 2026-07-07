@@ -12,6 +12,7 @@ from .api import HotPath, router
 from .cosmos_client import CosmosFeatureClient, FeatureSource, InMemoryFeatureClient
 from .eh_producer import DecisionEmitter, EventHubsDecisionEmitter, NullDecisionEmitter
 from .features import AggregatesStore, FeatureLookup
+from .sb_producer import AlertPublisher, NullAlertPublisher, ServiceBusAlertPublisher
 from .scoring import OnnxScorer
 from .settings import Settings, get_settings
 from .telemetry import configure_logging, configure_tracing
@@ -63,9 +64,28 @@ async def _build_hot_path(settings: Settings) -> tuple[HotPath, list[object]]:
     else:
         emitter = NullDecisionEmitter()
 
+    alerts: AlertPublisher
+    if settings.servicebus_fqdn:
+        sb = ServiceBusAlertPublisher(settings)
+        await sb.connect()
+        alerts = sb
+        closeables.append(sb)
+    else:
+        alerts = NullAlertPublisher()
+
     scorer = OnnxScorer(settings.model_path, settings.model_version)
+    alert_decisions = frozenset(
+        d.strip().upper() for d in settings.servicebus_alert_decisions.split(",") if d.strip()
+    )
     return (
-        HotPath(features=features, aggregates=aggregates, scorer=scorer, emitter=emitter),
+        HotPath(
+            features=features,
+            aggregates=aggregates,
+            scorer=scorer,
+            emitter=emitter,
+            alerts=alerts,
+            alert_decisions=alert_decisions,
+        ),
         closeables,
     )
 

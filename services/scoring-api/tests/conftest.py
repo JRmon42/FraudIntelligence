@@ -24,6 +24,7 @@ from app.eh_producer import NullDecisionEmitter  # noqa: E402
 from app.features import AggregatesStore, FeatureLookup  # noqa: E402
 from app.main import create_app  # noqa: E402
 from app.models import CardFeatures, MerchantFeatures  # noqa: E402
+from app.sb_producer import NullAlertPublisher  # noqa: E402
 from app.scoring import OnnxScorer  # noqa: E402
 from app.settings import get_settings  # noqa: E402
 
@@ -75,8 +76,15 @@ async def hot(
     features = FeatureLookup(source, settings)
     aggregates = await AggregatesStore.create(settings)
     emitter = NullDecisionEmitter()
+    alerts = NullAlertPublisher()
     scorer = OnnxScorer(settings.model_path, settings.model_version)
-    yield HotPath(features=features, aggregates=aggregates, scorer=scorer, emitter=emitter)
+    yield HotPath(
+        features=features,
+        aggregates=aggregates,
+        scorer=scorer,
+        emitter=emitter,
+        alerts=alerts,
+    )
     await aggregates.close()
 
 

@@ -19,6 +19,7 @@ from .psd2_optimizer import (
     decide,
     select_exemption,
 )
+from .sb_producer import AlertPublisher
 from .scoring import OnnxScorer, ScoringContext
 from .telemetry import get_tracer
 
@@ -34,6 +35,8 @@ class HotPath:
     aggregates: AggregatesStore
     scorer: OnnxScorer
     emitter: DecisionEmitter
+    alerts: AlertPublisher
+    alert_decisions: frozenset[str] = frozenset({"DECLINE"})
 
 
 def _hot(request: Request) -> HotPath:
@@ -63,6 +66,7 @@ async def readyz(request: Request) -> dict[str, object]:
         "redis": redis_ok,
         "model_loaded": hot.scorer.loaded,
         "eventhub": hot.emitter.healthy,
+        "servicebus": hot.alerts.healthy,
     }
 
 
@@ -149,6 +153,27 @@ async def score(
                 degraded = True
                 log.warning("emit_degraded", err=str(exc), txn_id=payload.transaction_id)
             emit_ms = (time.perf_counter() - ts) * 1000.0
+
+        # High-risk decisions trigger the async enforcement loop: fire-and-forget
+        # publish to the Service Bus ``highrisk-alerts`` queue (consumed by the
+        # enforcement Function). A publish failure must never fail the response.
+        if decision in hot.alert_decisions:
+            try:
+                await hot.alerts.publish(
+                    {
+                        "transaction_id": payload.transaction_id,
+                        "card_id": payload.card_id,
+                        "merchant_id": payload.merchant_id,
+                        "decision": decision,
+                        "score": score_value,
+                        "reason_codes": reason_codes,
+                        "psd2_exemption": exemption,
+                        "model_version": hot.scorer.model_version,
+                        "ts": payload.timestamp.isoformat(),
+                    }
+                )
+            except Exception as exc:  # noqa: BLE001  publish is fire-and-forget
+                log.warning("alert_publish_degraded", err=str(exc), txn_id=payload.transaction_id)
     except HTTPException:
         raise
     except Exception as exc:  # noqa: BLE001

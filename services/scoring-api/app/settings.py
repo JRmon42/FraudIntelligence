@@ -56,6 +56,14 @@ class Settings(BaseSettings):
     eventhub_decisions: str = "decision.events"
     eventhub_conn_str: str = ""
 
+    # Service Bus — async enforcement loop. On high-risk decisions the scoring
+    # path fire-and-forget publishes to the ``highrisk-alerts`` queue, consumed
+    # by the enforcement Function. Key-less (Entra) auth; empty FQDN => no-op.
+    servicebus_fqdn: str = ""
+    servicebus_queue: str = "highrisk-alerts"
+    # Decisions that trigger an enforcement alert (comma-separated).
+    servicebus_alert_decisions: str = "DECLINE"
+
     # Model
     model_path: str = "ml/artifacts/ensemble.onnx"
     model_version: str = "v0.0.0-stub"
