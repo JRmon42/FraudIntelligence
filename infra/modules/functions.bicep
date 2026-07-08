@@ -40,6 +40,14 @@ param cosmosEndpoint string = ''
 param cosmosDatabase string = 'fraud'
 param cosmosCasesContainer string = 'cases'
 
+@description('Private-endpoint subnet id (snet-pe) for the identity-based host storage. Empty disables storage private endpoints (leaves public access enabled).')
+param privateEndpointSubnetId string = ''
+
+@description('Private DNS zone ids for storage blob/queue/table (from the network module). Required when privateEndpointSubnetId is set.')
+param blobDnsZoneId string = ''
+param queueDnsZoneId string = ''
+param tableDnsZoneId string = ''
+
 var funcName = 'func-heimdall-enforce-${env}-${regionCode}'
 var planName = 'plan-func-heimdall-${env}-${regionCode}'
 var stName = 'stfn${env}heimdall${regionCode}'
@@ -57,7 +65,12 @@ resource st 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   properties: {
     minimumTlsVersion: 'TLS1_2'
     allowBlobPublicAccess: false
+    allowSharedKeyAccess: false
     supportsHttpsTrafficOnly: true
+    // Locked to private-endpoint-only access once a PE subnet is supplied. The
+    // Flex Consumption host reaches blob/queue/table via the private endpoints
+    // below (over the Function's VNet integration); public access is disabled.
+    publicNetworkAccess: empty(privateEndpointSubnetId) ? 'Enabled' : 'Disabled'
   }
 }
 
@@ -163,6 +176,50 @@ resource cosmosDataRole 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignment
     scope: cosmos.id
   }
 }
+
+// ---------------------------------------------------------------------------
+// Private endpoints for the identity-based host storage (blob/queue/table).
+// Flex Consumption + identity-based AzureWebJobsStorage needs all three; a
+// file share is NOT used. Created in snet-pe with a DNS zone group so the A
+// records auto-register in the private zones the Function resolves over its
+// VNet integration. Deployment package + host coordination stay fully private.
+// ---------------------------------------------------------------------------
+var storagePeEnabled = !empty(privateEndpointSubnetId)
+var storagePeGroups = [
+  { svc: 'blob', zoneId: blobDnsZoneId }
+  { svc: 'queue', zoneId: queueDnsZoneId }
+  { svc: 'table', zoneId: tableDnsZoneId }
+]
+
+resource stPrivateEndpoints 'Microsoft.Network/privateEndpoints@2023-11-01' = [for g in storagePeGroups: if (storagePeEnabled) {
+  name: 'pe-stfn-${g.svc}'
+  location: location
+  tags: tags
+  properties: {
+    subnet: { id: privateEndpointSubnetId }
+    privateLinkServiceConnections: [
+      {
+        name: 'conn-stfn-${g.svc}'
+        properties: {
+          privateLinkServiceId: st.id
+          groupIds: [ g.svc ]
+        }
+      }
+    ]
+  }
+}]
+
+resource stPeDnsGroups 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2023-11-01' = [for (g, i) in storagePeGroups: if (storagePeEnabled) {
+  name: '${stPrivateEndpoints[i].name}/default'
+  properties: {
+    privateDnsZoneConfigs: [
+      {
+        name: g.svc
+        properties: { privateDnsZoneId: g.zoneId }
+      }
+    ]
+  }
+}]
 
 output functionName string = func.name
 output functionId string = func.id

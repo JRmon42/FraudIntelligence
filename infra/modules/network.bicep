@@ -197,6 +197,8 @@ var dnsZoneNames = [
   'privatelink.vaultcore.azure.net'
   'privatelink.documents.azure.com'
   'privatelink.blob.core.windows.net'
+  'privatelink.queue.core.windows.net' // enforcement Function AzureWebJobsStorage (identity-based)
+  'privatelink.table.core.windows.net' // enforcement Function AzureWebJobsStorage (identity-based)
   'privatelink.servicebus.windows.net' // Event Hubs
   'privatelink.search.windows.net'
   'privatelink.openai.azure.com'
@@ -251,3 +253,6 @@ output subnetAgwId string = '${vnet.id}/subnets/snet-agw'
 output subnetMgmtId string = '${vnet.id}/subnets/snet-mgmt'
 output subnetFuncId string = '${vnet.id}/subnets/snet-func'
 output dnsZoneNames array = dnsZoneNames
+output blobDnsZoneId string = resourceId('Microsoft.Network/privateDnsZones', 'privatelink.blob.core.windows.net')
+output queueDnsZoneId string = resourceId('Microsoft.Network/privateDnsZones', 'privatelink.queue.core.windows.net')
+output tableDnsZoneId string = resourceId('Microsoft.Network/privateDnsZones', 'privatelink.table.core.windows.net')

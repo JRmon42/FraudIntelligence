@@ -324,6 +324,10 @@ module fn 'modules/functions.bicep' = if (isPrimary) {
     functionSubnetId: net.outputs.subnetFuncId
     cosmosAccountName: cosmos.outputs.cosmosName
     cosmosEndpoint: cosmos.outputs.cosmosEndpoint
+    privateEndpointSubnetId: net.outputs.subnetPeId
+    blobDnsZoneId: net.outputs.blobDnsZoneId
+    queueDnsZoneId: net.outputs.queueDnsZoneId
+    tableDnsZoneId: net.outputs.tableDnsZoneId
   }
 }
 

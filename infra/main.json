@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.44.1.10279",
-      "templateHash": "1125716795778306887"
+      "templateHash": "7287016373597441982"
     }
   },
   "parameters": {
@@ -466,7 +466,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.44.1.10279",
-              "templateHash": "9451948479382328955"
+              "templateHash": "17275743171154150655"
             }
           },
           "parameters": {
@@ -762,7 +762,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.44.1.10279",
-                      "templateHash": "545553569843255957"
+                      "templateHash": "12967972866968057784"
                     }
                   },
                   "parameters": {
@@ -831,6 +831,8 @@
                       "privatelink.vaultcore.azure.net",
                       "privatelink.documents.azure.com",
                       "privatelink.blob.core.windows.net",
+                      "privatelink.queue.core.windows.net",
+                      "privatelink.table.core.windows.net",
                       "privatelink.servicebus.windows.net",
                       "privatelink.search.windows.net",
                       "privatelink.openai.azure.com",
@@ -1090,6 +1092,18 @@
                     "dnsZoneNames": {
                       "type": "array",
                       "value": "[variables('dnsZoneNames')]"
+                    },
+                    "blobDnsZoneId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.Network/privateDnsZones', 'privatelink.blob.core.windows.net')]"
+                    },
+                    "queueDnsZoneId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.Network/privateDnsZones', 'privatelink.queue.core.windows.net')]"
+                    },
+                    "tableDnsZoneId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.Network/privateDnsZones', 'privatelink.table.core.windows.net')]"
                     }
                   }
                 }
@@ -5060,6 +5074,18 @@
                   },
                   "cosmosEndpoint": {
                     "value": "[reference('cosmos').outputs.cosmosEndpoint.value]"
+                  },
+                  "privateEndpointSubnetId": {
+                    "value": "[reference('net').outputs.subnetPeId.value]"
+                  },
+                  "blobDnsZoneId": {
+                    "value": "[reference('net').outputs.blobDnsZoneId.value]"
+                  },
+                  "queueDnsZoneId": {
+                    "value": "[reference('net').outputs.queueDnsZoneId.value]"
+                  },
+                  "tableDnsZoneId": {
+                    "value": "[reference('net').outputs.tableDnsZoneId.value]"
                   }
                 },
                 "template": {
@@ -5069,7 +5095,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.44.1.10279",
-                      "templateHash": "10902029782644240251"
+                      "templateHash": "11637068312032198565"
                     }
                   },
                   "parameters": {
@@ -5136,6 +5162,28 @@
                     "cosmosCasesContainer": {
                       "type": "string",
                       "defaultValue": "cases"
+                    },
+                    "privateEndpointSubnetId": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Private-endpoint subnet id (snet-pe) for the identity-based host storage. Empty disables storage private endpoints (leaves public access enabled)."
+                      }
+                    },
+                    "blobDnsZoneId": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Private DNS zone ids for storage blob/queue/table (from the network module). Required when privateEndpointSubnetId is set."
+                      }
+                    },
+                    "queueDnsZoneId": {
+                      "type": "string",
+                      "defaultValue": ""
+                    },
+                    "tableDnsZoneId": {
+                      "type": "string",
+                      "defaultValue": ""
                     }
                   },
                   "variables": {
@@ -5143,7 +5191,22 @@
                     "planName": "[format('plan-func-heimdall-{0}-{1}', parameters('env'), parameters('regionCode'))]",
                     "stName": "[format('stfn{0}heimdall{1}', parameters('env'), parameters('regionCode'))]",
                     "deployContainerName": "deployment",
-                    "blobDataOwnerRoleId": "b7e6dc6d-f1e8-4753-8033-0f276bb0955b"
+                    "blobDataOwnerRoleId": "b7e6dc6d-f1e8-4753-8033-0f276bb0955b",
+                    "storagePeEnabled": "[not(empty(parameters('privateEndpointSubnetId')))]",
+                    "storagePeGroups": [
+                      {
+                        "svc": "blob",
+                        "zoneId": "[parameters('blobDnsZoneId')]"
+                      },
+                      {
+                        "svc": "queue",
+                        "zoneId": "[parameters('queueDnsZoneId')]"
+                      },
+                      {
+                        "svc": "table",
+                        "zoneId": "[parameters('tableDnsZoneId')]"
+                      }
+                    ]
                   },
                   "resources": [
                     {
@@ -5159,7 +5222,9 @@
                       "properties": {
                         "minimumTlsVersion": "TLS1_2",
                         "allowBlobPublicAccess": false,
-                        "supportsHttpsTrafficOnly": true
+                        "allowSharedKeyAccess": false,
+                        "supportsHttpsTrafficOnly": true,
+                        "publicNetworkAccess": "[if(empty(parameters('privateEndpointSubnetId')), 'Enabled', 'Disabled')]"
                       }
                     },
                     {
@@ -5297,6 +5362,60 @@
                       },
                       "dependsOn": [
                         "[resourceId('Microsoft.Web/sites', variables('funcName'))]"
+                      ]
+                    },
+                    {
+                      "copy": {
+                        "name": "stPrivateEndpoints",
+                        "count": "[length(variables('storagePeGroups'))]"
+                      },
+                      "condition": "[variables('storagePeEnabled')]",
+                      "type": "Microsoft.Network/privateEndpoints",
+                      "apiVersion": "2023-11-01",
+                      "name": "[format('pe-stfn-{0}', variables('storagePeGroups')[copyIndex()].svc)]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "properties": {
+                        "subnet": {
+                          "id": "[parameters('privateEndpointSubnetId')]"
+                        },
+                        "privateLinkServiceConnections": [
+                          {
+                            "name": "[format('conn-stfn-{0}', variables('storagePeGroups')[copyIndex()].svc)]",
+                            "properties": {
+                              "privateLinkServiceId": "[resourceId('Microsoft.Storage/storageAccounts', variables('stName'))]",
+                              "groupIds": [
+                                "[variables('storagePeGroups')[copyIndex()].svc]"
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Storage/storageAccounts', variables('stName'))]"
+                      ]
+                    },
+                    {
+                      "copy": {
+                        "name": "stPeDnsGroups",
+                        "count": "[length(variables('storagePeGroups'))]"
+                      },
+                      "condition": "[variables('storagePeEnabled')]",
+                      "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+                      "apiVersion": "2023-11-01",
+                      "name": "[format('{0}/default', format('pe-stfn-{0}', variables('storagePeGroups')[copyIndex()].svc))]",
+                      "properties": {
+                        "privateDnsZoneConfigs": [
+                          {
+                            "name": "[variables('storagePeGroups')[copyIndex()].svc]",
+                            "properties": {
+                              "privateDnsZoneId": "[variables('storagePeGroups')[copyIndex()].zoneId]"
+                            }
+                          }
+                        ]
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Network/privateEndpoints', format('pe-stfn-{0}', variables('storagePeGroups')[copyIndex()].svc))]"
                       ]
                     }
                   ],
@@ -6043,7 +6162,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.44.1.10279",
-              "templateHash": "9451948479382328955"
+              "templateHash": "17275743171154150655"
             }
           },
           "parameters": {
@@ -6339,7 +6458,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.44.1.10279",
-                      "templateHash": "545553569843255957"
+                      "templateHash": "12967972866968057784"
                     }
                   },
                   "parameters": {
@@ -6408,6 +6527,8 @@
                       "privatelink.vaultcore.azure.net",
                       "privatelink.documents.azure.com",
                       "privatelink.blob.core.windows.net",
+                      "privatelink.queue.core.windows.net",
+                      "privatelink.table.core.windows.net",
                       "privatelink.servicebus.windows.net",
                       "privatelink.search.windows.net",
                       "privatelink.openai.azure.com",
@@ -6667,6 +6788,18 @@
                     "dnsZoneNames": {
                       "type": "array",
                       "value": "[variables('dnsZoneNames')]"
+                    },
+                    "blobDnsZoneId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.Network/privateDnsZones', 'privatelink.blob.core.windows.net')]"
+                    },
+                    "queueDnsZoneId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.Network/privateDnsZones', 'privatelink.queue.core.windows.net')]"
+                    },
+                    "tableDnsZoneId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.Network/privateDnsZones', 'privatelink.table.core.windows.net')]"
                     }
                   }
                 }
@@ -10637,6 +10770,18 @@
                   },
                   "cosmosEndpoint": {
                     "value": "[reference('cosmos').outputs.cosmosEndpoint.value]"
+                  },
+                  "privateEndpointSubnetId": {
+                    "value": "[reference('net').outputs.subnetPeId.value]"
+                  },
+                  "blobDnsZoneId": {
+                    "value": "[reference('net').outputs.blobDnsZoneId.value]"
+                  },
+                  "queueDnsZoneId": {
+                    "value": "[reference('net').outputs.queueDnsZoneId.value]"
+                  },
+                  "tableDnsZoneId": {
+                    "value": "[reference('net').outputs.tableDnsZoneId.value]"
                   }
                 },
                 "template": {
@@ -10646,7 +10791,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.44.1.10279",
-                      "templateHash": "10902029782644240251"
+                      "templateHash": "11637068312032198565"
                     }
                   },
                   "parameters": {
@@ -10713,6 +10858,28 @@
                     "cosmosCasesContainer": {
                       "type": "string",
                       "defaultValue": "cases"
+                    },
+                    "privateEndpointSubnetId": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Private-endpoint subnet id (snet-pe) for the identity-based host storage. Empty disables storage private endpoints (leaves public access enabled)."
+                      }
+                    },
+                    "blobDnsZoneId": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Private DNS zone ids for storage blob/queue/table (from the network module). Required when privateEndpointSubnetId is set."
+                      }
+                    },
+                    "queueDnsZoneId": {
+                      "type": "string",
+                      "defaultValue": ""
+                    },
+                    "tableDnsZoneId": {
+                      "type": "string",
+                      "defaultValue": ""
                     }
                   },
                   "variables": {
@@ -10720,7 +10887,22 @@
                     "planName": "[format('plan-func-heimdall-{0}-{1}', parameters('env'), parameters('regionCode'))]",
                     "stName": "[format('stfn{0}heimdall{1}', parameters('env'), parameters('regionCode'))]",
                     "deployContainerName": "deployment",
-                    "blobDataOwnerRoleId": "b7e6dc6d-f1e8-4753-8033-0f276bb0955b"
+                    "blobDataOwnerRoleId": "b7e6dc6d-f1e8-4753-8033-0f276bb0955b",
+                    "storagePeEnabled": "[not(empty(parameters('privateEndpointSubnetId')))]",
+                    "storagePeGroups": [
+                      {
+                        "svc": "blob",
+                        "zoneId": "[parameters('blobDnsZoneId')]"
+                      },
+                      {
+                        "svc": "queue",
+                        "zoneId": "[parameters('queueDnsZoneId')]"
+                      },
+                      {
+                        "svc": "table",
+                        "zoneId": "[parameters('tableDnsZoneId')]"
+                      }
+                    ]
                   },
                   "resources": [
                     {
@@ -10736,7 +10918,9 @@
                       "properties": {
                         "minimumTlsVersion": "TLS1_2",
                         "allowBlobPublicAccess": false,
-                        "supportsHttpsTrafficOnly": true
+                        "allowSharedKeyAccess": false,
+                        "supportsHttpsTrafficOnly": true,
+                        "publicNetworkAccess": "[if(empty(parameters('privateEndpointSubnetId')), 'Enabled', 'Disabled')]"
                       }
                     },
                     {
@@ -10874,6 +11058,60 @@
                       },
                       "dependsOn": [
                         "[resourceId('Microsoft.Web/sites', variables('funcName'))]"
+                      ]
+                    },
+                    {
+                      "copy": {
+                        "name": "stPrivateEndpoints",
+                        "count": "[length(variables('storagePeGroups'))]"
+                      },
+                      "condition": "[variables('storagePeEnabled')]",
+                      "type": "Microsoft.Network/privateEndpoints",
+                      "apiVersion": "2023-11-01",
+                      "name": "[format('pe-stfn-{0}', variables('storagePeGroups')[copyIndex()].svc)]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "properties": {
+                        "subnet": {
+                          "id": "[parameters('privateEndpointSubnetId')]"
+                        },
+                        "privateLinkServiceConnections": [
+                          {
+                            "name": "[format('conn-stfn-{0}', variables('storagePeGroups')[copyIndex()].svc)]",
+                            "properties": {
+                              "privateLinkServiceId": "[resourceId('Microsoft.Storage/storageAccounts', variables('stName'))]",
+                              "groupIds": [
+                                "[variables('storagePeGroups')[copyIndex()].svc]"
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Storage/storageAccounts', variables('stName'))]"
+                      ]
+                    },
+                    {
+                      "copy": {
+                        "name": "stPeDnsGroups",
+                        "count": "[length(variables('storagePeGroups'))]"
+                      },
+                      "condition": "[variables('storagePeEnabled')]",
+                      "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+                      "apiVersion": "2023-11-01",
+                      "name": "[format('{0}/default', format('pe-stfn-{0}', variables('storagePeGroups')[copyIndex()].svc))]",
+                      "properties": {
+                        "privateDnsZoneConfigs": [
+                          {
+                            "name": "[variables('storagePeGroups')[copyIndex()].svc]",
+                            "properties": {
+                              "privateDnsZoneId": "[variables('storagePeGroups')[copyIndex()].zoneId]"
+                            }
+                          }
+                        ]
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Network/privateEndpoints', format('pe-stfn-{0}', variables('storagePeGroups')[copyIndex()].svc))]"
                       ]
                     }
                   ],
