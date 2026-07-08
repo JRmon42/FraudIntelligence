@@ -149,9 +149,10 @@ and are **not** reproduced by the CLI demo above (which exercises the live scori
 >   the async enforcement path (Entra-only, `disableLocalAuth`); the scoring API
 >   **publishes every DECLINE** to it (key-less send).
 > - **Enforcement Function** `func-heimdall-enforce-prod-swc` (Flex Consumption FC1,
->   identity-based storage, **VNet-integrated** to reach the Cosmos private endpoint) —
->   Service-Bus-triggered block / step-up / notify / **open-case** consumer
->   (`services/enforcement-function/`); each DECLINE persists a Cosmos case in `cases`.
+>   identity-based storage **locked to private endpoints** — blob/queue/table PEs in
+>   `snet-pe`, `publicNetworkAccess=Disabled`; **VNet-integrated** to reach the Cosmos
+>   private endpoint) — Service-Bus-triggered block / step-up / notify / **open-case**
+>   consumer (`services/enforcement-function/`); each DECLINE persists a Cosmos case in `cases`.
 > - **Microsoft Sentinel** — onboarded on `log-heimdall-prod-swc` (SIEM/SOAR).
 >
 > **On-stage honesty note:** **Redis and the Service Bus → enforcement Function loop
