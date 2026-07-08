@@ -42,11 +42,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Total Tx Count"
+                  "Property": "Exemption Tx Count"
                 }
               },
-              "queryRef": "_Measures.Total Tx Count",
-              "nativeQueryRef": "Total Tx Count"
+              "queryRef": "_Measures.Exemption Tx Count",
+              "nativeQueryRef": "Exemption Tx Count"
             }
           ]
         }

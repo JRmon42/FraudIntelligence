@@ -11,6 +11,22 @@ table _Measures
 		formatString: #,0
 		lineageTag: 7b6c686a-11c3-4983-b1b9-2810caec65b6
 
+	/// Transactions per SCA-exemption code (Fact_Exemption grain). Use for the exemption-mix donut — Fact_Tx is not related to Dim_Exemption.
+	measure 'Exemption Tx Count' = SUM(Fact_Exemption[TxCount])
+		formatString: #,0
+		lineageTag: 5a20b2d3-f010-4203-bdf9-a26f35c1cfb7
+
+	/// Fraud-loss reduction from the first to the latest period on the Fact_Tx date axis (program outcome, e.g. H1 2026).
+	measure 'Fraud Loss Reduction %' = ```
+			VAR firstD = CALCULATE(MIN(Fact_Tx[BookingDate]), ALL(Fact_Tx))
+			VAR lastD = CALCULATE(MAX(Fact_Tx[BookingDate]), ALL(Fact_Tx))
+			VAR L0 = CALCULATE(SUM(Fact_Tx[LossValueEur]), ALL(Fact_Tx), Fact_Tx[BookingDate] = firstD)
+			VAR L1 = CALCULATE(SUM(Fact_Tx[LossValueEur]), ALL(Fact_Tx), Fact_Tx[BookingDate] = lastD)
+			RETURN DIVIDE(L0 - L1, L0)
+			```
+		formatString: 0%
+		lineageTag: cc636642-eed5-4d84-8ba0-89ab9ebf22e1
+
 	/// Declines divided by total decisions — KPI tracked vs the 1.1% target.
 	measure 'Decline Rate %' = DIVIDE(SUM(Fact_Tx[DeclineCount]), SUM(Fact_Tx[TxCount]))
 		formatString: 0.00%

@@ -23,11 +23,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Fraud Rate (bps)"
+                  "Property": "Fraud Loss Reduction %"
                 }
               },
-              "queryRef": "_Measures.Fraud Rate (bps)",
-              "nativeQueryRef": "Fraud Rate (bps)"
+              "queryRef": "_Measures.Fraud Loss Reduction %",
+              "nativeQueryRef": "Fraud Loss Reduction %"
             }
           ]
         }

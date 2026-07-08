@@ -51,11 +51,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Total Tx Count"
+                  "Property": "EBA Tx Count"
                 }
               },
-              "queryRef": "_Measures.Total Tx Count",
-              "nativeQueryRef": "Total Tx Count"
+              "queryRef": "_Measures.EBA Tx Count",
+              "nativeQueryRef": "EBA Tx Count"
             },
             {
               "field": {
@@ -65,11 +65,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Total Tx Value (€)"
+                  "Property": "EBA Tx Value (€)"
                 }
               },
-              "queryRef": "_Measures.Total Tx Value (€)",
-              "nativeQueryRef": "Total Tx Value (€)"
+              "queryRef": "_Measures.EBA Tx Value (€)",
+              "nativeQueryRef": "EBA Tx Value (€)"
             }
           ]
         }
