@@ -12,21 +12,31 @@
 #
 # Every setting is overridable via environment variables:
 #   SUBSCRIPTION_ID / AZURE_SUBSCRIPTION_ID  target subscription (default: az login)
-#   RESOURCE_GROUP                           resource group      (default: rg-heimdall-prod-swc)
+#   RESOURCE_GROUP                           resource group      (default: heimdall_rg)
 #   WORKSPACE                                AML workspace       (default: mlw-heimdall-prod-swc)
 #   SKIP_TRAIN=1                             reuse existing ml/artifacts (skip training)
 #
-# Requires the Azure ML CLI v2 extension (`az extension add -n ml`). Because the
-# workspace is private (managed VNet, publicNetworkAccess=Disabled), run this
-# from a host with line-of-sight to the workspace (Azure Cloud Shell, a jump
-# box, or a self-hosted runner in the VNet).
+# Requires the Azure ML CLI v2 extension (`az extension add -n ml`, preinstalled
+# on Azure ML compute instances). Because the workspace storage is private
+# (managed-VNet private endpoints, publicNetworkAccess=Disabled, shared-key
+# disabled), run this from a host WITH DATA-PLANE LINE-OF-SIGHT to the workspace
+# storage — i.e. an Azure ML Compute Instance in the workspace (recommended).
+# A laptop on a P2S VPN to the hub/project VNet is NOT sufficient: the AML
+# storage's private endpoints live in the Microsoft-managed VNet, unreachable
+# from the customer VNet.
+#
+# The workspace default datastore (workspaceblobstore) must use IDENTITY-BASED
+# auth (credentialsType=None) because the storage account has shared-key access
+# disabled; an account-key datastore fails with KeyBasedAuthenticationNotPermitted.
+# The caller identity (and the compute's managed identity) need the
+# "Storage Blob Data Contributor" role on the AML storage account.
 # ============================================================================
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
 SUBSCRIPTION_ID="${SUBSCRIPTION_ID:-${AZURE_SUBSCRIPTION_ID:-}}"
-RESOURCE_GROUP="${RESOURCE_GROUP:-rg-heimdall-prod-swc}"
+RESOURCE_GROUP="${RESOURCE_GROUP:-heimdall_rg}"
 WORKSPACE="${WORKSPACE:-mlw-heimdall-prod-swc}"
 MODEL_NAME="fraud-intel-ensemble-sklearn"
 ARTIFACTS="ml/artifacts"
