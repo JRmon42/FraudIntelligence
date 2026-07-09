@@ -15,6 +15,7 @@
 #   RESOURCE_GROUP                           resource group      (default: heimdall_rg)
 #   WORKSPACE                                AML workspace       (default: mlw-heimdall-prod-swc)
 #   SKIP_TRAIN=1                             reuse existing ml/artifacts (skip training)
+#   STREAM=0                                 submit the RAI job without --stream (fire-and-forget)
 #
 # Requires the Azure ML CLI v2 extension (`az extension add -n ml`, preinstalled
 # on Azure ML compute instances). Because the workspace storage is private
@@ -101,10 +102,18 @@ echo "    registered version: $MODEL_VERSION"
 # 5) Submit the Responsible AI pipeline
 # --------------------------------------------------------------------------
 echo "==> Submitting RAI dashboard + scorecard pipeline"
-"${AZ[@]}" ml job create "${DEFAULTS[@]}" \
-  --file ml/aml_jobs/rai_scorecard.yml \
-  --set inputs.model_info="${MODEL_NAME}:${MODEL_VERSION}" \
-  --stream
+if [[ "${STREAM:-1}" == "0" ]]; then
+  JOB_NAME="$("${AZ[@]}" ml job create "${DEFAULTS[@]}" \
+    --file ml/aml_jobs/rai_scorecard.yml \
+    --set inputs.model_info="${MODEL_NAME}:${MODEL_VERSION}" \
+    --query name -o tsv)"
+  echo "    submitted RAI pipeline job (not streaming): $JOB_NAME"
+else
+  "${AZ[@]}" ml job create "${DEFAULTS[@]}" \
+    --file ml/aml_jobs/rai_scorecard.yml \
+    --set inputs.model_info="${MODEL_NAME}:${MODEL_VERSION}" \
+    --stream
+fi
 
 echo "==> Done. Open Azure ML Studio -> Models -> $MODEL_NAME -> Responsible AI"
 echo "    to view the dashboard and download the PDF scorecard."
