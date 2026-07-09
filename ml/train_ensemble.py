@@ -491,13 +491,56 @@ def run(input_path: str | None, output_dir: str, n_smoke: int = 0,
     per_row_ms = _validate_onnx(onnx_path, X_test_df.head(64))
     metrics["onnx_per_row_ms"] = per_row_ms
 
+    # Persist the model-ready train/test frames (raw feature columns + label).
+    # The Responsible AI dashboard/scorecard pipeline consumes these as MLTable
+    # data assets and applies the pipeline's own preprocessing, so we store the
+    # RAW columns (NUM_FEATURES + CAT_FEATURES) plus the target, exactly what
+    # the served sklearn pipeline expects.
+    train_ds = X_train_df.copy()
+    train_ds["is_fraud"] = np.asarray(y_train).astype(int)
+    test_ds = X_test_df.copy()
+    test_ds["is_fraud"] = np.asarray(y_test).astype(int)
+    train_ds.to_parquet(out / "train_data.parquet", index=False)
+    test_ds.to_parquet(out / "test_data.parquet", index=False)
+    print(f"  Saved RAI datasets: train={len(train_ds):,} test={len(test_ds):,} rows")
+
     write_model_card(out / "ensemble_model_card.md", metrics, fairness, n_train=len(y_train))
     (out / "metrics.json").write_text(json.dumps({**metrics, "fairness": fairness}, indent=2, default=float))
 
     if HAS_MLFLOW:
-        mlflow.log_metrics({k: v for k, v in metrics.items() if isinstance(v, (int, float))})
+        # MLflow metric names may not contain '@'; sanitise (tpr@0.5 -> tpr_at_0.5)
+        # so the tracking log_batch call succeeds in the AML job.
+        mlflow.log_metrics({
+            k.replace("@", "_at_"): v
+            for k, v in metrics.items() if isinstance(v, (int, float))
+        })
         mlflow.log_artifact(str(onnx_path))
         mlflow.log_artifact(str(out / "ensemble_model_card.md"))
+        # Log the SERVED sklearn pipeline as an MLflow model so it can be
+        # registered as an mlflow_model and analysed by the Responsible AI
+        # tabular components (which require an MLflow-flavoured model). This is
+        # the same Pipeline([pre, calibrated-XGB]) that is exported to ONNX for
+        # online serving, so the scorecard reflects the deployed model.
+        try:
+            import shutil
+            from mlflow import sklearn as mlflow_sklearn
+            from mlflow.models.signature import infer_signature
+            sample = X_test_df.head(50)
+            sig = infer_signature(sample, pipe.predict_proba(sample)[:, 1])
+            # Fixed local dir so scripts/run_rai_scorecard.sh can register it
+            # with `az ml model create --type mlflow_model --path ...`.
+            model_dir = out / "sklearn-model"
+            if model_dir.exists():
+                shutil.rmtree(model_dir)
+            mlflow_sklearn.save_model(
+                pipe, str(model_dir), signature=sig,
+                input_example=X_test_df.head(5),
+            )
+            # Also track it inside the MLflow run for lineage.
+            mlflow.log_artifacts(str(model_dir), artifact_path="sklearn-model")
+            print(f"  Saved + logged MLflow sklearn model at {model_dir}")
+        except Exception as exc:  # pragma: no cover - best-effort, offline-safe
+            print(f"  WARNING: could not save MLflow sklearn model: {exc}")
         mlflow.end_run()
 
     return {"metrics": metrics, "fairness": fairness, "onnx_path": str(onnx_path)}

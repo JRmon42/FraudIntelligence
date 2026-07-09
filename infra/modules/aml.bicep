@@ -131,6 +131,29 @@ resource peDns 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2023-11-
   }
 }
 
+// CPU compute cluster — used by training jobs and the Responsible AI
+// dashboard/scorecard pipeline. Scales to zero when idle so there is no
+// standing cost; nodes have no public IP (managed VNet only).
+resource cpuCluster 'Microsoft.MachineLearningServices/workspaces/computes@2024-04-01' = {
+  parent: aml
+  name: 'cpu-cluster'
+  location: location
+  properties: {
+    computeType: 'AmlCompute'
+    properties: {
+      vmSize: 'Standard_DS3_v2'
+      vmPriority: 'Dedicated'
+      scaleSettings: {
+        minNodeCount: 0
+        maxNodeCount: 4
+        nodeIdleTimeBeforeScaleDown: 'PT300S'
+      }
+      enableNodePublicIp: false
+      remoteLoginPortPublicAccess: 'Disabled'
+    }
+  }
+}
+
 // Online endpoint placeholder
 resource onlineEp 'Microsoft.MachineLearningServices/workspaces/onlineEndpoints@2024-04-01' = {
   parent: aml
@@ -150,3 +173,4 @@ output amlName string = aml.name
 output amlPrincipalId string = aml.identity.principalId
 output amlStorageId string = amlStorage.id
 output onlineEndpointName string = onlineEp.name
+output cpuClusterName string = cpuCluster.name

@@ -1,0 +1,88 @@
+$schema: https://azuremlschemas.azureedge.net/latest/pipelineJob.schema.json
+type: pipeline
+experiment_name: fraud-intel-rai
+display_name: heimdall-fraud-rai-scorecard
+description: |
+  Responsible AI dashboard + scorecard for the Heimdall fraud ensemble.
+  Registers explanations, error analysis and fairness for the SERVED sklearn
+  pipeline (the same calibrated XGBoost that is exported to ONNX for online
+  scoring), then renders a downloadable PDF scorecard. Runs on cpu-cluster.
+
+settings:
+  default_compute: azureml:cpu-cluster
+
+inputs:
+  # Registered MLflow model produced by ml/train_ensemble.py and registered by
+  # scripts/run_rai_scorecard.sh. Keep model_info in sync with the version.
+  model_info: fraud-intel-ensemble-sklearn:1
+  target_column_name: is_fraud
+  train_data:
+    type: mltable
+    path: azureml:fraud-intel-rai-train@latest
+    mode: download
+  test_data:
+    type: mltable
+    path: azureml:fraud-intel-rai-test@latest
+    mode: download
+  # Scorecard PDF definition (metrics + fairness cohorts).
+  score_card_config:
+    type: uri_file
+    path: ./rai_scorecard_config.json
+    mode: download
+
+jobs:
+  # 1) Construct the RAI insights dashboard for the model + data.
+  create_rai_insights:
+    type: command
+    component: azureml://registries/azureml/components/microsoft_azureml_rai_tabular_insight_constructor/labels/latest
+    inputs:
+      title: Heimdall Fraud Ensemble
+      task_type: classification
+      model_info: ${{parent.inputs.model_info}}
+      model_input:
+        type: mlflow_model
+        path: azureml:fraud-intel-ensemble-sklearn@latest
+      train_dataset: ${{parent.inputs.train_data}}
+      test_dataset: ${{parent.inputs.test_data}}
+      target_column_name: ${{parent.inputs.target_column_name}}
+      categorical_column_names: '["card_country","merchant_country","ip_country","card_brand","channel","device_os","mcc"]'
+      classes: '["legit","fraud"]'
+      maximum_rows_for_test_dataset: 5000
+      use_model_dependency: true
+
+  # 2) Model explanations (global + local feature importance).
+  explain:
+    type: command
+    component: azureml://registries/azureml/components/microsoft_azureml_rai_tabular_explanation/labels/latest
+    inputs:
+      comment: Global and local feature importance for the fraud ensemble.
+      rai_insights_dashboard: ${{parent.jobs.create_rai_insights.outputs.rai_insights_dashboard}}
+
+  # 3) Error analysis (cohorts where the model underperforms).
+  error_analysis:
+    type: command
+    component: azureml://registries/azureml/components/microsoft_azureml_rai_tabular_erroranalysis/labels/latest
+    inputs:
+      comment: Error tree over card_country / channel / amount cohorts.
+      rai_insights_dashboard: ${{parent.jobs.create_rai_insights.outputs.rai_insights_dashboard}}
+
+  # 4) Gather the insight tools into a single dashboard.
+  gather:
+    type: command
+    component: azureml://registries/azureml/components/microsoft_azureml_rai_tabular_insight_gather/labels/latest
+    inputs:
+      constructor: ${{parent.jobs.create_rai_insights.outputs.rai_insights_dashboard}}
+      insight_1: ${{parent.jobs.explain.outputs.explanation}}
+      insight_2: ${{parent.jobs.error_analysis.outputs.error_analysis}}
+
+  # 5) Render the downloadable PDF scorecard.
+  score_card:
+    type: command
+    component: azureml://registries/azureml/components/microsoft_azureml_rai_tabular_score_card/labels/latest
+    inputs:
+      dashboard: ${{parent.jobs.gather.outputs.dashboard}}
+      pdf_generation_config: ${{parent.inputs.score_card_config}}
+    outputs:
+      scorecard:
+        type: uri_folder
+        mode: upload

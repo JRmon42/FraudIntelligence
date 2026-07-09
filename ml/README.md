@@ -25,7 +25,9 @@ ml/
 │   ├── train_ensemble.yml      # AML command job (cpu-cluster)
 │   ├── train_gnn.yml           # AML command job (gpu-cluster)
 │   ├── deploy_endpoint.yml     # Managed online endpoint + blue/green deployments
-│   └── register_models.yml     # Model registration manifests
+│   ├── register_models.yml     # Model registration manifests
+│   ├── rai_scorecard.yml       # Responsible AI dashboard + scorecard pipeline
+│   └── rai_scorecard_config.json  # Scorecard metrics + fairness cohorts
 ├── notebooks/
 │   ├── 01_eda.ipynb
 │   ├── 02_train_local.ipynb
@@ -154,6 +156,39 @@ az ml online-deployment create --file ml/aml_jobs/deploy_endpoint.yml --all-traf
 az ml online-endpoint invoke -n fraud-intel-scoring \
     --request-file ml/tests/sample_request.json
 ```
+
+## Responsible AI dashboard + scorecard
+
+`ml/train_ensemble.py` also logs the **served** sklearn pipeline (the same
+calibrated XGBoost that is exported to ONNX) as an MLflow model and writes
+`train_data.parquet` / `test_data.parquet`. The Responsible AI pipeline turns
+those into a dashboard + downloadable PDF scorecard inside the workspace:
+
+```bash
+# One command: register the MLflow model + MLTable data assets and submit
+# the RAI dashboard/scorecard pipeline (runs on the cpu-cluster).
+RESOURCE_GROUP=rg-heimdall-prod-swc WORKSPACE=mlw-heimdall-prod-swc \
+  ./scripts/run_rai_scorecard.sh
+```
+
+What it produces, visible under **Azure ML Studio → Models →
+`fraud-intel-ensemble-sklearn` → Responsible AI**:
+
+| Insight | Source component |
+|---|---|
+| Feature importance (global + local) | `rai_tabular_explanation` |
+| Error analysis (worst cohorts) | `rai_tabular_erroranalysis` |
+| Fairness across `card_country` / `channel` | scorecard config `Fairness` block |
+| Downloadable **PDF scorecard** | `rai_tabular_score_card` |
+
+Because the workspace is private (managed VNet, `publicNetworkAccess=Disabled`),
+run the script from a host with line-of-sight to it (Azure Cloud Shell, a jump
+box, or a VNet-joined runner). The `cpu-cluster` it targets is defined in
+`infra/modules/aml.bicep` and scales to zero when idle.
+
+> **Honesty note:** explanations, error analysis and fairness are computed on
+> the synthetic back-test set, so they are *methodologically* real but
+> *substantively* illustrative until re-run on production data during the pilot.
 
 ## Smoke-run quality bar (CI)
 

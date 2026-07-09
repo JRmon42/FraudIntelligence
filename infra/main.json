@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.44.1.10279",
-      "templateHash": "7287016373597441982"
+      "templateHash": "8939394691414486984"
     }
   },
   "parameters": {
@@ -466,7 +466,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.44.1.10279",
-              "templateHash": "17275743171154150655"
+              "templateHash": "11588194045251735898"
             }
           },
           "parameters": {
@@ -2687,7 +2687,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.44.1.10279",
-                      "templateHash": "18187334809943281633"
+                      "templateHash": "16580085828393697906"
                     }
                   },
                   "parameters": {
@@ -2899,6 +2899,29 @@
                       ]
                     },
                     {
+                      "type": "Microsoft.MachineLearningServices/workspaces/computes",
+                      "apiVersion": "2024-04-01",
+                      "name": "[format('{0}/{1}', variables('workspaceName'), 'cpu-cluster')]",
+                      "location": "[parameters('location')]",
+                      "properties": {
+                        "computeType": "AmlCompute",
+                        "properties": {
+                          "vmSize": "Standard_DS3_v2",
+                          "vmPriority": "Dedicated",
+                          "scaleSettings": {
+                            "minNodeCount": 0,
+                            "maxNodeCount": 4,
+                            "nodeIdleTimeBeforeScaleDown": "PT300S"
+                          },
+                          "enableNodePublicIp": false,
+                          "remoteLoginPortPublicAccess": "Disabled"
+                        }
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.MachineLearningServices/workspaces', variables('workspaceName'))]"
+                      ]
+                    },
+                    {
                       "type": "Microsoft.MachineLearningServices/workspaces/onlineEndpoints",
                       "apiVersion": "2024-04-01",
                       "name": "[format('{0}/{1}', variables('workspaceName'), 'scoring-ep')]",
@@ -2937,6 +2960,10 @@
                     "onlineEndpointName": {
                       "type": "string",
                       "value": "scoring-ep"
+                    },
+                    "cpuClusterName": {
+                      "type": "string",
+                      "value": "cpu-cluster"
                     }
                   }
                 }
@@ -6162,7 +6189,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.44.1.10279",
-              "templateHash": "17275743171154150655"
+              "templateHash": "11588194045251735898"
             }
           },
           "parameters": {
@@ -8383,7 +8410,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.44.1.10279",
-                      "templateHash": "18187334809943281633"
+                      "templateHash": "16580085828393697906"
                     }
                   },
                   "parameters": {
@@ -8595,6 +8622,29 @@
                       ]
                     },
                     {
+                      "type": "Microsoft.MachineLearningServices/workspaces/computes",
+                      "apiVersion": "2024-04-01",
+                      "name": "[format('{0}/{1}', variables('workspaceName'), 'cpu-cluster')]",
+                      "location": "[parameters('location')]",
+                      "properties": {
+                        "computeType": "AmlCompute",
+                        "properties": {
+                          "vmSize": "Standard_DS3_v2",
+                          "vmPriority": "Dedicated",
+                          "scaleSettings": {
+                            "minNodeCount": 0,
+                            "maxNodeCount": 4,
+                            "nodeIdleTimeBeforeScaleDown": "PT300S"
+                          },
+                          "enableNodePublicIp": false,
+                          "remoteLoginPortPublicAccess": "Disabled"
+                        }
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.MachineLearningServices/workspaces', variables('workspaceName'))]"
+                      ]
+                    },
+                    {
                       "type": "Microsoft.MachineLearningServices/workspaces/onlineEndpoints",
                       "apiVersion": "2024-04-01",
                       "name": "[format('{0}/{1}', variables('workspaceName'), 'scoring-ep')]",
@@ -8633,6 +8683,10 @@
                     "onlineEndpointName": {
                       "type": "string",
                       "value": "scoring-ep"
+                    },
+                    "cpuClusterName": {
+                      "type": "string",
+                      "value": "cpu-cluster"
                     }
                   }
                 }

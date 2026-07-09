@@ -1,0 +1,51 @@
+{
+  "Model": {
+    "ModelName": "Heimdall Fraud Ensemble",
+    "ModelType": "Classification",
+    "ModelSummary": "Calibrated stacked XGBoost + LightGBM + Logistic ensemble (served as ONNX) scoring Nordic card-not-present transactions in real time."
+  },
+  "Metrics": {
+    "accuracy_score": {
+      "threshold": ">=0.99"
+    },
+    "precision_score": {},
+    "recall_score": {},
+    "f1_score": {}
+  },
+  "FeatureImportance": {
+    "top_n": 10
+  },
+  "DataExplorer": {
+    "features": [
+      "card_country",
+      "channel",
+      "amount",
+      "card_ring_score"
+    ]
+  },
+  "Fairness": {
+    "metric": [
+      "false_positive_rate",
+      "selection_rate",
+      "recall_score"
+    ],
+    "sensitive_features": [
+      "card_country",
+      "channel"
+    ],
+    "fairness_evaluation_kind": "difference"
+  },
+  "Cohorts": {
+    "high_value": {
+      "filters": [
+        {
+          "column": "amount",
+          "method": "greater",
+          "arg": [
+            1000
+          ]
+        }
+      ]
+    }
+  }
+}
