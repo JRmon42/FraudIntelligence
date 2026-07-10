@@ -532,9 +532,26 @@ def run(input_path: str | None, output_dir: str, n_smoke: int = 0,
             model_dir = out / "sklearn-model"
             if model_dir.exists():
                 shutil.rmtree(model_dir)
+            # Curated, exact-pinned inference deps. MLflow's auto-inferred env
+            # otherwise captures the whole CI pip freeze (azure-ai-ml, lightgbm,
+            # torch, ...) which conflicts when the Responsible AI tabular
+            # components recreate the conda env (`use_model_dependency: true`).
+            # The exported pipeline only needs sklearn preprocessing + a
+            # calibrated XGBoost classifier at inference, so pin just those.
+            import cloudpickle
+            import sklearn as _sklearn
+            pip_requirements = [
+                "mlflow==%s" % mlflow.__version__,
+                "scikit-learn==%s" % _sklearn.__version__,
+                "xgboost==%s" % xgb.__version__,
+                "numpy==%s" % np.__version__,
+                "pandas==%s" % pd.__version__,
+                "cloudpickle==%s" % cloudpickle.__version__,
+            ]
             mlflow_sklearn.save_model(
                 pipe, str(model_dir), signature=sig,
                 input_example=X_test_df.head(5),
+                pip_requirements=pip_requirements,
             )
             # Also track it inside the MLflow run for lineage.
             mlflow.log_artifacts(str(model_dir), artifact_path="sklearn-model")
