@@ -18,9 +18,7 @@
   "DataExplorer": {
     "features": [
       "card_country",
-      "channel",
-      "amount",
-      "card_ring_score"
+      "channel"
     ]
   },
   "Fairness": {
