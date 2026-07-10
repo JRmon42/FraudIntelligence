@@ -63,7 +63,9 @@ jobs:
     type: command
     component: azureml://registries/azureml/components/microsoft_azureml_rai_tabular_erroranalysis/labels/latest
     inputs:
-      comment: Error tree over card_country / channel / amount cohorts.
+      # NB: the rai_tabular_erroranalysis component (v0.22.0) does not accept a
+      # `comment` input (unlike rai_tabular_explanation); only the dashboard plus
+      # optional tree-depth knobs are valid here.
       rai_insights_dashboard: ${{parent.jobs.create_rai_insights.outputs.rai_insights_dashboard}}
 
   # 4) Gather the insight tools into a single dashboard.
