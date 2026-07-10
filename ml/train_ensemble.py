@@ -532,25 +532,20 @@ def run(input_path: str | None, output_dir: str, n_smoke: int = 0,
             model_dir = out / "sklearn-model"
             if model_dir.exists():
                 shutil.rmtree(model_dir)
-            # The RAI tabular components load this model in their
-            # `responsibleai-tabular` env (Python 3.9) and, when
-            # use_model_dependency=true, run `conda env update` from the model's
-            # conda.yaml into that env. MLflow would otherwise pin
-            # `python=<CI python, 3.10>`, which the update cannot satisfy (can't
-            # change the base Python) so the pip section (xgboost) never
-            # installs -> "No module named 'xgboost'". Pin python=3.9 to match
-            # the RAI env so the update is a clean no-op that just adds xgboost
-            # (sklearn/numpy/pandas/cloudpickle already ship in that env).
+            # The RAI constructor loads this model via:
+            #   conda env update --prefix <responsibleai-tabular> -f conda.yaml
+            # Any conda-level dependency (python=, or even a bare `pip`) forces a
+            # full solver run against that curated env, which conflicts and exits
+            # 1 ("Installing dependency ... failed"). Keep the model conda.yaml to
+            # a *pip-only* section with just xgboost (the one package that env
+            # lacks and the served pipeline needs) so `conda env update` simply
+            # runs `pip install xgboost` with no conda solve. sklearn / numpy /
+            # pandas / cloudpickle / mlflow already ship in responsibleai-tabular.
             conda_env = {
                 "name": "fraud-ensemble",
                 "channels": ["conda-forge"],
                 "dependencies": [
-                    "python=3.9",
-                    "pip",
-                    {"pip": [
-                        "mlflow==%s" % mlflow.__version__,
-                        "xgboost==%s" % xgb.__version__,
-                    ]},
+                    {"pip": ["xgboost==%s" % xgb.__version__]},
                 ],
             }
             mlflow_sklearn.save_model(
