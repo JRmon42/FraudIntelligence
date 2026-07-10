@@ -22,7 +22,10 @@ trap '"$PY" "$RPT" logtail "$(tail -c 2500 "$LOG" | tr "\n" "~")" || true' EXIT
 cd "$REPO" || { report repo_missing "$REPO"; exit 1; }
 report start "py=$PY"
 
-"$PY" -m pip install -q --user lightgbm xgboost skl2onnx onnxmltools onnxruntime mltable 2>&1 | tail -4
+# Pin xgboost<3 so the model's conda env installs on the RAI env's Python 3.9
+# (xgboost 3.x requires Python >=3.10, which breaks `conda env update` in the
+# responsibleai-tabular env when the RAI constructor loads the model).
+"$PY" -m pip install -q --user lightgbm "xgboost==2.1.4" skl2onnx onnxmltools onnxruntime mltable 2>&1 | tail -4
 report pip done
 
 "$PY" -m ml.train_ensemble --output ml/artifacts/ --smoke 60000 && report train ok || { report train FAILED; exit 3; }
