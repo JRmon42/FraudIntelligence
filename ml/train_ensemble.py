@@ -532,21 +532,31 @@ def run(input_path: str | None, output_dir: str, n_smoke: int = 0,
             model_dir = out / "sklearn-model"
             if model_dir.exists():
                 shutil.rmtree(model_dir)
-            # Minimal *additive* deps. The RAI tabular components pip-install
-            # these into their existing `responsibleai-tabular` env, which
-            # already pins numpy/scipy/scikit-learn. Pinning those here collides
-            # with the base env (conda solve fails). xgboost is the only thing
-            # that env lacks and that the served pipeline needs at inference, so
-            # require just that (+ mlflow for the loader); sklearn / numpy /
-            # pandas / cloudpickle are already present in responsibleai-tabular.
-            pip_requirements = [
-                "mlflow==%s" % mlflow.__version__,
-                "xgboost==%s" % xgb.__version__,
-            ]
+            # The RAI tabular components load this model in their
+            # `responsibleai-tabular` env (Python 3.9) and, when
+            # use_model_dependency=true, run `conda env update` from the model's
+            # conda.yaml into that env. MLflow would otherwise pin
+            # `python=<CI python, 3.10>`, which the update cannot satisfy (can't
+            # change the base Python) so the pip section (xgboost) never
+            # installs -> "No module named 'xgboost'". Pin python=3.9 to match
+            # the RAI env so the update is a clean no-op that just adds xgboost
+            # (sklearn/numpy/pandas/cloudpickle already ship in that env).
+            conda_env = {
+                "name": "fraud-ensemble",
+                "channels": ["conda-forge"],
+                "dependencies": [
+                    "python=3.9",
+                    "pip",
+                    {"pip": [
+                        "mlflow==%s" % mlflow.__version__,
+                        "xgboost==%s" % xgb.__version__,
+                    ]},
+                ],
+            }
             mlflow_sklearn.save_model(
                 pipe, str(model_dir), signature=sig,
                 input_example=X_test_df.head(5),
-                pip_requirements=pip_requirements,
+                conda_env=conda_env,
             )
             # Also track it inside the MLflow run for lineage.
             mlflow.log_artifacts(str(model_dir), artifact_path="sklearn-model")
