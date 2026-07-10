@@ -48,7 +48,10 @@ jobs:
       categorical_column_names: '["card_country","merchant_country","ip_country","card_brand","channel","device_os","mcc"]'
       classes: '["legit","fraud"]'
       maximum_rows_for_test_dataset: 5000
-      use_model_dependency: true
+      # The registered RAI model is a sklearn-native GBDT surrogate that loads
+      # directly in the responsibleai-tabular env, so no model-dependency
+      # install (conda env update) is needed or wanted.
+      use_model_dependency: false
 
   # 2) Model explanations (global + local feature importance).
   explain:

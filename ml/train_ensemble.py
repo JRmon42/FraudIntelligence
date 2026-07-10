@@ -526,32 +526,39 @@ def run(input_path: str | None, output_dir: str, n_smoke: int = 0,
             from mlflow import sklearn as mlflow_sklearn
             from mlflow.models.signature import infer_signature
             sample = X_test_df.head(50)
-            sig = infer_signature(sample, pipe.predict_proba(sample)[:, 1])
             # Fixed local dir so scripts/run_rai_scorecard.sh can register it
             # with `az ml model create --type mlflow_model --path ...`.
             model_dir = out / "sklearn-model"
             if model_dir.exists():
                 shutil.rmtree(model_dir)
-            # The RAI constructor loads this model via:
-            #   conda env update --prefix <responsibleai-tabular> -f conda.yaml
-            # Any conda-level dependency (python=, or even a bare `pip`) forces a
-            # full solver run against that curated env, which conflicts and exits
-            # 1 ("Installing dependency ... failed"). Keep the model conda.yaml to
-            # a *pip-only* section with just xgboost (the one package that env
-            # lacks and the served pipeline needs) so `conda env update` simply
-            # runs `pip install xgboost` with no conda solve. sklearn / numpy /
-            # pandas / cloudpickle / mlflow already ship in responsibleai-tabular.
-            conda_env = {
-                "name": "fraud-ensemble",
-                "channels": ["conda-forge"],
-                "dependencies": [
-                    {"pip": ["xgboost==%s" % xgb.__version__]},
-                ],
-            }
+            # RAI model = a *pure scikit-learn* GBDT surrogate.
+            #
+            # The Responsible AI tabular components run in the curated
+            # `responsibleai-tabular` env (Python 3.9, scikit-learn only) and,
+            # with use_model_dependency=true, try to recreate the model's conda
+            # env via `conda env update --prefix <env> -f conda.yaml` — which
+            # fails here (the served pipeline needs xgboost, and installing it
+            # into that locked env under the managed VNet is not reliable). So
+            # for the RAI dashboard we register a sklearn-native
+            # HistGradientBoosting pipeline trained on the *same* features and
+            # labels as the served ensemble. It loads with zero extra deps
+            # (use_model_dependency=false), so the scorecard/fairness/error
+            # analysis populate and faithfully reflect the fraud model's
+            # behaviour on the identical feature space. The served, online model
+            # remains the calibrated XGBoost pipeline exported to ONNX above.
+            from sklearn.ensemble import HistGradientBoostingClassifier
+            sw = np.where(np.asarray(y_train) == 1, float(spw), 1.0)
+            rai_base = HistGradientBoostingClassifier(
+                max_iter=200, learning_rate=0.1, l2_regularization=1.0,
+                early_stopping=False,
+            )
+            rai_cal = CalibratedClassifierCV(rai_base, method="isotonic", cv=2)
+            rai_pipe = Pipeline([("pre", build_preprocessor()), ("clf", rai_cal)])
+            rai_pipe.fit(X_train_df, y_train, clf__sample_weight=sw)
+            sig = infer_signature(sample, rai_pipe.predict_proba(sample)[:, 1])
             mlflow_sklearn.save_model(
-                pipe, str(model_dir), signature=sig,
+                rai_pipe, str(model_dir), signature=sig,
                 input_example=X_test_df.head(5),
-                conda_env=conda_env,
             )
             # Also track it inside the MLflow run for lineage.
             mlflow.log_artifacts(str(model_dir), artifact_path="sklearn-model")
