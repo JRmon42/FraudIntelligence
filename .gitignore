@@ -16,6 +16,7 @@ dist/
 build/
 *.onnx
 ml/artifacts/
+ml/aml_jobs/rai_data/
 .terraform/
 *.tfstate
 *.tfstate.*
