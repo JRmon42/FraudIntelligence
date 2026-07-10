@@ -32,18 +32,5 @@
       "channel"
     ],
     "fairness_evaluation_kind": "difference"
-  },
-  "Cohorts": {
-    "high_value": {
-      "filters": [
-        {
-          "column": "amount",
-          "method": "greater",
-          "arg": [
-            1000
-          ]
-        }
-      ]
-    }
   }
 }
