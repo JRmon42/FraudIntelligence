@@ -532,21 +532,16 @@ def run(input_path: str | None, output_dir: str, n_smoke: int = 0,
             model_dir = out / "sklearn-model"
             if model_dir.exists():
                 shutil.rmtree(model_dir)
-            # Curated, exact-pinned inference deps. MLflow's auto-inferred env
-            # otherwise captures the whole CI pip freeze (azure-ai-ml, lightgbm,
-            # torch, ...) which conflicts when the Responsible AI tabular
-            # components recreate the conda env (`use_model_dependency: true`).
-            # The exported pipeline only needs sklearn preprocessing + a
-            # calibrated XGBoost classifier at inference, so pin just those.
-            import cloudpickle
-            import sklearn as _sklearn
+            # Minimal *additive* deps. The RAI tabular components pip-install
+            # these into their existing `responsibleai-tabular` env, which
+            # already pins numpy/scipy/scikit-learn. Pinning those here collides
+            # with the base env (conda solve fails). xgboost is the only thing
+            # that env lacks and that the served pipeline needs at inference, so
+            # require just that (+ mlflow for the loader); sklearn / numpy /
+            # pandas / cloudpickle are already present in responsibleai-tabular.
             pip_requirements = [
                 "mlflow==%s" % mlflow.__version__,
-                "scikit-learn==%s" % _sklearn.__version__,
                 "xgboost==%s" % xgb.__version__,
-                "numpy==%s" % np.__version__,
-                "pandas==%s" % pd.__version__,
-                "cloudpickle==%s" % cloudpickle.__version__,
             ]
             mlflow_sklearn.save_model(
                 pipe, str(model_dir), signature=sig,
