@@ -12,10 +12,10 @@
 
 <div align="center">
 
-<video src="https://github.com/JRmon42/FraudIntelligence/raw/main/docs/assets/Heimdall_Demo_8min.mp4" controls muted width="720"></video>
+<video src="https://github.com/JRmon42/FraudIntelligence/raw/main/docs/assets/Heimdall_Demo_8min.mp4" poster="https://github.com/JRmon42/FraudIntelligence/raw/main/docs/assets/demo-poster.png" controls muted width="720"></video>
 
 <em>▶️ End-to-end walkthrough: real-time scoring, PSD2 SCA step-up, agentic investigation, EBA reporting.<br/>
-If the inline player doesn't load, <a href="https://github.com/JRmon42/FraudIntelligence/raw/main/docs/assets/Heimdall_Demo_8min.mp4">click here to download / open the video</a>.</em>
+The inline player appears on GitHub; if it doesn't load, <a href="https://github.com/JRmon42/FraudIntelligence/raw/main/docs/assets/Heimdall_Demo_8min.mp4">click here to play / download the video</a>.</em>
 
 </div>
 
