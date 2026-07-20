@@ -89,7 +89,7 @@ flowchart LR
   ACA -->|<2ms| Redis[(Redis Enterprise<br/>feature cache)]
   ACA -->|1-hop graph| Cosmos[(Cosmos DB<br/>Gremlin + SQL<br/>multi-master)]
   ACA -->|tx.scored| EH[Event Hubs Dedicated]
-  EH --> ASA[Stream Analytics] --> Fabric[Microsoft Fabric<br/>OneLake Bronze→Silver→Gold]
+  EH --> ASA[Stream Analytics] --> Fabric[Microsoft Fabric<br/>OneLake Bronze / Silver / Gold]
   Fabric --> PBI[Power BI Premium<br/>EBA dashboards]
   AML[Azure ML Registry] -->|ONNX model| ACA
   Agents[Semantic Kernel agents<br/>+ Azure OpenAI] <--> Fabric
