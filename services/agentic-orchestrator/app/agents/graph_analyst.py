@@ -10,7 +10,9 @@ from .base import Agent
 
 class GraphAnalystAgent(Agent):
     name = "GraphAnalystAgent"
-    description = "Traverses card/merchant/device graph to find suspicious neighbourhoods."
+    description = (
+        "Traverses card/merchant/device graph to find suspicious neighbourhoods."
+    )
     tools = ["graph_two_hop"]
 
     @property
@@ -20,7 +22,10 @@ class GraphAnalystAgent(Agent):
     async def _run(self, state: WorkflowState) -> AgentResult:
         a = state.alert
         findings = await graph_two_hop(
-            self.graph, card_id=a.card_id, device_id=a.device_id, merchant_id=a.merchant_id
+            self.graph,
+            card_id=a.card_id,
+            device_id=a.device_id,
+            merchant_id=a.merchant_id,
         )
         state.graph = findings
         return AgentResult(

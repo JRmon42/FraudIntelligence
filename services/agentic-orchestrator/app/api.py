@@ -21,13 +21,17 @@ from .tools import register_with_semantic_kernel
 class ServiceContext:
     """Wires together LLM, Cosmos clients, agents and planner."""
 
-    def __init__(self, *, mock_llm: bool | None = None, mock_cosmos: bool | None = None) -> None:
+    def __init__(
+        self, *, mock_llm: bool | None = None, mock_cosmos: bool | None = None
+    ) -> None:
         self.llm = build_llm(mock=mock_llm)
         self.cases = build_cases(mock=mock_cosmos)
         self.graph = build_graph(mock=mock_cosmos)
         self.kernel = build_kernel()
         self.tool_metadata = (
-            register_with_semantic_kernel(self.kernel, graph=self.graph, cases=self.cases)
+            register_with_semantic_kernel(
+                self.kernel, graph=self.graph, cases=self.cases
+            )
             if self.kernel
             else {}
         )
@@ -50,6 +54,7 @@ class ServiceContext:
 
 
 # ---------- request/response schemas ----------
+
 
 class AlertIn(BaseModel):
     transaction_id: str | None = None
@@ -76,6 +81,7 @@ class ReplayRequest(BaseModel):
 
 # ---------- router factory ----------
 
+
 def build_router(ctx: ServiceContext) -> APIRouter:
     router = APIRouter(prefix="/v1")
 
@@ -93,7 +99,11 @@ def build_router(ctx: ServiceContext) -> APIRouter:
         # but also publish events for any live WS subscribers.
         await _run_and_publish()
         case = state.to_case()
-        return AlertResponse(case_id=case.case_id, classification=case.classification.value, status=case.status)
+        return AlertResponse(
+            case_id=case.case_id,
+            classification=case.classification.value,
+            status=case.status,
+        )
 
     @router.get("/cases/{case_id}")
     async def get_case(case_id: str) -> dict[str, Any]:
@@ -143,7 +153,9 @@ def build_router(ctx: ServiceContext) -> APIRouter:
     return router
 
 
-def build_app(*, mock_llm: bool | None = None, mock_cosmos: bool | None = None) -> FastAPI:
+def build_app(
+    *, mock_llm: bool | None = None, mock_cosmos: bool | None = None
+) -> FastAPI:
     app = FastAPI(title="Heimdall Agentic Orchestrator", version="0.1.0")
     ctx = ServiceContext(mock_llm=mock_llm, mock_cosmos=mock_cosmos)
     app.state.ctx = ctx

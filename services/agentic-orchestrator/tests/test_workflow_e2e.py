@@ -6,7 +6,6 @@ from fastapi.testclient import TestClient
 from app.api import build_app
 from app.state import Classification
 
-
 pytestmark = pytest.mark.asyncio
 
 

@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import Any
 import json
 import re
+from abc import ABC, abstractmethod
+from typing import Any
 
 from ..llm import BaseLLM
 from ..state import AgentMessage, AgentResult, TimelineEntry, WorkflowState
@@ -38,7 +38,9 @@ class Agent(ABC):
                 result = await self._run(state)
             except Exception as exc:
                 logger.exception("agent_failed", agent=self.name, case_id=state.case_id)
-                result = AgentResult(agent=self.name, summary=f"error: {exc}", error=str(exc))
+                result = AgentResult(
+                    agent=self.name, summary=f"error: {exc}", error=str(exc)
+                )
 
             state.append_timeline(
                 TimelineEntry(
@@ -85,7 +87,9 @@ class Agent(ABC):
             return obj if isinstance(obj, dict) else {}
         except json.JSONDecodeError:
             pass
-        fenced = re.sub(r"^```(?:json)?\s*|\s*```$", "", text, flags=re.IGNORECASE).strip()
+        fenced = re.sub(
+            r"^```(?:json)?\s*|\s*```$", "", text, flags=re.IGNORECASE
+        ).strip()
         try:
             obj = json.loads(fenced)
             return obj if isinstance(obj, dict) else {}

@@ -59,6 +59,10 @@ target-version = "py311"
 select = ["E", "F", "I", "B", "UP", "N", "S", "ASYNC"]
 ignore = ["S101"]
 
+[tool.ruff.lint.per-file-ignores]
+# Load-testing helper uses the stdlib PRNG to synthesise traffic; not security-sensitive.
+"scripts/load_test.py" = ["S311"]
+
 [tool.black]
 line-length = 100
 target-version = ["py311"]

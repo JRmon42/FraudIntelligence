@@ -62,15 +62,15 @@ class ScaExemption(StrEnum):
     """RTS Art. 10–18 SCA exemptions (and the "applied" sentinel)."""
 
     APPLIED = "sca_applied"
-    LOW_VALUE = "low_value"           # Art. 16
-    TRA = "tra"                        # Art. 18 — transaction risk analysis
-    TRUSTED_BENEFICIARY = "trusted"   # Art. 13
-    RECURRING = "recurring"           # Art. 14
-    CORPORATE = "corporate"           # Art. 17
+    LOW_VALUE = "low_value"  # Art. 16
+    TRA = "tra"  # Art. 18 — transaction risk analysis
+    TRUSTED_BENEFICIARY = "trusted"  # Art. 13
+    RECURRING = "recurring"  # Art. 14
+    CORPORATE = "corporate"  # Art. 17
     SECURE_CORPORATE = "secure_corp"  # Art. 17
-    MERCHANT_INITIATED = "mit"        # MIT outside PSD2 scope
+    MERCHANT_INITIATED = "mit"  # MIT outside PSD2 scope
     CONTACTLESS_LOW_VALUE = "contactless_lv"  # Art. 11
-    UNATTENDED_TRANSPORT = "unattended"        # Art. 12
+    UNATTENDED_TRANSPORT = "unattended"  # Art. 12
 
 
 class FraudType(StrEnum):
@@ -149,7 +149,9 @@ class ReportHeader(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    psp_lei: str = Field(min_length=20, max_length=20, description="LEI of reporting PSP")
+    psp_lei: str = Field(
+        min_length=20, max_length=20, description="LEI of reporting PSP"
+    )
     psp_name: str
     reporting_country: Country
     quarter: str

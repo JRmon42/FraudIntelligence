@@ -83,9 +83,16 @@ def build_feature_vector(ctx: ScoringContext) -> np.ndarray:
 # blocked card are applied by the policy layer (psd2_optimizer), not the model.
 GNN_EMB_DIM = 16
 ONNX_NUM_INPUTS: tuple[str, ...] = (
-    "amount", "amount_log", "hour", "dow", "is_weekend",
-    "card_age_days", "merchant_risk", "card_txn_count_24h",
-    "card_amount_sum_24h", "card_distinct_merchants_24h",
+    "amount",
+    "amount_log",
+    "hour",
+    "dow",
+    "is_weekend",
+    "card_age_days",
+    "merchant_risk",
+    "card_txn_count_24h",
+    "card_amount_sum_24h",
+    "card_distinct_merchants_24h",
     # GNN-derived per-card features (published into the feature store by the
     # nightly fraud-ring GraphSAGE job). These wire the GNN into the live
     # decision: a known ring card scores high regardless of amount / time.
@@ -93,8 +100,13 @@ ONNX_NUM_INPUTS: tuple[str, ...] = (
     *(f"card_emb_{i}" for i in range(GNN_EMB_DIM)),
 )
 ONNX_CAT_INPUTS: tuple[str, ...] = (
-    "card_country", "merchant_country", "ip_country",
-    "card_brand", "channel", "device_os", "mcc",
+    "card_country",
+    "merchant_country",
+    "ip_country",
+    "card_brand",
+    "channel",
+    "device_os",
+    "mcc",
 )
 
 
@@ -130,7 +142,7 @@ def build_onnx_inputs(ctx: ScoringContext) -> dict[str, np.ndarray]:
         # published embedding -> the model falls back to behavioural features).
         "card_ring_score": float(card.ring_score) if card else 0.0,
     }
-    emb = (card.gnn_embedding if card and card.gnn_embedding else [0.0] * GNN_EMB_DIM)
+    emb = card.gnn_embedding if card and card.gnn_embedding else [0.0] * GNN_EMB_DIM
     for i in range(GNN_EMB_DIM):
         num[f"card_emb_{i}"] = float(emb[i]) if i < len(emb) else 0.0
     cat = {
@@ -218,7 +230,7 @@ class OnnxScorer:
             else:
                 feed = build_onnx_inputs(ctx)
             outs = self._session.run(self._output_names, feed)
-            result = dict(zip(self._output_names, outs))
+            result = dict(zip(self._output_names, outs, strict=False))
             return _extract_fraud_probability(result, outs)
         except Exception as exc:  # noqa: BLE001
             log.error("onnx_inference_failed", err=str(exc))

@@ -211,11 +211,7 @@ async def test_process_batch_aggregates_card_state_across_events() -> None:
 async def test_two_cards_keep_independent_state() -> None:
     store = InMemoryFeatureStore()
     emitter = InMemoryEmitter()
-    await process_event(
-        make_event(card_id="A", transaction_id="a1").get_body(), store, emitter
-    )
-    await process_event(
-        make_event(card_id="B", transaction_id="b1").get_body(), store, emitter
-    )
+    await process_event(make_event(card_id="A", transaction_id="a1").get_body(), store, emitter)
+    await process_event(make_event(card_id="B", transaction_id="b1").get_body(), store, emitter)
     assert store.states["card:A"]["features"]["count_1h"] == 1
     assert store.states["card:B"]["features"]["count_1h"] == 1

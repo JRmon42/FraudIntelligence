@@ -29,14 +29,18 @@ structlog.configure(
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.processors.JSONRenderer(),
     ],
-    wrapper_class=structlog.make_filtering_bound_logger(getattr(logging, _log_level, logging.INFO)),
+    wrapper_class=structlog.make_filtering_bound_logger(
+        getattr(logging, _log_level, logging.INFO)
+    ),
 )
 
 logger = structlog.get_logger("agentic-orchestrator")
 
 _tracer = None
 if _OTEL_AVAILABLE:
-    resource = Resource.create({"service.name": os.getenv("OTEL_SERVICE_NAME", "fi-agentic-orchestrator")})
+    resource = Resource.create(
+        {"service.name": os.getenv("OTEL_SERVICE_NAME", "fi-agentic-orchestrator")}
+    )
     provider = TracerProvider(resource=resource)
     if os.getenv("OTEL_CONSOLE_EXPORT", "false").lower() == "true":
         provider.add_span_processor(SimpleSpanProcessor(ConsoleSpanExporter()))
@@ -54,7 +58,7 @@ def agent_span(agent: str, **attrs: Any) -> Iterator[dict[str, Any]]:
         return
     with _tracer.start_as_current_span(f"agent.{agent}") as span:
         for k, v in attrs.items():
-            try:
+            try:  # noqa: SIM105  (best-effort span attribute; suppress keeps pragma)
                 span.set_attribute(k, v)
             except Exception:  # pragma: no cover
                 pass

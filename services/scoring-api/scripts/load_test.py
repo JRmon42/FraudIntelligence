@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import random
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from locust import FastHttpUser, between, task
 
@@ -39,7 +39,7 @@ class ScoringUser(FastHttpUser):
             "currency": random.choice(CURRENCIES),
             "country": random.choice(COUNTRIES),
             "channel": random.choice(CHANNELS),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "device_fingerprint": f"fp_{uuid.uuid4().hex[:12]}",
             "ip": f"203.0.113.{random.randint(1, 254)}",
         }

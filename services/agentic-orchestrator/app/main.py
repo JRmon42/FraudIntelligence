@@ -26,9 +26,15 @@ app = build_app(
 def cli() -> None:
     parser = argparse.ArgumentParser("fi-orchestrator")
     parser.add_argument("--host", default=os.getenv("SERVICE_HOST", "0.0.0.0"))
-    parser.add_argument("--port", type=int, default=int(os.getenv("SERVICE_PORT", "8080")))
-    parser.add_argument("--mock-llm", action="store_true", help="Use deterministic LLM stub")
-    parser.add_argument("--mock-cosmos", action="store_true", help="Use in-memory Cosmos stub")
+    parser.add_argument(
+        "--port", type=int, default=int(os.getenv("SERVICE_PORT", "8080"))
+    )
+    parser.add_argument(
+        "--mock-llm", action="store_true", help="Use deterministic LLM stub"
+    )
+    parser.add_argument(
+        "--mock-cosmos", action="store_true", help="Use in-memory Cosmos stub"
+    )
     parser.add_argument("--reload", action="store_true")
     args = parser.parse_args()
 

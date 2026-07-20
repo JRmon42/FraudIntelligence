@@ -48,9 +48,7 @@ class CosmosFeatureStore:
         from azure.cosmos.exceptions import CosmosResourceNotFoundError
 
         try:
-            return await self._features.read_item(
-                item=entity_key, partition_key=entity_key
-            )
+            return await self._features.read_item(item=entity_key, partition_key=entity_key)
         except CosmosResourceNotFoundError:
             return None
 
@@ -61,9 +59,7 @@ class CosmosFeatureStore:
         from azure.cosmos.exceptions import CosmosResourceNotFoundError
 
         try:
-            await self._dedup.read_item(
-                item=transaction_id, partition_key=transaction_id
-            )
+            await self._dedup.read_item(item=transaction_id, partition_key=transaction_id)
             return True
         except CosmosResourceNotFoundError:
             return False
@@ -126,9 +122,7 @@ class EventHubFeatureEmitter:
 
         try:
             batch = await self._client.create_batch()
-            batch.add(
-                EventData(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
-            )
+            batch.add(EventData(json.dumps(payload, separators=(",", ":")).encode("utf-8")))
             await self._client.send_batch(batch)
         except Exception as exc:  # noqa: BLE001
             log.warning("feature_event_emit_failed", err=str(exc))

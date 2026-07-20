@@ -21,7 +21,9 @@ class LLMMessage:
 class BaseLLM:
     is_mock: bool = False
 
-    async def chat(self, messages: list[LLMMessage], tools: list[dict] | None = None, **kwargs: Any) -> dict:
+    async def chat(
+        self, messages: list[LLMMessage], tools: list[dict] | None = None, **kwargs: Any
+    ) -> dict:
         raise NotImplementedError
 
 
@@ -41,7 +43,11 @@ class MockLLM(BaseLLM):
                 "High-velocity authorisations across multiple cards sharing a device fingerprint "
                 "and a single merchant MCC indicate a coordinated fraud ring."
             ),
-            "recommended_agents": ["GraphAnalystAgent", "PolicyAgent", "NarrativeAgent"],
+            "recommended_agents": [
+                "GraphAnalystAgent",
+                "PolicyAgent",
+                "NarrativeAgent",
+            ],
         },
         "PolicyAgent": {
             "sca_exemptions_applied": [],
@@ -77,7 +83,9 @@ class MockLLM(BaseLLM):
         },
     }
 
-    async def chat(self, messages: list[LLMMessage], tools: list[dict] | None = None, **kwargs: Any) -> dict:
+    async def chat(
+        self, messages: list[LLMMessage], tools: list[dict] | None = None, **kwargs: Any
+    ) -> dict:
         agent_hint = ""
         for m in messages:
             if m.role == "system" and m.content.startswith("AGENT:"):
@@ -131,7 +139,9 @@ class AzureOpenAILLM(BaseLLM):
         token = await self._credential.get_token(self._AAD_SCOPE)
         return {"Authorization": f"Bearer {token.token}"}
 
-    async def chat(self, messages: list[LLMMessage], tools: list[dict] | None = None, **kwargs: Any) -> dict:
+    async def chat(
+        self, messages: list[LLMMessage], tools: list[dict] | None = None, **kwargs: Any
+    ) -> dict:
         import httpx
 
         url = f"{self.endpoint}/openai/deployments/{self.deployment}/chat/completions"

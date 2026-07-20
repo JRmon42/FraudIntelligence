@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 from uuid import uuid4
@@ -11,10 +11,10 @@ from pydantic import BaseModel, Field
 
 
 def _utcnow() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
-class Classification(str, Enum):
+class Classification(str, Enum):  # noqa: UP042
     SUSPECTED_FRAUD_RING = "suspected_fraud_ring"
     ACCOUNT_TAKEOVER = "account_takeover"
     CARD_PRESENT_FRAUD = "card_present_fraud"
@@ -23,7 +23,7 @@ class Classification(str, Enum):
     UNKNOWN = "unknown"
 
 
-class ReflectionVerdict(str, Enum):
+class ReflectionVerdict(str, Enum):  # noqa: UP042
     ACCEPT = "accept"
     REPLAN = "replan"
     ESCALATE = "escalate"

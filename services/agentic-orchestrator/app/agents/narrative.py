@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from ..llm import LLMMessage
 from ..state import AgentResult, WorkflowState
 from .base import Agent
-
 
 SYS = (
     "AGENT: NarrativeAgent. You draft regulator-grade narratives. "
@@ -20,7 +19,9 @@ SYS = (
 
 class NarrativeAgent(Agent):
     name = "NarrativeAgent"
-    description = "Drafts SAR and EBA reporting narratives from the consolidated case state."
+    description = (
+        "Drafts SAR and EBA reporting narratives from the consolidated case state."
+    )
     tools: list[str] = []
 
     async def _run(self, state: WorkflowState) -> AgentResult:
@@ -31,7 +32,10 @@ class NarrativeAgent(Agent):
             "policy": state.policy.model_dump() if state.policy else None,
         }
         resp = await self.llm.chat(
-            [LLMMessage("system", SYS), LLMMessage("user", json.dumps(ctx, default=str))],
+            [
+                LLMMessage("system", SYS),
+                LLMMessage("user", json.dumps(ctx, default=str)),
+            ],
             temperature=0.2,
             response_format={"type": "json_object"},
         )
@@ -41,8 +45,12 @@ class NarrativeAgent(Agent):
         eba_tmpl = parsed.get("eba", "")
         # Mock LLM returns format placeholders; render them.
         fmt_kwargs = {
-            "date": datetime.now(timezone.utc).date().isoformat(),
-            "n_cards": sum(1 for n in (state.graph.nodes if state.graph else []) if n.get("label") == "card"),
+            "date": datetime.now(UTC).date().isoformat(),
+            "n_cards": sum(
+                1
+                for n in (state.graph.nodes if state.graph else [])
+                if n.get("label") == "card"
+            ),
             "merchant_id": state.alert.merchant_id or "(unknown)",
             "device_id": state.alert.device_id or "(unknown)",
             "amount": state.alert.amount or 0.0,

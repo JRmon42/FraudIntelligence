@@ -16,16 +16,12 @@ Pipeline:
 
 from __future__ import annotations
 
-import json
 import logging
-import os
-import sys
 import uuid
-from datetime import date, datetime, timezone
-from decimal import Decimal
+from collections.abc import Iterable
+from datetime import UTC, date, datetime
 from io import BytesIO
 from pathlib import Path
-from typing import Iterable
 
 import click
 import pandas as pd
@@ -44,7 +40,6 @@ from models import (
     AggregatedFraudRow,
     Country,
     EbaReport,
-    Instrument,
     ReportHeader,
     ReportSection,
 )
@@ -103,7 +98,9 @@ def read_from_lakehouse(country: Country, quarter: str) -> list[AggregatedFraudR
     cred = DefaultAzureCredential()
     storage_options = {
         "azure_storage_account_name": SETTINGS.lakehouse_account,
-        "azure_storage_token": cred.get_token("https://storage.azure.com/.default").token,
+        "azure_storage_token": cred.get_token(
+            "https://storage.azure.com/.default"
+        ).token,
     }
     uri = (
         f"abfss://{SETTINGS.lakehouse_container}@{SETTINGS.lakehouse_account}"
@@ -112,7 +109,10 @@ def read_from_lakehouse(country: Country, quarter: str) -> list[AggregatedFraudR
     log.info("reading_lakehouse", uri=uri, country=country, quarter=quarter)
     dt = DeltaTable(uri, storage_options=storage_options)
     df = dt.to_pandas(
-        partitions=[("reporting_country", "=", country.value), ("quarter", "=", quarter)]
+        partitions=[
+            ("reporting_country", "=", country.value),
+            ("quarter", "=", quarter),
+        ]
     )
     return [AggregatedFraudRow.model_validate(r) for r in df.to_dict(orient="records")]
 
@@ -123,15 +123,16 @@ def read_from_cosmos(country: Country, quarter: str) -> list[AggregatedFraudRow]
 
     cred = DefaultAzureCredential()
     client = CosmosClient(SETTINGS.cosmos_endpoint, credential=cred)
-    container = client.get_database_client(SETTINGS.cosmos_database).get_container_client(
-        SETTINGS.cosmos_container
-    )
-    query = (
-        "SELECT * FROM c WHERE c.reporting_country = @c AND c.quarter = @q"
-    )
+    container = client.get_database_client(
+        SETTINGS.cosmos_database
+    ).get_container_client(SETTINGS.cosmos_container)
+    query = "SELECT * FROM c WHERE c.reporting_country = @c AND c.quarter = @q"
     items = container.query_items(
         query=query,
-        parameters=[{"name": "@c", "value": country.value}, {"name": "@q", "value": quarter}],
+        parameters=[
+            {"name": "@c", "value": country.value},
+            {"name": "@q", "value": quarter},
+        ],
         enable_cross_partition_query=True,
     )
     return [AggregatedFraudRow.model_validate(item) for item in items]
@@ -164,7 +165,9 @@ def _to_df(rows: Iterable[AggregatedFraudRow]) -> pd.DataFrame:
 def annex_a_payment_volumes(df: pd.DataFrame) -> ReportSection:
     """Annex A — Total volumes & values by instrument & channel."""
     if df.empty:
-        return ReportSection(annex="A", title="Annex A — Payment volumes & values", rows=[])
+        return ReportSection(
+            annex="A", title="Annex A — Payment volumes & values", rows=[]
+        )
     grp = (
         df.groupby(["instrument", "channel"], as_index=False)
         .agg(tx_count=("tx_count", "sum"), tx_value_eur=("tx_value_eur", "sum"))
@@ -213,8 +216,10 @@ def annex_c_sca_exemptions(df: pd.DataFrame) -> ReportSection:
         .sort_values(["instrument", "sca_exemption"])
     )
     grp["fraud_rate_bps"] = (
-        (grp["fraud_value_eur"] / grp["tx_value_eur"].replace(0, pd.NA)) * 10_000
-    ).fillna(0).round(2)
+        ((grp["fraud_value_eur"] / grp["tx_value_eur"].replace(0, pd.NA)) * 10_000)
+        .fillna(0)
+        .round(2)
+    )
     return ReportSection(
         annex="C",
         title="Annex C — SCA exemptions",
@@ -229,7 +234,9 @@ def annex_d_loss_allocation(df: pd.DataFrame) -> ReportSection:
     fraud = df[df["fraud_count"] > 0]
     grp = (
         fraud.groupby(["instrument", "loss_bearer", "counterparty_geo"], as_index=False)
-        .agg(loss_value_eur=("loss_value_eur", "sum"), fraud_count=("fraud_count", "sum"))
+        .agg(
+            loss_value_eur=("loss_value_eur", "sum"), fraud_count=("fraud_count", "sum")
+        )
         .sort_values(["instrument", "loss_bearer", "counterparty_geo"])
     )
     return ReportSection(
@@ -239,7 +246,9 @@ def annex_d_loss_allocation(df: pd.DataFrame) -> ReportSection:
     )
 
 
-def build_report(country: Country, quarter: str, rows: list[AggregatedFraudRow]) -> EbaReport:
+def build_report(
+    country: Country, quarter: str, rows: list[AggregatedFraudRow]
+) -> EbaReport:
     df = _to_df(rows)
     period_start, period_end = _quarter_to_dates(quarter)
     header = ReportHeader(
@@ -355,7 +364,7 @@ def render_parquet(report: EbaReport) -> bytes:
     df["reporting_country"] = report.header.reporting_country.value
     df["quarter"] = report.header.quarter
     df["submission_id"] = report.header.submission_id
-    df["generated_at_utc"] = datetime.now(timezone.utc).isoformat()
+    df["generated_at_utc"] = datetime.now(UTC).isoformat()
     table = pa.Table.from_pandas(df, preserve_index=False)
     buf = BytesIO()
     pq.write_table(table, buf, compression="snappy")

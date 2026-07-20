@@ -15,7 +15,6 @@ from ..llm import LLMMessage
 from ..state import AgentResult, ReflectionVerdict, WorkflowState
 from .base import Agent
 
-
 SYS = (
     "AGENT: ReflectorAgent. You are a critical reviewer. Given the case state "
     "verify completeness: there must be a graph analysis (if classification is "
@@ -71,20 +70,29 @@ class ReflectorAgent(Agent):
         )
         parsed = self.parse_json(resp.get("content"))
 
-        if (missing or artefact_gaps) and state.reflections_used < state.reflection_budget:
+        if (
+            missing or artefact_gaps
+        ) and state.reflections_used < state.reflection_budget:
             verdict = ReflectionVerdict.REPLAN
-            next_agent = missing[0] if missing else self._agent_for_artefact(artefact_gaps[0])
+            next_agent = (
+                missing[0] if missing else self._agent_for_artefact(artefact_gaps[0])
+            )
             reason = f"missing {missing or artefact_gaps}"
             state.reflections_used += 1
         elif missing or artefact_gaps:
             verdict = ReflectionVerdict.ESCALATE
             next_agent = None
-            reason = f"reflection budget exhausted; gaps remain: {missing or artefact_gaps}"
+            reason = (
+                f"reflection budget exhausted; gaps remain: {missing or artefact_gaps}"
+            )
             state.done = True
         else:
             # If LLM disagrees and demands replan, honour it within budget.
             llm_verdict = (parsed.get("verdict") or "accept").lower()
-            if llm_verdict == "replan" and state.reflections_used < state.reflection_budget:
+            if (
+                llm_verdict == "replan"
+                and state.reflections_used < state.reflection_budget
+            ):
                 verdict = ReflectionVerdict.REPLAN
                 next_agent = (parsed.get("missing_steps") or ["NarrativeAgent"])[0]
                 reason = parsed.get("reason", "LLM requested replan")

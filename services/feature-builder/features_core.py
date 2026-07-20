@@ -86,9 +86,7 @@ def parse_event(payload: dict[str, Any]) -> TxnEvent:
     )
 
 
-def _prune(
-    events: list[tuple[float, float, str]], now_s: float
-) -> list[tuple[float, float, str]]:
+def _prune(events: list[tuple[float, float, str]], now_s: float) -> list[tuple[float, float, str]]:
     cutoff = now_s - WINDOWS_S["24h"]
     pruned = [e for e in events if e[0] >= cutoff]
     if len(pruned) > MAX_RETAINED_EVENTS:
@@ -106,18 +104,14 @@ def update_state(state: WindowState, event: TxnEvent) -> WindowState:
     return state
 
 
-def compute_features(
-    state: WindowState, now: datetime | None = None
-) -> dict[str, float | int]:
+def compute_features(state: WindowState, now: datetime | None = None) -> dict[str, float | int]:
     """Roll up sliding-window counts/sums from the retained event log."""
 
     now_s = (now or datetime.fromisoformat(state.last_seen_iso)).timestamp()
     out: dict[str, float | int] = {}
     for label, span in WINDOWS_S.items():
         cutoff = now_s - span
-        window: Iterable[tuple[float, float, str]] = [
-            e for e in state.events if e[0] >= cutoff
-        ]
+        window: Iterable[tuple[float, float, str]] = [e for e in state.events if e[0] >= cutoff]
         count = 0
         amount = 0.0
         merchants: set[str] = set()
@@ -132,9 +126,7 @@ def compute_features(
     return out
 
 
-def fold_event(
-    state: WindowState, event: TxnEvent
-) -> tuple[WindowState, dict[str, float | int]]:
+def fold_event(state: WindowState, event: TxnEvent) -> tuple[WindowState, dict[str, float | int]]:
     """Convenience: update state + compute new feature snapshot in one step."""
 
     new_state = update_state(state, event)

@@ -29,7 +29,9 @@ class InMemoryCases(BaseCases):
 
 
 class CosmosCases(BaseCases):  # pragma: no cover — exercised live, not in CI
-    def __init__(self, endpoint: str, database: str, container: str, key: str | None = None) -> None:
+    def __init__(
+        self, endpoint: str, database: str, container: str, key: str | None = None
+    ) -> None:
         from azure.cosmos.aio import CosmosClient
 
         # Prefer a data-plane key when supplied; otherwise fall back to the
@@ -66,7 +68,9 @@ class CosmosCases(BaseCases):  # pragma: no cover — exercised live, not in CI
 
 
 class BaseGraph:
-    async def two_hop(self, *, card_id: str | None, device_id: str | None, merchant_id: str | None) -> dict[str, Any]: ...
+    async def two_hop(
+        self, *, card_id: str | None, device_id: str | None, merchant_id: str | None
+    ) -> dict[str, Any]: ...
 
 
 class MockGraph(BaseGraph):
@@ -86,10 +90,15 @@ class MockGraph(BaseGraph):
         device = device_id or "device-FP-7731"
         merchant = merchant_id or "merch-9001"
         cards = [card_id or "card-A1", "card-A2", "card-A3", "card-A4", "card-A5"]
-        nodes = [{"id": device, "label": "device"}, {"id": merchant, "label": "merchant"}]
+        nodes = [
+            {"id": device, "label": "device"},
+            {"id": merchant, "label": "merchant"},
+        ]
         nodes += [{"id": c, "label": "card"} for c in cards]
         edges = [{"from": c, "to": device, "label": "used_on"} for c in cards]
-        edges += [{"from": c, "to": merchant, "label": "transacted_with"} for c in cards]
+        edges += [
+            {"from": c, "to": merchant, "label": "transacted_with"} for c in cards
+        ]
         return {
             "nodes": nodes,
             "edges": edges,
@@ -114,14 +123,21 @@ class GremlinGraph(BaseGraph):  # pragma: no cover
             message_serializer=serializer.GraphSONSerializersV2d0(),
         )
 
-    async def two_hop(self, *, card_id=None, device_id=None, merchant_id=None) -> dict[str, Any]:
+    async def two_hop(
+        self, *, card_id=None, device_id=None, merchant_id=None
+    ) -> dict[str, Any]:
         anchor = card_id or device_id or merchant_id
         q = (
             f"g.V().has('id','{anchor}').repeat(both().simplePath()).times(2)"
             ".path().by(valueMap(true)).limit(50)"
         )
         result = self._client.submitAsync(q).result().all().result()
-        return {"nodes": [], "edges": [], "anomaly_score": 0.0, "notes": [str(result)[:500]]}
+        return {
+            "nodes": [],
+            "edges": [],
+            "anomaly_score": 0.0,
+            "notes": [str(result)[:500]],
+        }
 
 
 def build_cases(mock: bool | None = None) -> BaseCases:

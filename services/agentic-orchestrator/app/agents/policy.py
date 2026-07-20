@@ -13,7 +13,6 @@ from ..state import AgentResult, Classification, PolicyFindings, WorkflowState
 from ..tools import evaluate_sca_exemptions
 from .base import Agent
 
-
 SYS = (
     "AGENT: PolicyAgent. You are a PSD2 / EBA compliance specialist. "
     "Given the alert, graph context and the deterministic SCA evaluation, "
@@ -42,15 +41,21 @@ class PolicyAgent(Agent):
             "deterministic_sca": det,
         }
         resp = await self.llm.chat(
-            [LLMMessage("system", SYS), LLMMessage("user", json.dumps(ctx, default=str))],
+            [
+                LLMMessage("system", SYS),
+                LLMMessage("user", json.dumps(ctx, default=str)),
+            ],
             temperature=0.0,
             response_format={"type": "json_object"},
         )
         parsed = self.parse_json(resp.get("content"))
         findings = PolicyFindings(
-            sca_exemptions_applied=parsed.get("sca_exemptions_applied") or det["applied"],
-            sca_exemptions_blocked=parsed.get("sca_exemptions_blocked") or det["blocked"],
-            eba_categories=parsed.get("eba_categories") or self._default_eba(state.classification),
+            sca_exemptions_applied=parsed.get("sca_exemptions_applied")
+            or det["applied"],
+            sca_exemptions_blocked=parsed.get("sca_exemptions_blocked")
+            or det["blocked"],
+            eba_categories=parsed.get("eba_categories")
+            or self._default_eba(state.classification),
             rationale=parsed.get("rationale", ""),
         )
         state.policy = findings

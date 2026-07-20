@@ -8,6 +8,7 @@ from openpyxl import load_workbook
 
 from models import Country
 from report import (
+    _to_df,
     annex_a_payment_volumes,
     annex_b_fraud_breakdown,
     annex_c_sca_exemptions,
@@ -16,7 +17,6 @@ from report import (
     render_json,
     render_parquet,
     render_xlsx,
-    _to_df,
 )
 
 
@@ -92,7 +92,13 @@ def test_render_parquet_is_valid(sample_rows) -> None:
     payload = render_parquet(rep)
     table = pq.read_table(BytesIO(payload))
     cols = set(table.column_names)
-    assert {"annex", "psp_lei", "reporting_country", "quarter", "submission_id"}.issubset(cols)
+    assert {
+        "annex",
+        "psp_lei",
+        "reporting_country",
+        "quarter",
+        "submission_id",
+    }.issubset(cols)
 
 
 def test_empty_rows_produces_empty_sections() -> None:

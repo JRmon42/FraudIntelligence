@@ -47,7 +47,6 @@ from .agents.triage import TriageAgent
 from .state import AgentResult, ReflectionVerdict, WorkflowState
 from .telemetry import logger
 
-
 # Conditional edges keyed by (current_agent, condition) -> next_agent
 EDGES: dict[str, dict[str, str]] = {
     "TriageAgent": {
@@ -93,7 +92,10 @@ class Planner:
             return last.next_agent
 
         # 2. Reflector verdict can terminate
-        if state.reflection_verdict in (ReflectionVerdict.ACCEPT, ReflectionVerdict.ESCALATE):
+        if state.reflection_verdict in (
+            ReflectionVerdict.ACCEPT,
+            ReflectionVerdict.ESCALATE,
+        ):
             return None
 
         # 3. Look up conditional edge
@@ -122,11 +124,16 @@ class Planner:
                 logger.warning("unknown_agent", name=next_name)
                 state.done = True
                 break
-            logger.info("planner_step", step=steps, agent=next_name, case_id=state.case_id)
+            logger.info(
+                "planner_step", step=steps, agent=next_name, case_id=state.case_id
+            )
             last = await agent.run(state)
             steps += 1
             # Always persist after each non-persistence step (CaseManager handles its own).
-            if not isinstance(agent, (CaseManagerAgent, ReflectorAgent)) and "cases" in agent.deps:
+            if (
+                not isinstance(agent, (CaseManagerAgent, ReflectorAgent))
+                and "cases" in agent.deps
+            ):
                 pass  # case manager will run later via the DAG
         # Ensure the final case is persisted, even if reflector ended things first.
         cm = self.agents.get("CaseManagerAgent")

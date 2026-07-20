@@ -17,7 +17,6 @@ from .llm import build_llm
 from .planner import Planner
 from .state import Alert, WorkflowState
 
-
 SAMPLE = Path(__file__).resolve().parent.parent / "examples" / "sample_alert.json"
 
 
@@ -32,8 +31,10 @@ async def main() -> None:
     planner = Planner(agents)
 
     state = WorkflowState(alert=alert, reflection_budget=2)
-    print(f"\n=== Heimdall Agentic Orchestrator — DEMO ===")
-    print(f"Alert: {alert.alert_id} amount={alert.amount} {alert.currency} reasons={alert.reason_codes}\n")
+    print("\n=== Heimdall Agentic Orchestrator — DEMO ===")
+    print(
+        f"Alert: {alert.alert_id} amount={alert.amount} {alert.currency} reasons={alert.reason_codes}\n"
+    )
 
     await planner.run(state)
 
@@ -42,7 +43,9 @@ async def main() -> None:
         print(f"{i:>2}. [{t.ts}] {t.agent:<20} {t.action}")
     print(f"\nFinal classification: {state.classification.value}")
     print(f"Reflections used   : {state.reflections_used}/{state.reflection_budget}")
-    print(f"Verdict            : {state.reflection_verdict.value if state.reflection_verdict else 'n/a'}")
+    print(
+        f"Verdict            : {state.reflection_verdict.value if state.reflection_verdict else 'n/a'}"
+    )
     print(f"Visited agents     : {' -> '.join(state.visited)}")
 
     if state.narrative_sar:

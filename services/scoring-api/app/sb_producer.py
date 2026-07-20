@@ -97,9 +97,7 @@ class ServiceBusAlertPublisher:
 
             assert self._client is not None
             body = json.dumps(payload, separators=(",", ":"))
-            async with self._client.get_queue_sender(
-                self._settings.servicebus_queue
-            ) as sender:
+            async with self._client.get_queue_sender(self._settings.servicebus_queue) as sender:
                 await sender.send_messages(
                     ServiceBusMessage(
                         body,

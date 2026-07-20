@@ -22,7 +22,11 @@ class CaseManagerAgent(Agent):
         return AgentResult(
             agent=self.name,
             summary=f"case persisted: {case.case_id} (status={case.status})",
-            data={"case_id": case.case_id, "status": case.status, "timeline_len": len(case.timeline)},
+            data={
+                "case_id": case.case_id,
+                "status": case.status,
+                "timeline_len": len(case.timeline),
+            },
             next_agent="ReflectorAgent",
             reason="reflector should review the persisted case",
         )

@@ -8,7 +8,6 @@ from ..llm import LLMMessage
 from ..state import AgentResult, Classification, WorkflowState
 from .base import Agent
 
-
 CLASSIFY_SYS = (
     "AGENT: TriageAgent. You are a senior fraud triage analyst. "
     "Classify the alert into exactly one of: suspected_fraud_ring, account_takeover, "
@@ -21,7 +20,9 @@ CLASSIFY_SYS = (
 
 class TriageAgent(Agent):
     name = "TriageAgent"
-    description = "Classifies fraud alerts and proposes the initial downstream agent plan."
+    description = (
+        "Classifies fraud alerts and proposes the initial downstream agent plan."
+    )
     tools: list[str] = []
 
     async def _run(self, state: WorkflowState) -> AgentResult:
@@ -53,7 +54,9 @@ class TriageAgent(Agent):
             classification = Classification.UNKNOWN
         state.classification = classification
 
-        plan: list[str] = parsed.get("recommended_agents") or self._default_plan(classification)
+        plan: list[str] = parsed.get("recommended_agents") or self._default_plan(
+            classification
+        )
         state.next_agent = plan[0] if plan else "ReflectorAgent"
 
         return AgentResult(
