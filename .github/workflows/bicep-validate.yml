@@ -38,10 +38,14 @@ jobs:
 
       - name: az deployment sub validate (main)
         if: hashFiles('infra/main.bicep') != ''
+        env:
+          SYNAPSE_SQL_ADMIN_PASSWORD: ${{ secrets.SYNAPSE_SQL_ADMIN_PASSWORD }}
         run: |
           az deployment sub validate \
             --location ${{ vars.AZURE_LOCATION || 'swedencentral' }} \
             --template-file infra/main.bicep \
-            --parameters env=dev
-
-# CI verification: confirm bicep-validate OIDC login works (throwaway PR).
+            --parameters env=dev \
+            --parameters synapseAadAdminLogin='${{ vars.SYNAPSE_AAD_ADMIN_LOGIN }}' \
+            --parameters synapseAadAdminObjectId='${{ vars.SYNAPSE_AAD_ADMIN_OBJECT_ID }}' \
+            --parameters synapseSqlAdminPassword="$SYNAPSE_SQL_ADMIN_PASSWORD" \
+            --only-show-errors
