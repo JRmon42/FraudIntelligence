@@ -8,6 +8,17 @@
 
 **AI-driven real-time fraud-intelligence platform for a Nordic payments provider.**
 
+## 🎬 Demo (8 min)
+
+<div align="center">
+
+<video src="https://github.com/JRmon42/FraudIntelligence/raw/main/docs/assets/Heimdall_Demo_8min.mp4" controls muted width="720"></video>
+
+<em>▶️ End-to-end walkthrough: real-time scoring, PSD2 SCA step-up, agentic investigation, EBA reporting.<br/>
+If the inline player doesn't load, <a href="https://github.com/JRmon42/FraudIntelligence/raw/main/docs/assets/Heimdall_Demo_8min.mp4">click here to download / open the video</a>.</em>
+
+</div>
+
 A real-time, multi-region, agentic AI platform that scores 4.2 B yearly card transactions at p99 < 18 ms, optimises PSD2 SCA exemptions, detects fraud rings via Graph Neural Networks, and produces automated EBA regulatory fraud reports — all on Azure with sovereignty for SE/NO/DK/FI/EE.
 
 ## Outcomes targeted
