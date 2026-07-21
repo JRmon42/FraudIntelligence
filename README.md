@@ -72,7 +72,9 @@ cp infra/parameters.example.json infra/parameters.prod.json   # fill <PLACEHOLDE
 > [docs/production-readiness.md](./docs/production-readiness.md) — it lists the
 > prerequisites, every overridable variable (subscription, regions, resource
 > groups, secrets), and the automated readiness checks that run at the end of
-> each deployment.
+> each deployment. To make the **GitHub Actions** pipelines pass (OIDC login,
+> the 7 required secrets, repo variables, federated credentials and RBAC), follow
+> [docs/cicd-setup.md](./docs/cicd-setup.md).
 
 ## Compliance
 GDPR · EU AI Act (high-risk system) · PSD2 SCA · EBA fraud reporting. See [docs/compliance/](./docs/compliance/).
